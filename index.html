@@ -1062,7 +1062,7 @@
         document.getElementById('exportMenu').classList.add('hidden');
         const dumpType = prompt("Select export type:\n1. Full Data Dump\n2. Selected Columns Only", "1");
         if (!dumpType) return;
-        alert(`Generating ${format.toUpperCase()} report (${dumpType === '1' ? 'Full Data Dump' : 'Selected Columns'}) for active financial year ${ACTIVE_FY}... Download started!`, 1000);
+        alert(`Generating ${format.toUpperCase()} report (${dumpType === '1' ? 'Full Data Dump' : 'Selected Columns'}) for active financial year ${ACTIVE_FY}... Download started!`);
     }
 </script>
 
