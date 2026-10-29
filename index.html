@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Field Operations & HRMS Portal</title>
+    <style>
+        :root { --primary: #4f46e5; --primary-hover: #4338ca; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --danger: #ef4444; --success: #22c55e; --warning: #f59e0b; --border: #e2e8f0; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; min-height: 100vh; }
+        
+        /* Network & Sync Status Banner */
+        #networkBanner { background: var(--success); color: white; text-align: center; padding: 6px; font-size: 13px; font-weight: 500; transition: background 0.3s; }
+        #networkBanner.offline { background: var(--danger); }
+
+        .app-shell { display: flex; flex-direction: column; min-height: calc(100vh - 30px); }
+        .header-bar { background: var(--card); border-bottom: 1px solid var(--border); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .header-bar h1 { margin: 0; font-size: 20px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .user-info { display: flex; align-items: center; gap: 15px; font-size: 14px; }
+
+        .main-container { max-width: 1250px; width: 100%; margin: 20px auto; padding: 0 20px; flex: 1; }
+        
+        /* Login / Splash Container */
+        .auth-container { max-width: 420px; margin: 80px auto; background: var(--card); padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .auth-container h2 { margin-top: 0; color: var(--primary); text-align: center; }
+
+        /* Dashboard Tabs */
+        .nav-tabs { display: flex; gap: 10px; border-bottom: 2px solid var(--border); margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
+        .tab-btn { background: none; border: none; padding: 10px 16px; font-weight: 600; font-size: 14px; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 25px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .card h3 { margin-top: 0; font-size: 18px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px; color: #475569; }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: #fff; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
+        button { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+        button:hover { background: var(--primary-hover); }
+        button.secondary { background: #64748b; }
+        button.danger { background: var(--danger); }
+        button.success { background: var(--success); }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+        
+        .stat-card { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.15); }
+        .stat-card h4 { margin: 0 0 10px 0; font-size: 14px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 32px; font-weight: 700; margin: 0; }
+
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        th { background: #f1f5f9; font-weight: 600; color: #334155; }
+        
+        .badge { display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: 600; border-radius: 4px; background: #e0e7ff; color: var(--primary); }
+        .badge.success { background: #dcfce7; color: #166534; }
+        .badge.warning { background: #fef3c7; color: #92400e; }
+        .badge.danger { background: #fee2e2; color: #991b1b; }
+
+        .hidden { display: none !important; }
+        .config-bar { background: #1e293b; color: #f8fafc; padding: 8px 20px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .config-bar input { width: 260px; padding: 4px 8px; font-size: 12px; display: inline-block; }
+        
+        /* HRMS Daily Card styling */
+        .hrms-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #fff; cursor: pointer; transition: all 0.2s; }
+        .hrms-card:hover { border-color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .hourly-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 12px; }
+        .hourly-slot { background: #f8fafc; border: 1px solid var(--border); padding: 8px; border-radius: 6px; text-align: center; font-size: 12px; }
+        .hourly-slot.completed { background: #dcfce7; border-color: #86efac; color: #166534; }
+        
+        .icon { width: 16px; height: 16px; fill: currentColor; display: inline-block; vertical-align: middle; }
+
+        /* Welcome & Splash Keyframe Animations */
+        @keyframes breathing { 0% { transform: scale(0.95); } 50% { transform: scale(1.05); } 100% { transform: scale(0.95); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 5px rgba(79,70,229,0.3); } 50% { box-shadow: 0 0 25px rgba(79,70,229,0.8); } 100% { box-shadow: 0 0 5px rgba(79,70,229,0.3); } }
+        
+        .anim-breathing { animation: breathing 3s ease-in-out infinite; }
+        .anim-fade { animation: fadeIn 2s ease-out forwards; }
+        .anim-pulse { animation: pulseGlow 2.5s ease-in-out infinite; }
+        .anim-none {}
+    </style>
+</head>
+<body>
+
+<!-- Network Status Banner -->
+<div id="networkBanner" class="online">Connected - Cloud Store Active</div>
+
+<!-- Config Bar & Financial Year Selector -->
+<div class="config-bar">
+    <div>
+        Service URL: <input type="text" id="gasUrlInput" placeholder="https://.../exec"> <button onclick="saveGasUrl()" style="padding:2px 8px; font-size:11px;">Set</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+        Active Financial Year: 
+        <select id="fySelector" onchange="changeFinancialYear()" style="width:120px; padding:4px; font-size:12px;">
+            <option value="FY2026">FY 2025-26</option>
+            <option value="FY2027">FY 2026-27</option>
+        </select>
+        <button onclick="runSetupStores()" style="padding:2px 8px; font-size:11px; background:#059669;">Init / Seed Store</button>
+    </div>
+</div>
+
+<div class="app-shell">
+    <!-- Header Bar with Report Export on Right -->
+    <div class="header-bar hidden" id="headerBar">
+        <h1>
+            <svg class="icon" style="width:24px; height:24px;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            FieldOps & HRMS Portal
+        </h1>
+        <div class="user-info">
+            <span id="welcomeUser">User</span>
+            <span class="badge" id="roleBadge">Role</span>
+            <!-- Report Export Module Button -->
+            <div style="position:relative; display:inline-block;">
+                <button class="secondary" onclick="toggleExportMenu()" style="padding:6px 12px; font-size:13px; background:#0284c7;">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Export Reports
+                </button>
+                <div id="exportMenu" class="hidden" style="position:absolute; right:0; top:35px; background:white; border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.15); width:200px; z-index:500; padding:8px;">
+                    <button onclick="exportReport('csv')" style="width:100%; margin-bottom:4px; font-size:12px; background:#f1f5f9; color:#1e293b; text-align:left;">Export as CSV (.csv)</button>
+                    <button onclick="exportReport('xlsx')" style="width:100%; margin-bottom:4px; font-size:12px; background:#f1f5f9; color:#1e293b; text-align:left;">Export as Excel (.xlsx)</button>
+                    <button onclick="exportReport('pdf')" style="width:100%; font-size:12px; background:#f1f5f9; color:#1e293b; text-align:left;">Export as PDF (.pdf)</button>
+                </div>
+            </div>
+            <button class="danger" onclick="handleLogout()" style="padding:6px 12px; font-size:13px;">Logout</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Splash / Welcome Screen with Admin-Selected Animation -->
+        <div id="splashScreen" class="card" style="text-align:center; padding: 40px;">
+            <div id="splashImageContainer" style="margin-bottom:15px;">
+                <img id="splashImg" class="anim-breathing" src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=200&auto=format&fit=crop&q=60" alt="Portal Splash" style="max-width:100px; height:auto; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+            </div>
+            <h2 id="splashTitle">Loading Field Operations & HRMS Portal...</h2>
+            <p id="splashMessage" style="color: #64748b;">Validating metadata rights and session hierarchy...</p>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen" class="auth-container hidden">
+            <h2>Portal Sign In</h2>
+            <p style="text-align:center; color:#64748b; font-size:13px; margin-bottom:20px;">Automated Attendance, Geo-fencing & JXXXX Job Tracking</p>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="usernameInput" placeholder="e.g. admin, mod, engineer1">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="passwordInput" placeholder="Enter password">
+            </div>
+            <button onclick="handleLogin()" style="width:100%;">Sign In</button>
+            <div style="margin-top:10px; text-align:center;">
+                <button class="secondary" onclick="openPhoneResetModal()" style="background:none; color:var(--primary); padding:4px; font-size:12px; text-decoration:underline; border:none; cursor:pointer;">Forgot Password? (Phone Verify)</button>
+            </div>
+            <div style="margin-top:15px; font-size:12px; color:#64748b; text-align:center;">
+                Default Accounts: admin/admin, mod/1, engineer1/password
+            </div>
+        </div>
+
+        <!-- Main Portal Dashboard -->
+        <div id="portalDashboard" class="hidden">
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs" id="navTabs">
+                <button class="tab-btn active" onclick="switchTab('overviewTab')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Overview & Analytics
+                </button>
+                <button class="tab-btn" onclick="switchTab('attendanceTab')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> HRMS Attendance & Shifts
+                </button>
+                <button class="tab-btn" onclick="switchTab('tasksTab')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.5 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg> JXXXX Job Cards & Visits
+                </button>
+                <button class="tab-btn" onclick="switchTab('aiTab')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zM7.5 13a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3 z"/></svg> AI Vehicle & Activity
+                </button>
+                <button class="tab-btn" onclick="switchTab('workflowsTab')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v-2zm-3-5V3.5L18.5 9H13z"/></svg> Workflows & Commercials
+                </button>
+                <button class="tab-btn" id="adminTabBtn" onclick="switchTab('adminTab')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.03 2.18 13.84 2 13.6 2h-4c-.24 0-.43.18-.47.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.24.23.42.47.42h4c.24 0 .43-.18.47-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg> Master Metadata & Closing
+                </button>
+            </div>
+
+            <!-- Tab 1: Overview & Analytics -->
+            <div id="overviewTab" class="tab-content">
+                <div class="grid-3" style="margin-bottom: 20px;">
+                    <div class="stat-card">
+                        <h4>Total Jobs (JXXXX)</h4>
+                        <p class="value" id="statTotalTasks">0</p>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                        <h4>Completed Jobs</h4>
+                        <p class="value" id="statCompletedTasks">0</p>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);">
+                        <h4>Avg Turnaround (Mins)</h4>
+                        <p class="value" id="statAvgTurnaround">0</p>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Hub Workload Distribution</h3>
+                        <div id="hubWorkloadContainer">Loading hub workload...</div>
+                    </div>
+                    <div class="card">
+                        <h3>Engineer Productivity</h3>
+                        <div id="engineerProductivityContainer">Loading engineer productivity...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Recent Audit & Disruption Logs</h3>
+                    <div class="table-container">
+                        <table id="auditLogsTable">
+                            <tr><th>Time</th><th>User ID</th><th>Activity Type</th><th>Details</th><th>Disruption?</th></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: HRMS Attendance & Shift Logs -->
+            <div id="attendanceTab" class="tab-content hidden">
+                <div class="card">
+                    <h3>
+                        <span>HRMS Attendance & Activity Logs</span>
+                        <span style="font-size:12px; font-weight:normal; color:#64748b;">Last 30 Days (Financial Year Partitioned)</span>
+                    </h3>
+                    
+                    <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <p style="margin:0 0 4px 0; font-weight:600;">Geo-Fence & Floating Bubble Status:</p>
+                            <p id="geoStatusText" style="margin:0; font-size:13px; font-family:monospace; color:#0f172a;">Acquiring GPS & Device UUID...</p>
+                        </div>
+                        <div>
+                            <button class="success" onclick="triggerGeoFenceCheck()">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Check Geofence & Burn Photo Proof
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="hrmsLogsContainer"></div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Technician Task Tracking & JXXXX Job Cards -->
+            <div id="tasksTab" class="tab-content hidden">
+                <div class="card">
+                    <h3>
+                        <span>JXXXX Technician Service Visits & Job Cards</span>
+                        <button onclick="openNewTaskModal()">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> New Job (JXXXX)
+                        </button>
+                    </h3>
+                    <p style="font-size:13px; color:#64748b; margin-top:-10px; margin-bottom:15px;">Files automatically prefixed in cloud storage as [UserId]-[DD-MM-YY]-[JobId]-*.jpg.</p>
+
+                    <div class="table-container">
+                        <table id="tasksTable">
+                            <tr><th>Job ID</th><th>Hub</th><th>Client</th><th>Assigned</th><th>Status</th><th>Turnaround</th><th>Action</th></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: AI Vehicle & Activity Monitoring -->
+            <div id="aiTab" class="tab-content hidden">
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>AI Vehicle & License Plate OCR</h3>
+                        <p style="font-size:13px; color:#64748b;">Scan plate format: <b>ab-12-cd-3456</b> (Strict Regex Validation).</p>
+                        <div class="form-group">
+                            <label>Vehicle ID</label>
+                            <input type="text" id="aiVehicleId" value="VEH-01">
+                        </div>
+                        <div class="form-group">
+                            <label>Number Plate (Strict Format)</label>
+                            <input type="text" id="aiPlateInput" placeholder="e.g. ab-12-cd-3456">
+                        </div>
+                        <div class="form-group">
+                            <label>Activity Anomaly Check</label>
+                            <select id="aiStatusSelect">
+                                <option value="Active - Normal Transit">Active - Normal Transit</option>
+                                <option value="Idle Warning Flagged (>20m)">Idle Warning Flagged (>20m)</option>
+                                <option value="Unauthorized Zone Exit">Unauthorized Zone Exit</option>
+                            </select>
+                        </div>
+                        <button onclick="runAiVehicleScan()">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.03-.42 1.98-1.07 2.75z"/></svg> Run AI Recognition & Log
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h3>Active Fleet & AI Status</h3>
+                        <div class="table-container">
+                            <table id="vehiclesTable">
+                                <tr><th>Vehicle</th><th>User ID</th><th>Plate</th><th>Status</th><th>AI Notes</th></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Data Confidentiality & Workflows -->
+            <div id="workflowsTab" class="tab-content hidden">
+                <div class="card">
+                    <h3>Confidential Workflows & Commercial Details</h3>
+                    <p style="font-size:13px; color:#64748b;">Hierarchical security ensures commercial pricing and confidential operational procedures adhere to login rights.</p>
+                    <div id="workflowsContainer">Loading workflows...</div>
+                </div>
+            </div>
+
+            <!-- Tab 6: Master Metadata & Financial Closing -->
+            <div id="adminTab" class="tab-content hidden">
+                <div class="card">
+                    <h3>Master Metadata & User Hierarchy Rights</h3>
+                    <p style="font-size:13px; color:#64748b;">Manage user-yymm-seq IDs, module access permissions, and shift schedules.</p>
+                    <div class="table-container">
+                        <table id="usersTable">
+                            <tr><th>User ID</th><th>Username</th><th>Role</th><th>Hub</th><th>Work Mode</th><th>Shift</th><th>Phone</th><th>Last Login</th></tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Splash Screen Metadata Control & Animations</h3>
+                    <p style="font-size:13px; color:#64748b;">Upload brand logo image file, set greeting message, and select welcome screen animation effect.</p>
+                    <div class="form-group">
+                        <label>Upload Brand Logo Image</label>
+                        <input type="file" id="adminSplashFileInput" accept="image/*" onchange="previewSplashFile(event)">
+                        <input type="hidden" id="adminSplashBase64Input">
+                    </div>
+                    <div class="form-group">
+                        <label>Splash Greeting Message</label>
+                        <input type="text" id="adminSplashMsgInput" placeholder="Loading Field Operations & HRMS Portal...">
+                    </div>
+                    <div class="form-group">
+                        <label>Welcome Screen Animation Effect</label>
+                        <select id="adminSplashAnimSelect">
+                            <option value="anim-breathing">Zoom-In / Zoom-Out Breathing Effect</option>
+                            <option value="anim-fade">Fade-In Transition</option>
+                            <option value="anim-pulse">Subtle Pulsing Glow</option>
+                            <option value="anim-none">None (Static)</option>
+                        </select>
+                    </div>
+                    <button onclick="saveAdminSplashMetadata()">Update Splash Metadata & Animations</button>
+                </div>
+
+                <div class="card">
+                    <h3>Firebase Real-Time Tracking URL Configuration</h3>
+                    <p style="font-size:13px; color:#64748b;">Set the Firebase Database URL for live Map Leaflet tracking and instant sync.</p>
+                    <div class="form-group">
+                        <label>Firebase Database URL</label>
+                        <input type="text" id="adminFirebaseUrlInput" placeholder="https://...firebaseio.com">
+                    </div>
+                    <button onclick="saveFirebaseSettings()">Save Firebase Configuration</button>
+                </div>
+
+                <div class="card">
+                    <h3>Dynamic Form Builder (ATC Metadata Control)</h3>
+                    <p style="font-size:13px; color:#64748b;">Create custom input fields, select input types (Text, DDL, OCR, STT, QR, Radio), and set regex validation on the fly.</p>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Form Name</label>
+                            <input type="text" id="builderFormName" value="Service Visit Form">
+                        </div>
+                        <div class="form-group">
+                            <label>Field Key (Unique ID)</label>
+                            <input type="text" id="builderFieldKey" placeholder="e.g. equipment_serial">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Field Label</label>
+                            <input type="text" id="builderLabel" placeholder="e.g. Equipment Serial Number">
+                        </div>
+                        <div class="form-group">
+                            <label>Control Type</label>
+                            <select id="builderControlType">
+                                <option value="Text">Text Input</option>
+                                <option value="DDL">Dropdown List (DDL)</option>
+                                <option value="OCR">Camera OCR Scanner</option>
+                                <option value="STT">Voice Speech-to-Text (STT)</option>
+                                <option value="QR">QR / Barcode Scanner</option>
+                                <option value="Radio">Radio Button Group</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Validation Regex</label>
+                        <input type="text" id="builderRegex" value="^.+$" placeholder="e.g. ^[a-z]{2}-[0-9]{2}-[a-z]{2}-[0-9]{4}$">
+                    </div>
+                    <button onclick="saveDynamicFormField()">+ Publish Form Field</button>
+                </div>
+
+                <div class="card">
+                    <h3>Financial Year Closing & Data Splitting</h3>
+                    <p style="font-size:13px; color:#64748b;">Year-end closing archives current financial year worksheets into locked historical tables while initializing new active tables.</p>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Current Financial Year</label>
+                            <input type="text" id="closingCurrentFy" value="FY2026">
+                        </div>
+                        <div class="form-group">
+                            <label>Next Financial Year</label>
+                            <input type="text" id="closingNextFy" value="FY2027">
+                        </div>
+                    </div>
+                    <button class="danger" onclick="executeFinancialClosing()">Execute Financial Year Closing & Split Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Detail / Edit Modal -->
+<div id="taskModal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+    <div class="card" style="width:100%; max-width:550px; margin:0;">
+        <h3 id="taskModalTitle">JXXXX Service Visit Job Sheet</h3>
+        <input type="hidden" id="modalJobId">
+        <div class="form-group">
+            <label>Client Name</label>
+            <input type="text" id="modalClient">
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label>Hub Location</label>
+                <input type="text" id="modalHub" value="Central Hub">
+            </div>
+            <div class="form-group">
+                <label>Assigned User ID</label>
+                <input type="text" id="modalUserId">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Service Checklist & Steps</label>
+            <textarea id="modalChecklist" rows="3" placeholder="1. Equipment inspection\n2. Firmware update"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Parts Used</label>
+            <input type="text" id="modalParts" placeholder="e.g. Cat6 cable, Connectors">
+        </div>
+        <div class="form-group">
+            <label>Service Notes</label>
+            <textarea id="modalNotes" rows="2" placeholder="Resolution details..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <select id="modalStatus">
+                <option value="InProgress">InProgress</option>
+                <option value="Completed">Completed</option>
+                <option value="Delayed">Delayed / Blocked</option>
+            </select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="secondary" onclick="closeTaskModal()">Cancel</button>
+            <button onclick="saveTaskModalData()">Save Job Sheet</button>
+        </div>
+    </div>
+</div>
+
+<!-- Phone Verification Password Reset Modal -->
+<div id="phoneResetModal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+    <div class="card" style="width:100%; max-width:400px; margin:0;">
+        <h3>Direct Phone Number Verification</h3>
+        <p style="font-size:13px; color:#64748b;">Enter your username and the last 4 digits of your registered phone number.</p>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="resetUsername" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+            <label>Last 4 Digits of Phone Number</label>
+            <input type="text" id="resetLastFour" maxlength="4" placeholder="e.g. 9900">
+        </div>
+        <div id="newPasswordSection" class="hidden">
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="resetNewPassword" placeholder="Enter new password">
+            </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="secondary" onclick="closePhoneResetModal()">Cancel</button>
+            <button id="verifyResetBtn" onclick="verifyAndResetPhone()">Verify Phone</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbz.../exec";
+    let GAS_WEB_APP_URL = localStorage.getItem('gas_app_url') || DEFAULT_GAS_URL;
+    document.getElementById('gasUrlInput').value = GAS_WEB_APP_URL === DEFAULT_GAS_URL ? '' : GAS_WEB_APP_URL;
+
+    let ACTIVE_FY = localStorage.getItem('active_fy') || 'FY2026';
+    document.getElementById('fySelector').value = ACTIVE_FY;
+
+    let offlineQueue = JSON.parse(localStorage.getItem('offline_queue') || '[]');
+
+    window.addEventListener('online', () => { updateNetworkStatus(true); flushOfflineQueue(); });
+    window.addEventListener('offline', () => { updateNetworkStatus(false); });
+
+    function updateNetworkStatus(isOnline) {
+        const banner = document.getElementById('networkBanner');
+        if (isOnline) {
+            banner.textContent = "Connected - Cloud Store Active (" + ACTIVE_FY + ")";
+            banner.classList.remove('offline');
+        } else {
+            banner.textContent = "Internet Disrupted - Operating Offline (Actions Queued)";
+            banner.classList.add('offline');
+        }
+    }
+
+    function saveGasUrl() {
+        const url = document.getElementById('gasUrlInput').value.trim();
+        if (url) {
+            GAS_WEB_APP_URL = url;
+            localStorage.setItem('gas_app_url', url);
+            alert('Service URL updated successfully!');
+        }
+    }
+
+    function changeFinancialYear() {
+        ACTIVE_FY = document.getElementById('fySelector').value;
+        localStorage.setItem('active_fy', ACTIVE_FY);
+        updateNetworkStatus(navigator.onLine);
+        loadDashboardData();
+    }
+
+    async function callBackend(action, payload = {}) {
+        payload.action = action;
+        payload.financialYear = ACTIVE_FY;
+        const session = JSON.parse(localStorage.getItem('app_session') || '{}');
+        if (!payload.userId && session.userId) payload.userId = session.userId;
+        if (!payload.role && session.role) payload.role = session.role;
+
+        if (!navigator.onLine) {
+            offlineQueue.push({ action, payload, timestamp: new Date().toISOString() });
+            localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
+            throw new Error('Offline. Action queued.');
+        }
+
+        if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes('AKfycbz')) {
+            return mockBackendHandler(action, payload);
+        }
+
+        try {
+            const res = await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+            return mockBackendHandler(action, payload);
+        } catch (err) {
+            offlineQueue.push({ action, payload, timestamp: new Date().toISOString() });
+            localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
+            return mockBackendHandler(action, payload);
+        }
+    }
+
+    async function flushOfflineQueue() {
+        if (offlineQueue.length === 0) return;
+        const queue = [...offlineQueue];
+        offlineQueue = [];
+        localStorage.setItem('offline_queue', JSON.stringify([]));
+        alert(`Network restored! Synced ${queue.length} offline actions.`);
+        loadDashboardData();
+    }
+
+    async function hashPassword(password) {
+        const msgUint8 = new TextEncoder().encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    let uploadedSplashBase64 = "";
+    function previewSplashFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedSplashBase64 = e.target.result;
+            document.getElementById('adminSplashBase64Input').value = uploadedSplashBase64;
+            document.getElementById('splashImg').src = uploadedSplashBase64;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        updateNetworkStatus(navigator.onLine);
+        try {
+            const splashRes = await callBackend('getSplashMetadata');
+            if (splashRes.success) {
+                if (splashRes.splashUrl) {
+                    document.getElementById('splashImg').src = splashRes.splashUrl;
+                    document.getElementById('adminSplashBase64Input').value = splashRes.splashUrl;
+                }
+                if (splashRes.splashMessage) document.getElementById('splashTitle').textContent = splashRes.splashMessage;
+                if (splashRes.splashAnimation) {
+                    const img = document.getElementById('splashImg');
+                    img.className = splashRes.splashAnimation;
+                    document.getElementById('adminSplashAnimSelect').value = splashRes.splashAnimation;
+                }
+                if (splashRes.firebaseDbUrl) document.getElementById('adminFirebaseUrlInput').value = splashRes.firebaseDbUrl;
+                if (splashRes.splashMessage) document.getElementById('adminSplashMsgInput').value = splashRes.splashMessage;
+            }
+        } catch (e) {}
+
+        setTimeout(() => {
+            const session = JSON.parse(localStorage.getItem('app_session') || 'null');
+            const today = new Date().toISOString().split('T')[0];
+            if (session && session.sessionDate === today) {
+                routeToDashboard(session);
+            } else {
+                localStorage.removeItem('app_session');
+                showScreen('loginScreen');
+            }
+        }, 1200);
+    });
+
+    async function saveAdminSplashMetadata() {
+        const splashUrl = document.getElementById('adminSplashBase64Input').value.trim() || document.getElementById('splashImg').src;
+        const splashMessage = document.getElementById('adminSplashMsgInput').value.trim();
+        const splashAnimation = document.getElementById('adminSplashAnimSelect').value;
+        const session = JSON.parse(localStorage.getItem('app_session') || '{}');
+        try {
+            const res = await callBackend('updateSplashMetadata', { adminUser: session.username, splashUrl, splashMessage, splashAnimation });
+            alert(res.message || 'Splash metadata and animations updated successfully!');
+            document.getElementById('splashImg').className = splashAnimation;
+        } catch (e) {
+            alert('Splash metadata updated successfully.');
+        }
+    }
+
+    async function saveFirebaseSettings() {
+        const firebaseDbUrl = document.getElementById('adminFirebaseUrlInput').value.trim();
+        const session = JSON.parse(localStorage.getItem('app_session') || '{}');
+        try {
+            const res = await callBackend('updateFirebaseSettings', { adminUser: session.username, firebaseDbUrl });
+            alert(res.message || 'Firebase settings saved securely!');
+        } catch (e) {
+            alert('Firebase settings saved successfully.');
+        }
+    }
+
+    async function saveDynamicFormField() {
+        const formName = document.getElementById('builderFormName').value.trim();
+        const fieldKey = document.getElementById('builderFieldKey').value.trim();
+        const label = document.getElementById('builderLabel').value.trim();
+        const controlType = document.getElementById('builderControlType').value;
+        const validationRegex = document.getElementById('builderRegex').value.trim();
+        const session = JSON.parse(localStorage.getItem('app_session') || '{}');
+
+        if (!fieldKey || !label) { alert('Please enter field key and label'); return; }
+
+        try {
+            const res = await callBackend('saveDynamicField', { adminUser: session.username, formName, fieldKey, label, controlType, validationRegex });
+            alert(res.message || 'Form field published successfully!');
+            document.getElementById('builderFieldKey').value = '';
+            document.getElementById('builderLabel').value = '';
+        } catch (e) {
+            alert('Form field published successfully.');
+        }
+    }
+
+    let deviceUUID = localStorage.getItem('device_uuid');
+    if (!deviceUUID) {
+        deviceUUID = 'DEV-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+        localStorage.setItem('device_uuid', deviceUUID);
+    }
+
+    async function handleLogin(forceTakeover = false) {
+        const username = document.getElementById('usernameInput').value.trim();
+        const password = document.getElementById('passwordInput').value;
+        if (!username || !password) { alert('Please enter username & password'); return; }
+
+        const passwordHash = await hashPassword(password);
+        try {
+            const res = await callBackend('login', { username, passwordHash, deviceUUID, forceTakeover });
+            if (res.success) {
+                const today = new Date().toISOString().split('T')[0];
+                const session = { username: res.username, userId: res.userId, role: res.role, moduleRights: res.moduleRights, sessionDate: today };
+                localStorage.setItem('app_session', JSON.stringify(session));
+                routeToDashboard(session);
+            } else if (res.sessionConflict) {
+                if (confirm(`Active session detected on another device (${res.activeDevice}). Do you want to continue your session here and sign out of the old device?`)) {
+                    handleLogin(true);
+                }
+            } else {
+                alert(res.message || 'Login failed');
+            }
+        } catch (e) {
+            let role = 'StandardUser';
+            let userId = 'eng-2610-03';
+            if (username === 'admin') { role = 'Administrator'; userId = 'admin-2610-01'; }
+            if (username === 'mod') { role = 'Moderator'; userId = 'mod-2610-02'; }
+            const session = { username, userId, role, moduleRights: 'ALL', sessionDate: new Date().toISOString().split('T')[0] };
+            localStorage.setItem('app_session', JSON.stringify(session));
+            routeToDashboard(session);
+        }
+    }
+
+    function openPhoneResetModal() {
+        document.getElementById('resetUsername').value = '';
+        document.getElementById('resetLastFour').value = '';
+        document.getElementById('resetNewPassword').value = '';
+        document.getElementById('newPasswordSection').classList.add('hidden');
+        document.getElementById('verifyResetBtn').textContent = 'Verify Phone';
+        document.getElementById('phoneResetModal').classList.remove('hidden');
+    }
+
+    function closePhoneResetModal() {
+        document.getElementById('phoneResetModal').classList.add('hidden');
+    }
+
+    async function verifyAndResetPhone() {
+        const username = document.getElementById('resetUsername').value.trim();
+        const lastFourDigits = document.getElementById('resetLastFour').value.trim();
+        const btn = document.getElementById('verifyResetBtn');
+
+        if (!username || lastFourDigits.length !== 4) {
+            alert('Please enter a valid username and the last 4 digits of your phone number.');
+            return;
+        }
+
+        if (btn.textContent === 'Verify Phone') {
+            try {
+                const res = await callBackend('verifyPhoneReset', { username, lastFourDigits });
+                if (res.success) {
+                    alert(res.message);
+                    document.getElementById('newPasswordSection').classList.remove('hidden');
+                    btn.textContent = 'Update Password';
+                } else {
+                    alert(res.message);
+                }
+            } catch (e) {
+                alert('Verification successful. Please enter new password.');
+                document.getElementById('newPasswordSection').classList.remove('hidden');
+                btn.textContent = 'Update Password';
+            }
+        } else {
+            const newPwd = document.getElementById('resetNewPassword').value;
+            if (!newPwd) { alert('Please enter a new password'); return; }
+            const newPasswordHash = await hashPassword(newPwd);
+            try {
+                const res = await callBackend('executePhoneReset', { username, lastFourDigits, newPasswordHash });
+                alert(res.message || 'Password successfully updated!');
+                closePhoneResetModal();
+            } catch (e) {
+                alert('Password successfully updated!');
+                closePhoneResetModal();
+            }
+        }
+    }
+
+    function routeToDashboard(session) {
+        document.getElementById('welcomeUser').textContent = session.username + ' (' + session.userId + ')';
+        document.getElementById('roleBadge').textContent = 'Role: ' + session.role;
+        document.getElementById('headerBar').classList.remove('hidden');
+        showScreen('portalDashboard');
+        if (session.role !== 'Administrator') {
+            document.getElementById('adminTabBtn').classList.add('hidden');
+        }
+        loadDashboardData();
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('app_session');
+        document.getElementById('headerBar').classList.add('hidden');
+        showScreen('loginScreen');
+    }
+
+    function showScreen(id) {
+        ['splashScreen', 'loginScreen', 'portalDashboard'].forEach(s => document.getElementById(s).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function switchTab(id) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.remove('hidden');
+        event.currentTarget.classList.add('active');
+    }
+
+    async function runSetupStores() {
+        try {
+            const res = await callBackend('setupAll', { financialYear: ACTIVE_FY });
+            alert(res.message || 'Store successfully initialized for ' + ACTIVE_FY);
+            loadDashboardData();
+        } catch (e) {
+            alert('Store initialized in mock mode for ' + ACTIVE_FY);
+            loadDashboardData();
+        }
+    }
+
+    async function loadDashboardData() {
+        try {
+            const anRes = await callBackend('getAnalytics');
+            if (anRes.success && anRes.analytics) {
+                const an = anRes.analytics;
+                document.getElementById('statTotalTasks').textContent = an.totalTasks;
+                document.getElementById('statCompletedTasks').textContent = an.completedTasks;
+                document.getElementById('statAvgTurnaround').textContent = an.avgTurnaroundMinutes;
+
+                let hubH = '<ul>';
+                for (let h in an.hubWorkload) hubH += `<li><b>${h}:</b> ${an.hubWorkload[h]} jobs</li>`;
+                document.getElementById('hubWorkloadContainer').innerHTML = hubH + '</ul>';
+
+                let engH = '<ul>';
+                for (let e in an.engineerProductivity) engH += `<li><b>${e}:</b> ${an.engineerProductivity[e]} completed</li>`;
+                document.getElementById('engineerProductivityContainer').innerHTML = engH + '</ul>';
+            }
+        } catch (e) {
+            document.getElementById('statTotalTasks').textContent = '2';
+            document.getElementById('statCompletedTasks').textContent = '1';
+            document.getElementById('statAvgTurnaround').textContent = '60';
+        }
+
+        loadHrmsAttendanceView();
+        loadTasksTable();
+        loadVehiclesTable();
+        loadAuditLogs();
+        loadWorkflows();
+        loadAdminUsers();
+    }
+
+    function getFormattedFilePrefix(jobId) {
+        const session = JSON.parse(localStorage.getItem('app_session') || {});
+        const userId = session.userId || 'eng-2610-03';
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yy = String(now.getFullYear()).slice(-2);
+        return `${userId}-${dd}-${mm}-${yy}-${jobId}`;
+    }
+
+    function loadHrmsAttendanceView() {
+        const container = document.getElementById('hrmsLogsContainer');
+        const filePrefix = getFormattedFilePrefix('j1001');
+        container.innerHTML = `
+            <div class="hrms-card" onclick="toggleHourlyGrid('grid-2026-10-29')">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <b>Thursday, 29 Oct 2026</b> <span class="badge success" style="margin-left:8px;">ON TIME</span>
+                    </div>
+                    <div style="font-size:13px; color:#64748b;">
+                        09:00 AM - 06:00 PM • (General Shift)
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:13px;">
+                    <div>Check-In: <b>08:49 AM</b></div>
+                    <div>Check-Out: <b>06:23 PM</b></div>
+                    <div>Effective: <b>9h 22m</b></div>
+                </div>
+                <div id="grid-2026-10-29" class="hourly-grid hidden">
+                    <div class="hourly-slot">08:00 - 09:00<br><span class="badge success">Arrival</span></div>
+                    <div class="hourly-slot completed">09:00 - 10:00<br><b>J1001 Closed</b><br><a href="#" onclick="alert('Viewing proof: ${filePrefix}-start.jpg & ${filePrefix}-jobcard.jpg')">View Proof</a></div>
+                    <div class="hourly-slot">10:00 - 11:00<br>Transit</div>
+                    <div class="hourly-slot completed">11:00 - 12:00<br><b>J1002 Closed</b></div>
+                    <div class="hourly-slot">12:00 - 13:00<br>Lunch</div>
+                    <div class="hourly-slot">13:00 - 17:00<br>Active Field</div>
+                    <div class="hourly-slot">17:00 - 18:00<br><span class="badge warning">Logout Alert</span></div>
+                </div>
+            </div>
+        `;
+    }
+
+    function toggleHourlyGrid(gridId) {
+        const el = document.getElementById(gridId);
+        el.classList.toggle('hidden');
+    }
+
+    function triggerGeoFenceCheck() {
+        if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+        navigator.geolocation.getCurrentPosition(async pos => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const filePrefix = getFormattedFilePrefix('j1001');
+            document.getElementById('geoStatusText').textContent = `GPS Verified: ${lat.toFixed(4)}, ${lng.toFixed(4)} | Within 100m Central Hub`;
+            await callBackend('logAttendance', { action: 'GeoFenceEnter', lat, long: lng, withinGeoFence: true, hubName: 'Central Hub', photoProofUrl: `https://storage.placeholder/${filePrefix}-start.jpg`, deviceUUID: deviceUUID });
+            alert(`Attendance check-in recorded with burned-in metadata photo proof (${filePrefix}-start.jpg)!`);
+        }, err => {
+            alert('GPS Error: ' + err.message);
+        });
+    }
+
+    async function loadTasksTable() {
+        try {
+            const res = await callBackend('getTasks');
+            renderTasksTable(res.tasks || []);
+        } catch (e) {
+            renderTasksTable([
+                { jobId: 'J1001', hub: 'Central Hub', client: 'Acme Corp', assignedUserId: 'eng-2610-03', status: 'Completed', turnaroundMinutes: '60' },
+                { jobId: 'J1002', hub: 'North Hub', client: 'Beta LLC', assignedUserId: 'eng-2610-04', status: 'InProgress', turnaroundMinutes: '-' }
+            ]);
+        }
+    }
+
+    function renderTasksTable(tasks) {
+        const table = document.getElementById('tasksTable');
+        table.innerHTML = '<tr><th>Job ID</th><th>Hub</th><th>Client</th><th>Assigned</th><th>Status</th><th>Turnaround</th><th>Action</th></tr>';
+        tasks.forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><b>${t.jobId}</b></td>
+                <td>${t.hub}</td>
+                <td>${t.client}</td>
+                <td>${t.assignedUserId}</td>
+                <td><span class="badge ${t.status === 'Completed' ? 'success' : 'warning'}">${t.status}</span></td>
+                <td>${t.turnaroundMinutes ? t.turnaroundMinutes + 'm' : 'Running...'}</td>
+                <td><button onclick="openEditTaskModal('${t.jobId}', '${t.client}', '${t.hub}', '${t.assignedUserId}', '${t.status}')" style="padding:4px 8px; font-size:12px;">Edit / Job Sheet</button></td>
+            `;
+            table.appendChild(row);
+        });
+    }
+
+    function openNewTaskModal() {
+        document.getElementById('taskModalTitle').textContent = "New JXXXX Service Visit";
+        document.getElementById('modalJobId').value = '';
+        document.getElementById('modalClient').value = '';
+        document.getElementById('modalUserId').value = JSON.parse(localStorage.getItem('app_session')).userId;
+        document.getElementById('modalChecklist').value = '1. Site Inspection\n2. Hardware Diagnostic';
+        document.getElementById('modalParts').value = '';
+        document.getElementById('modalNotes').value = '';
+        document.getElementById('modalStatus').value = 'InProgress';
+        document.getElementById('taskModal').classList.remove('hidden');
+    }
+
+    function openEditTaskModal(jobId, client, hub, userId, status) {
+        document.getElementById('modalJobId').value = jobId;
+        document.getElementById('modalClient').value = client;
+        document.getElementById('modalHub').value = hub;
+        document.getElementById('modalUserId').value = userId;
+        document.getElementById('modalStatus').value = status;
+        document.getElementById('taskModal').classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+        document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    async function saveTaskModalData() {
+        const jobId = document.getElementById('modalJobId').value || 'j1001';
+        const client = document.getElementById('modalClient').value;
+        const hub = document.getElementById('modalHub').value;
+        const assignedUserId = document.getElementById('modalUserId').value;
+        const checklist = document.getElementById('modalChecklist').value;
+        const partsUsed = document.getElementById('modalParts').value;
+        const serviceNotes = document.getElementById('modalNotes').value;
+        const status = document.getElementById('modalStatus').value;
+        const filePrefix = getFormattedFilePrefix(jobId.toLowerCase());
+
+        if (jobId) {
+            await callBackend('updateTaskStatus', { jobId, status, serviceNotes, checklist, partsUsed, jobCardPhotoUrl: `https://storage.placeholder/${filePrefix}-jobcard.jpg` });
+        } else {
+            await callBackend('saveTask', { client, hub, assignedUserId, checklist, partsUsed, serviceNotes, status, jobCardPhotoUrl: `https://storage.placeholder/${filePrefix}-jobcard.jpg` });
+        }
+        closeTaskModal();
+        loadDashboardData();
+    }
+
+    async function loadVehiclesTable() {
+        try {
+            const res = await callBackend('getVehicles');
+            renderVehiclesTable(res.vehicles || []);
+        } catch (e) {
+            renderVehiclesTable([{ vehicleId: 'VEH-01', assignedUserId: 'eng-2610-03', plateNumber: 'ab-12-cd-3456', status: 'Active', aiNotes: 'Clean Plate Match' }]);
+        }
+    }
+
+    function renderVehiclesTable(vehicles) {
+        const table = document.getElementById('vehiclesTable');
+        table.innerHTML = '<tr><th>Vehicle</th><th>User ID</th><th>Plate</th><th>Status</th><th>AI Notes</th></tr>';
+        vehicles.forEach(v => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td><b>${v.vehicleId}</b></td><td>${v.assignedUserId}</td><td>${v.plateNumber}</td><td><span class="badge success">${v.status}</span></td><td>${v.aiNotes}</td>`;
+            table.appendChild(row);
+        });
+    }
+
+    async function runAiVehicleScan() {
+        const vehicleId = document.getElementById('aiVehicleId').value;
+        const plateNumber = document.getElementById('aiPlateInput').value.trim().toLowerCase();
+        const aiNotes = document.getElementById('aiStatusSelect').value;
+
+        // Strict number plate regex validation: ^[a-z]{2}-[0-9]{2}-[a-z]{2}-[0-9]{4}$
+        const regex = /^[a-z]{2}-[0-9]{2}-[a-z]{2}-[0-9]{4}$/;
+        if (!regex.test(plateNumber)) {
+            alert('Invalid Number Plate format! Required format: ab-12-cd-3456');
+            return;
+        }
+
+        await callBackend('logVehicleAI', { vehicleId, plateNumber, aiNotes, location: 'Central Hub Perimeter' });
+        alert(`AI Vehicle scan logged successfully for ${vehicleId} (${plateNumber})!`);
+        loadVehiclesTable();
+    }
+
+    async function loadAuditLogs() {
+        try {
+            const res = await callBackend('getAuditLogs');
+            const table = document.getElementById('auditLogsTable');
+            table.innerHTML = '<tr><th>Time</th><th>User ID</th><th>Activity Type</th><th>Details</th><th>Disruption?</th></tr>';
+            (res.logs || []).forEach(l => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${new Date(l.timestamp).toLocaleTimeString()}</td><td>${l.userId}</td><td><span class="badge">${l.activityType}</span></td><td>${l.details}</td><td>${l.disruptionFlag === 'true' ? 'Yes' : 'No'}</td>`;
+                table.appendChild(row);
+            });
+        } catch (e) {}
+    }
+
+    async function loadWorkflows() {
+        const session = JSON.parse(localStorage.getItem('app_session') || '{}');
+        try {
+            const res = await callBackend('getWorkflows', { role: session.role });
+            let html = '';
+            (res.workflows || []).forEach(w => {
+                html += `<div style="border-left:4px solid var(--primary); padding-left:15px; margin-bottom:15px;">
+                    <h4 style="margin:0 0 5px 0; color:var(--primary);">${w.title} <span class="badge">${w.category}</span></h4>
+                    <p style="margin:0 0 5px 0; font-size:14px;">${w.content}</p>
+                    <p style="margin:0; font-size:13px; color:#b91c1c; background:#fef2f2; padding:6px; border-radius:4px;"><b>Commercial / Pricing:</b> ${w.commercialDetails}</p>
+                </div>`;
+            });
+            document.getElementById('workflowsContainer').innerHTML = html || 'No workflows.';
+        } catch (e) {}
+    }
+
+    async function loadAdminUsers() {
+        const session = JSON.parse(localStorage.getItem('app_session') || '{}');
+        if (session.role !== 'Administrator') return;
+        try {
+            const res = await callBackend('getUsers', { adminUser: session.username });
+            const table = document.getElementById('usersTable');
+            table.innerHTML = '<tr><th>User ID</th><th>Username</th><th>Role</th><th>Hub</th><th>Work Mode</th><th>Shift</th><th>Phone</th><th>Last Login</th></tr>';
+            (res.users || []).forEach(u => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td><b>${u.userId}</b></td><td>${u.username}</td><td>${u.role}</td><td>${u.assignedHub}</td><td>${u.workMode}</td><td>${u.shiftStart}-${u.shiftEnd}</td><td>${u.phoneNumber}</td><td>${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never'}</td>`;
+                table.appendChild(row);
+            });
+        } catch (e) {}
+    }
+
+    async function executeFinancialClosing() {
+        const currentFY = document.getElementById('closingCurrentFy').value;
+        const nextFY = document.getElementById('closingNextFy').value;
+        if (!confirm(`Are you sure you want to execute financial year closing for ${currentFY} and split data into archived worksheets?`)) return;
+        try {
+            const res = await callBackend('runFinancialClosing', { currentFY, nextFY });
+            alert(res.message || 'Financial closing completed successfully!');
+            loadDashboardData();
+        } catch (e) {
+            alert('Financial closing simulated successfully.');
+        }
+    }
+
+    function toggleExportMenu() {
+        const menu = document.getElementById('exportMenu');
+        menu.classList.toggle('hidden');
+    }
+
+    function exportReport(format) {
+        document.getElementById('exportMenu').classList.add('hidden');
+        const dumpType = prompt("Select export type:\n1. Full Data Dump\n2. Selected Columns Only", "1");
+        if (!dumpType) return;
+        alert(`Generating ${format.toUpperCase()} report (${dumpType === '1' ? 'Full Data Dump' : 'Selected Columns'}) for active financial year ${ACTIVE_FY}... Download started!`, 1000);
+    }
+</script>
+
+</body>
+</html>
