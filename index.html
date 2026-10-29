@@ -488,9 +488,9 @@
 </div>
 
 <script>
-    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbz.../exec";
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbznQwL9EmwbLG-ISf0EEGnl_e573iTLltZNd8aTAgD5tSLVvTNCdoOVzjpzxTCNPQ60/exec";
     let GAS_WEB_APP_URL = localStorage.getItem('gas_app_url') || DEFAULT_GAS_URL;
-    document.getElementById('gasUrlInput').value = GAS_WEB_APP_URL === DEFAULT_GAS_URL ? '' : GAS_WEB_APP_URL;
+    document.getElementById('gasUrlInput').value = GAS_WEB_APP_URL;
 
     let ACTIVE_FY = localStorage.getItem('active_fy') || 'FY2026';
     document.getElementById('fySelector').value = ACTIVE_FY;
