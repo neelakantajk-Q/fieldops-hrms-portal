@@ -197,12 +197,12 @@
   <div class="sidebar-backdrop hidden" id="backdrop"></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand"><img class="mark" src="assets/quantum-logo.png" alt="Quantum EV"><div><strong>Quantum</strong><span>Field Operations</span></div></div>
-    <div class="nav-cat">Workspace</div>
+    <div class="nav-cat" id="workspaceNavCat">Workspace</div>
     <button class="nav-item active" data-view="overview" type="button">Overview</button>
     <button class="nav-item" data-view="attendance" type="button">Attendance</button>
     <button class="nav-item" data-view="jobs" type="button">Job Cards</button>
     <button class="nav-item" data-view="team" type="button">Team</button>
-    <div class="nav-cat">Fleet</div>
+    <div class="nav-cat" id="fleetNavCat">Fleet</div>
     <button class="nav-item" data-view="vehicles" type="button">Vehicles &amp; OCR</button>
     <button class="nav-item" data-view="masters" type="button">Master Data</button>
     <button class="nav-item" data-view="workflows" type="button">Workflows</button>
@@ -878,16 +878,59 @@
     } catch (e) {}
   }
 
+  function roleRank_(role) {
+    return { Technician: 1, StandardUser: 1, Supervisor: 2, Moderator: 3, Administrator: 4 }[role] || 0;
+  }
+
+  function rightsList_() {
+    var rights = state.session && state.session.moduleRights;
+    if (Array.isArray(rights)) return rights.map(function (item) { return String(item).toUpperCase(); });
+    return String(rights || '').split(',').map(function (item) { return item.trim().toUpperCase(); }).filter(Boolean);
+  }
+
+  function canView_(view) {
+    if (!state.session) return false;
+    var rank = roleRank_(state.session.role);
+    var rights = rightsList_();
+    if (view === 'overview' || view === 'attendance') return true;
+    if (view === 'jobs') return rank >= 2 || rights.indexOf('TASKS') >= 0;
+    if (view === 'team') return rank >= 2;
+    if (view === 'vehicles') return rank >= 2 || rights.indexOf('VEHICLES') >= 0;
+    if (view === 'masters') return rank >= 3;
+    if (view === 'workflows') return rank >= 2;
+    if (view === 'admin') return rank >= 4;
+    return false;
+  }
+
+  function applyRoleNavigation_() {
+    var signedIn = Boolean(state.session && state.session.token);
+    var items = document.querySelectorAll('[data-view]');
+    for (var i = 0; i < items.length; i++) {
+      var view = items[i].getAttribute('data-view');
+      items[i].classList.toggle('hidden', !(signedIn && canView_(view)));
+    }
+    var workspaceVisible = signedIn && (canView_('overview') || canView_('attendance') || canView_('jobs') || canView_('team'));
+    var fleetVisible = signedIn && (canView_('vehicles') || canView_('masters') || canView_('workflows'));
+    if (byId('workspaceNavCat')) byId('workspaceNavCat').classList.toggle('hidden', !workspaceVisible);
+    if (byId('fleetNavCat')) byId('fleetNavCat').classList.toggle('hidden', !fleetVisible);
+    if (byId('adminNavCat')) byId('adminNavCat').classList.toggle('hidden', !(signedIn && canView_('admin')));
+    if (byId('adminNavBtn')) byId('adminNavBtn').classList.toggle('hidden', !(signedIn && canView_('admin')));
+  }
+
   function renderSession() {
     var signedIn = Boolean(state.session && state.session.token);
     byId('view-login').classList.toggle('hidden', signedIn);
     byId('appViews').classList.toggle('hidden', !signedIn);
-    byId('userChip').textContent = signedIn ? (state.session.username + ' � ' + state.session.role) : 'Signed out';
+    byId('sidebar').classList.toggle('hidden', !signedIn);
+    byId('menuBtn').classList.toggle('hidden', !signedIn);
+    if (!signedIn) {
+      byId('sidebar').classList.remove('open');
+      byId('backdrop').classList.add('hidden');
+    }
+    byId('userChip').textContent = signedIn ? (state.session.username + ' · ' + state.session.role) : 'Signed out';
     byId('logoutBtn').classList.toggle('hidden', !signedIn);
     byId('exportBtn').classList.toggle('hidden', !signedIn);
-    var isAdmin = signedIn && state.session.role === 'Administrator';
-    byId('adminNavBtn').classList.toggle('hidden', !isAdmin);
-    byId('adminNavCat').classList.toggle('hidden', !isAdmin);
+    applyRoleNavigation_();
 
     var needsCheckIn = signedIn && (state.session.role === 'StandardUser' || state.session.role === 'Technician') && !state.session.checkedIn;
     byId('checkInChip').classList.toggle('hidden', !needsCheckIn);
@@ -904,6 +947,7 @@
       state.session.role = res.session.role;
       state.session.hub = res.session.hub;
       state.session.scope = res.session.scope;
+      state.session.moduleRights = res.session.moduleRights;
       saveSession(state.session);
     }
     if (res.settings && res.settings.currentFy) {
@@ -945,6 +989,7 @@
         role: res.role,
         hub: res.hub,
         scope: res.scope,
+        moduleRights: res.moduleRights,
         expiresAt: res.expiresAt,
         sessionDate: res.sessionDate,
         checkedIn: Boolean(res.checkedIn)
@@ -978,7 +1023,7 @@
   /* -------------------------------------------------------------------- views */
   async function route(view) {
     if (!state.session) { renderSession(); return; }
-    if (view === 'admin' && state.session.role !== 'Administrator') view = 'overview';
+    if (!canView_(view)) view = 'overview';
     state.view = view;
     var sections = document.querySelectorAll('.view');
     for (var i = 0; i < sections.length; i++) sections[i].classList.add('hidden');
