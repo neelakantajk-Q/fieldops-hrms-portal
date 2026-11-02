@@ -1,0 +1,35 @@
+{
+  "id": "./",
+  "name": "Field Operations & HRMS Portal",
+  "short_name": "FieldOps",
+  "description": "Field operations, attendance, job cards, fleet telemetry and live sync.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "lang": "en",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
