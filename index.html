@@ -28,7 +28,7 @@
   .small{font-size:12px}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   header.appbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(166,206,57,.20);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(166,206,57,.35);position:sticky;top:0;z-index:60}
-  .brand-band{width:40px;height:32px;border-radius:8px;display:grid;place-items:center;background:#000;color:#a6ce39;font-weight:900;font-size:16px;flex:0 0 auto}
+  .brand-band{width:auto;height:30px;border-radius:6px;display:block;background:#000;object-fit:contain;flex:0 0 auto}
   header.appbar h1{margin:0;font-size:15px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
   .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#f8fafc;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;color:#475569}
@@ -40,7 +40,7 @@
   .layout{display:flex;align-items:flex-start;gap:0}
   aside.sidebar{position:sticky;top:0;height:100vh;width:288px;flex:0 0 288px;background:#051330;color:#e2e8f0;display:flex;flex-direction:column;padding:18px 12px;overflow-y:auto}
   .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
-  .brand .mark{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#051330;color:#a6ce39;font-weight:900;font-size:20px;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .brand .mark{width:180px;height:70px;border-radius:12px;display:block;background:#000;object-fit:contain;box-shadow:0 1px 2px rgba(0,0,0,.25)}
   .brand strong{display:block;font-size:15px;color:#fff}
   .brand span{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#7c8aa5}
   .nav-cat{padding:14px 10px 6px;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#5f6f88;font-weight:700}
@@ -175,15 +175,15 @@
 <body>
 
 <div id="statusStrip">
-  <strong id="netLabel">Connecting…</strong>
+  <strong id="netLabel">Connectingï¿½</strong>
   <span id="netDetail" class="small">Checking cloud service</span>
   <span id="queueBadge" class="chip warn hidden">0 queued</span>
-  <span id="fyBadge" class="chip hidden">—</span>
+  <span id="fyBadge" class="chip hidden">ï¿½</span>
 </div>
 
 <header class="appbar">
   <button class="secondary sm" id="menuBtn" type="button" aria-label="Menu">?</button>
-  <span class="brand-band" aria-hidden="true">Q</span>
+  <img class="brand-band" src="assets/quantum-logo.png" alt="Quantum EV">
   <h1>Field Operations &amp; HRMS</h1>
   <div class="bar-actions">
     <span class="chip hidden" id="checkInChip">Check-in required</span>
@@ -196,7 +196,7 @@
 <div class="layout">
   <div class="sidebar-backdrop hidden" id="backdrop"></div>
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="mark">Q</div><div><strong>Quantum</strong><span>Field Operations</span></div></div>
+    <div class="brand"><img class="mark" src="assets/quantum-logo.png" alt="Quantum EV"><div><strong>Quantum</strong><span>Field Operations</span></div></div>
     <div class="nav-cat">Workspace</div>
     <button class="nav-item active" data-view="overview" type="button">Overview</button>
     <button class="nav-item" data-view="attendance" type="button">Attendance</button>
@@ -212,8 +212,9 @@
 
   <main class="content">
     <section id="view-login">
-      <div class="auth">
-        <h2>Sign In</h2>
+<div class="auth">
+<img src="assets/quantum-logo.png" alt="Quantum EV" style="width:240px;max-width:100%;display:block;margin:0 auto 18px;border-radius:10px">
+<h2>Sign In</h2>
         <p>Secure enterprise authentication</p>
         <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" placeholder="Enter username"></div>
         <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter password"></div>
@@ -282,7 +283,7 @@
 
       <section id="view-team" class="view hidden">
         <div class="page-head"><h2>Team</h2><p>Reporting tree for your access scope.</p></div>
-        <div class="card"><h3>Hierarchy <button class="secondary sm" id="teamRefresh" type="button">Refresh</button></h3><div id="orgTree" class="muted small">Loading…</div></div>
+        <div class="card"><h3>Hierarchy <button class="secondary sm" id="teamRefresh" type="button">Refresh</button></h3><div id="orgTree" class="muted small">Loadingï¿½</div></div>
       </section>
 
       <section id="view-masters" class="view hidden">
@@ -315,7 +316,7 @@
 
       <section id="view-workflows" class="view hidden">
         <div class="page-head"><h2>Workflows &amp; Commercials</h2><p>Filtered by your access level on the server.</p></div>
-        <div class="card" id="workflowList"><p class="small muted">Loading…</p></div>
+        <div class="card" id="workflowList"><p class="small muted">Loadingï¿½</p></div>
       </section>
 
       <section id="view-admin" class="view hidden">
@@ -324,12 +325,12 @@
         <div class="card">
           <h3>Operational Policy</h3>
           <div class="grid-2">
-            <div class="field"><label for="setPlateFormat">Vehicle number display</label><select id="setPlateFormat"><option value="compact">Compact — KA01AB1234</option><option value="dashed">Dashed — KA-01-AB-1234</option><option value="spaced">Spaced — KA 01 AB 1234</option></select></div>
+            <div class="field"><label for="setPlateFormat">Vehicle number display</label><select id="setPlateFormat"><option value="compact">Compact ï¿½ KA01AB1234</option><option value="dashed">Dashed ï¿½ KA-01-AB-1234</option><option value="spaced">Spaced ï¿½ KA 01 AB 1234</option></select></div>
             <div class="field"><label for="setFy">Active financial year</label><input id="setFy" placeholder="FY2026"></div>
             <div class="field"><label for="setRadius">Geofence radius (m)</label><input id="setRadius" type="number" min="0" step="10"></div>
             <div class="field"><label for="setBuffer">Outside-fence alert buffer (m)</label><input id="setBuffer" type="number" min="0" step="10"></div>
             <div class="field"><label for="setTelemetry">Telemetry push interval (minutes)</label><input id="setTelemetry" type="number" min="5" step="5"></div>
-            <div class="field"><label for="setRealtime">Real-time channel</label><select id="setRealtime"><option value="false">Disabled — 30 min batch only</option><option value="true">Enabled — live alerts to bubble</option></select></div>
+            <div class="field"><label for="setRealtime">Real-time channel</label><select id="setRealtime"><option value="false">Disabled ï¿½ 30 min batch only</option><option value="true">Enabled ï¿½ live alerts to bubble</option></select></div>
           </div>
           <div class="modal-actions" style="justify-content:flex-start">
             <button id="saveSettings" type="button">Save policy</button>
@@ -345,8 +346,8 @@
         <div class="card">
           <h3>Splash &amp; Integrations</h3>
           <div class="grid-2">
-            <div class="field"><label for="setSplashUrl">Splash image URL</label><input id="setSplashUrl" placeholder="https://…"></div>
-            <div class="field"><label for="setSplashMsg">Splash message</label><input id="setSplashMsg" placeholder="Loading portal…"></div>
+            <div class="field"><label for="setSplashUrl">Splash image URL</label><input id="setSplashUrl" placeholder="https://ï¿½"></div>
+            <div class="field"><label for="setSplashMsg">Splash message</label><input id="setSplashMsg" placeholder="Loading portalï¿½"></div>
             <div class="field"><label for="setSymbols">Splash animation</label><select id="setSplashAnim"><option value="anim-breathing">Breathing</option><option value="anim-fade">Fade</option><option value="anim-pulse">Pulse</option><option value="anim-none">None</option></select></div>
             <div class="field"><label for="setFirebase">Live sync endpoint</label><input id="setFirebase" placeholder="https://sync.yourbrand.com/"></div>
           </div>
@@ -421,7 +422,7 @@
       <div class="field"><label for="jobAssigned">Assigned user ID</label><input id="jobAssigned"></div>
       <div class="field"><label for="jobVehicle">Vehicle number</label><input id="jobVehicle" placeholder="KA01AB1234"></div>
       <div class="field"><label for="jobStatusInput">Status</label><select id="jobStatusInput"><option>InProgress</option><option>Delayed</option><option>Interrupted</option><option>Completed</option><option>Cancelled</option></select></div>
-      <div class="field"><label for="jobDelayCat">Delay category</label><select id="jobDelayCat"><option value="">—</option><option>Traffic</option><option>Customer delay</option><option>Parts shortage</option><option>Weather</option><option>Other</option></select></div>
+      <div class="field"><label for="jobDelayCat">Delay category</label><select id="jobDelayCat"><option value="">ï¿½</option><option>Traffic</option><option>Customer delay</option><option>Parts shortage</option><option>Weather</option><option>Other</option></select></div>
     </div>
     <div class="field"><label for="jobDelayReason">Delay reason</label><input id="jobDelayReason" maxlength="280"></div>
     <div class="field"><label for="jobChecklist">Checklist</label><textarea id="jobChecklist" rows="2"></textarea></div>
@@ -881,7 +882,7 @@
     var signedIn = Boolean(state.session && state.session.token);
     byId('view-login').classList.toggle('hidden', signedIn);
     byId('appViews').classList.toggle('hidden', !signedIn);
-    byId('userChip').textContent = signedIn ? (state.session.username + ' · ' + state.session.role) : 'Signed out';
+    byId('userChip').textContent = signedIn ? (state.session.username + ' ï¿½ ' + state.session.role) : 'Signed out';
     byId('logoutBtn').classList.toggle('hidden', !signedIn);
     byId('exportBtn').classList.toggle('hidden', !signedIn);
     var isAdmin = signedIn && state.session.role === 'Administrator';
@@ -909,7 +910,7 @@
       byId('fyBadge').classList.remove('hidden');
       byId('fyBadge').textContent = res.settings.currentFy;
     }
-    byId('overviewSub').textContent = 'Scope: ' + ((res.session && res.session.scope) || '—') + ' · Fiscal year ' + ((res.settings && res.settings.currentFy) || '—');
+    byId('overviewSub').textContent = 'Scope: ' + ((res.session && res.session.scope) || 'ï¿½') + ' ï¿½ Fiscal year ' + ((res.settings && res.settings.currentFy) || 'ï¿½');
     applySettingsToForm();
     setNet(true, 'Session verified');
     return res;
@@ -1045,8 +1046,8 @@
     byId('attBody').innerHTML = state.attendance.map(function (day) {
       var statusClass = day.status === 'Active' ? 'ok' : (day.status === 'LoggedOut' ? 'gray' : 'warn');
       var proof = day.checkInPhoto
-        ? '<button class="ghost sm" data-proof="' + Safe.esc(day.checkInPhoto) + '" data-meta="' + Safe.esc(day.userId + ' · ' + day.date + ' · ' + day.hubName) + '">View</button>'
-        : '<span class="muted">—</span>';
+        ? '<button class="ghost sm" data-proof="' + Safe.esc(day.checkInPhoto) + '" data-meta="' + Safe.esc(day.userId + ' ï¿½ ' + day.date + ' ï¿½ ' + day.hubName) + '">View</button>'
+        : '<span class="muted">ï¿½</span>';
       return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.userId) + '</td><td>' + Safe.esc(day.hubName) +
         '</td><td>' + Safe.esc(timeOnly(day.checkIn)) + '</td><td>' + Safe.esc(timeOnly(day.checkOut)) + '</td><td>' +
         Safe.esc(minutesToText(day.minutes)) + '</td><td><span class="badge ' + statusClass + '">' + Safe.esc(day.status) +
@@ -1068,13 +1069,13 @@
     });
     byId('jobsBody').innerHTML = rows.map(function (task) {
       var elapsed = task.endTime ? minutesToText(task.turnaroundMinutes) :
-        (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '—');
+        (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : 'ï¿½');
       var badge = task.status === 'Completed' ? 'ok' : (task.status === 'InProgress' ? '' : 'warn');
       var overtime = !task.endTime && task.startTime && (Date.now() - new Date(task.startTime).getTime()) > 3600000;
-      return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td>' + Safe.esc(plate(task.vehicleNo) || '—') +
-        '</td><td>' + Safe.esc(task.client || '—') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
+      return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td>' + Safe.esc(plate(task.vehicleNo) || 'ï¿½') +
+        '</td><td>' + Safe.esc(task.client || 'ï¿½') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
         badge + '">' + Safe.esc(task.status) + '</span>' + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
-        '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '—') +
+        '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || 'ï¿½') +
         '</td><td><button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="8" class="muted">No job cards.</td></tr>';
   }
@@ -1087,8 +1088,8 @@
       var flags = (vehicle.anomalyFlags || []).map(function (flag) {
         return '<span class="badge ' + (flag === 'UNKNOWN_VEHICLE' ? 'warn' : 'bad') + '">' + Safe.esc(flag) + '</span>';
       }).join(' ');
-      return '<tr><td><strong>' + Safe.esc(vehicle.display) + '</strong></td><td>' + Safe.esc(vehicle.hub || '—') +
-        '</td><td><span class="badge gray">' + Safe.esc(vehicle.status) + '</span></td><td>' + (flags || '<span class="muted">—</span>') +
+      return '<tr><td><strong>' + Safe.esc(vehicle.display) + '</strong></td><td>' + Safe.esc(vehicle.hub || 'ï¿½') +
+        '</td><td><span class="badge gray">' + Safe.esc(vehicle.status) + '</span></td><td>' + (flags || '<span class="muted">ï¿½</span>') +
         '</td><td><button class="secondary sm" data-vehicle="' + Safe.esc(vehicle.plateNo) + '">Details</button> ' +
         '<button class="secondary sm" data-edit-vehicle="' + Safe.esc(vehicle.plateNo) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="5" class="muted">Registry is empty. Captures will create vehicles automatically.</td></tr>';
@@ -1100,10 +1101,10 @@
     byId('captureFeed').innerHTML = state.captures.map(function (capture) {
       var flagged = (capture.anomalyFlags || []).length > 0;
       return '<article class="feed-item ' + (capture.source === 'MANUAL' ? 'manual ' : '') + (flagged ? 'flagged' : '') +
-        '" data-capture="' + Safe.esc(capture.id) + '"><h4>' + Safe.esc(capture.display) + ' · ' +
+        '" data-capture="' + Safe.esc(capture.id) + '"><h4>' + Safe.esc(capture.display) + ' ï¿½ ' +
         '<span class="badge ' + (capture.source === 'MANUAL' ? 'warn' : 'ok') + '">' + Safe.esc(capture.source) + '</span></h4>' +
-        '<p>' + Safe.esc(dateTime(capture.at)) + ' · ' + Safe.esc(capture.userId) + ' · confidence ' +
-        Safe.esc(Math.round((capture.confidence || 0) * 100)) + '%' + (capture.jobId ? ' · job ' + Safe.esc(capture.jobId) : '') +
+        '<p>' + Safe.esc(dateTime(capture.at)) + ' ï¿½ ' + Safe.esc(capture.userId) + ' ï¿½ confidence ' +
+        Safe.esc(Math.round((capture.confidence || 0) * 100)) + '%' + (capture.jobId ? ' ï¿½ job ' + Safe.esc(capture.jobId) : '') +
         '</p><p>' + Safe.esc((capture.anomalyFlags || []).join(', ')) + '</p></article>';
     }).join('') || '<p class="small muted">No captures yet. Plate scans from the floating window appear here.</p>';
   }
@@ -1112,18 +1113,18 @@
     var data = ensureOk(await Cloud.post('vehicleGet', { plateNo: plateNo }));
     var vehicle = data.vehicle;
     byId('vehDetailCard').classList.remove('hidden');
-    byId('vehDetailTitle').textContent = vehicle.display + ' · ' + (vehicle.make || '') + ' ' + (vehicle.model || '');
+    byId('vehDetailTitle').textContent = vehicle.display + ' ï¿½ ' + (vehicle.make || '') + ' ' + (vehicle.model || '');
     var jobs = (data.jobs || []).map(function (job) {
-      return '<tr><td>' + Safe.esc(job.jobId) + '</td><td>' + Safe.esc(job.client || '—') + '</td><td>' + Safe.esc(job.status) +
+      return '<tr><td>' + Safe.esc(job.jobId) + '</td><td>' + Safe.esc(job.client || 'ï¿½') + '</td><td>' + Safe.esc(job.status) +
         '</td><td>' + Safe.esc(dateTime(job.startTime)) + '</td><td><button class="secondary sm" data-edit-job="' +
         Safe.esc(job.jobId) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="5" class="muted">No job cards reference this vehicle.</td></tr>';
     var captures = (data.captures || []).map(function (capture) {
-      return '<li>' + Safe.esc(dateTime(capture.at)) + ' · ' + Safe.esc(capture.source) + ' · ' + Safe.esc(capture.userId) + '</li>';
+      return '<li>' + Safe.esc(dateTime(capture.at)) + ' ï¿½ ' + Safe.esc(capture.source) + ' ï¿½ ' + Safe.esc(capture.userId) + '</li>';
     }).join('');
     byId('vehDetail').innerHTML =
-      '<p class="small muted">Primary key: <span class="mono">' + Safe.esc(vehicle.plateNo) + '</span> · status ' +
-      Safe.esc(vehicle.status) + ' · hub ' + Safe.esc(vehicle.hub || '—') + ' · last seen ' + Safe.esc(dateTime(vehicle.lastSeen.at)) + '</p>' +
+      '<p class="small muted">Primary key: <span class="mono">' + Safe.esc(vehicle.plateNo) + '</span> ï¿½ status ' +
+      Safe.esc(vehicle.status) + ' ï¿½ hub ' + Safe.esc(vehicle.hub || 'ï¿½') + ' ï¿½ last seen ' + Safe.esc(dateTime(vehicle.lastSeen.at)) + '</p>' +
       '<h3 style="font-size:13px;margin:14px 0 8px">Job cards (foreign key)</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Client</th><th>Status</th><th>Start</th><th></th></tr></thead><tbody>' +
       jobs + '</tbody></table></div><h3 style="font-size:13px;margin:14px 0 8px">Captures</h3><ul class="list-plain">' +
       (captures || '<li class="muted">None</li>') + '</ul>';
@@ -1147,9 +1148,9 @@
     state.devices = data.devices || [];
     byId('deviceBody').innerHTML = state.devices.map(function (device) {
       var cls = device.batteryPct >= 0 && device.batteryPct < 20 ? 'bad' : (device.batteryPct >= 0 ? 'ok' : 'gray');
-      return '<tr><td>' + Safe.esc(device.userId) + '</td><td class="mono small">' + Safe.esc(device.deviceUUID || '—') +
+      return '<tr><td>' + Safe.esc(device.userId) + '</td><td class="mono small">' + Safe.esc(device.deviceUUID || 'ï¿½') +
         '</td><td><span class="badge ' + cls + '">' + (device.batteryPct >= 0 ? device.batteryPct + '%' : 'n/a') +
-        '</span></td><td>' + Safe.esc(device.zone || '—') + '</td><td>' + Safe.esc(dateTime(device.at)) + '</td></tr>';
+        '</span></td><td>' + Safe.esc(device.zone || 'ï¿½') + '</td><td>' + Safe.esc(dateTime(device.at)) + '</td></tr>';
     }).join('') || '<tr><td colspan="5" class="muted">No device telemetry yet.</td></tr>';
 
     var usersResponse = ensureOk(await Cloud.post('getUsers', {}));
@@ -1364,8 +1365,8 @@
       return task.status === 'Interrupted' || task.status === 'Delayed';
     });
     byId('retakeBody').innerHTML = retakeable.map(function (task) {
-      return '<tr><td>' + Safe.esc(task.jobId) + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '—') + '</td><td>' +
-        Safe.esc(task.interruptedReason || task.delayReason || '—') + '</td><td><button class="sm" data-resume="' +
+      return '<tr><td>' + Safe.esc(task.jobId) + '</td><td>' + Safe.esc(plate(task.vehicleNo) || 'ï¿½') + '</td><td>' +
+        Safe.esc(task.interruptedReason || task.delayReason || 'ï¿½') + '</td><td><button class="sm" data-resume="' +
         Safe.esc(task.jobId) + '">Resume</button></td></tr>';
     }).join('') || '<tr><td colspan="4" class="muted">No interrupted jobs.</td></tr>';
     openModal('retakeModal');
@@ -1423,7 +1424,7 @@
     var file = byId('checkInFile').files[0];
     if (!file) { setMsg('checkInMsg', 'Select the attendance photo first.', true); return; }
     byId('checkInSubmit').disabled = true;
-    setMsg('checkInMsg', 'Preparing photo…');
+    setMsg('checkInMsg', 'Preparing photoï¿½');
     try {
       var base64 = await readFile(file);
       var position = byId('checkInGeo').checked ? await currentPosition() : null;
@@ -1518,7 +1519,7 @@
       }
       var mm = Math.floor(left / 60);
       var ss = left % 60;
-      setMsg('settingsMsg', 'Live sync active — ' + mm + ':' + (ss < 10 ? '0' : '') + ss + ' remaining');
+      setMsg('settingsMsg', 'Live sync active ï¿½ ' + mm + ':' + (ss < 10 ? '0' : '') + ss + ' remaining');
       try {
         if (state.view === 'overview') await loadOverview();
         else if (state.view === 'attendance') await loadAttendance();
@@ -1621,7 +1622,7 @@
           '<strong>' + Safe.esc(person.username) + '</strong> <span class="small muted">' + Safe.esc(person.userId) + '</span> ' +
           '<span class="badge">' + Safe.esc(person.role) + '</span> ' +
           '<span class="badge ' + badge + '">' + (person.onDuty ? 'On duty' : 'Off duty') + '</span> ' +
-          '<span class="small muted">' + Safe.esc(person.hub || '') + (person.region ? ' · ' + Safe.esc(person.region) : '') + '</span>' +
+          '<span class="small muted">' + Safe.esc(person.hub || '') + (person.region ? ' ï¿½ ' + Safe.esc(person.region) : '') + '</span>' +
           (person.children && person.children.length ? render(person.children, depth + 1) : '') +
           '</li>';
       });
@@ -1649,7 +1650,7 @@
       return '<option value="' + Safe.esc(r.name) + '"></option>';
     }).join('');
     if (staff) staff.innerHTML = state.users.map(function (u) {
-      return '<option value="' + Safe.esc(u.userId) + '">' + Safe.esc(u.username + ' · ' + u.role) + '</option>';
+      return '<option value="' + Safe.esc(u.userId) + '">' + Safe.esc(u.username + ' ï¿½ ' + u.role) + '</option>';
     }).join('');
     var hubOptions = state.masters.hubs.map(function (h) {
       return '<option value="' + Safe.esc(h.hubId) + '">' + Safe.esc(h.name) + '</option>';
@@ -1657,7 +1658,7 @@
     var selector = byId('jobClientSel');
     if (selector) {
       selector.innerHTML = '<option value="">- none -</option>' + state.masters.clients.map(function (c) {
-        return '<option value="' + Safe.esc(c.clientId) + '">' + Safe.esc(c.name + ' · ' + (c.address || '')) + '</option>';
+        return '<option value="' + Safe.esc(c.clientId) + '">' + Safe.esc(c.name + ' ï¿½ ' + (c.address || '')) + '</option>';
       }).join('');
     }
     var hubDraft = byId('draftHubRegion');
@@ -1801,7 +1802,7 @@
     byId('seatHint').textContent = seats.used + ' of ' + seats.max + ' seats in use.';
     if (seats.used >= seats.max) {
       byId('cuSave').disabled = true;
-      byId('seatHint').textContent += ' No seats left — suspend an account or raise the limit.';
+      byId('seatHint').textContent += ' No seats left ï¿½ suspend an account or raise the limit.';
     } else {
       byId('cuSave').disabled = false;
     }
@@ -2021,7 +2022,7 @@
       if (splash && splash.plateFormat) state.plateFormat = splash.plateFormat;
       setNet(true, 'Cloud service reachable');
     } catch (error) {
-      setNet(false, 'Offline — queued changes will sync later');
+      setNet(false, 'Offline ï¿½ queued changes will sync later');
     }
 
     if (state.session) {
