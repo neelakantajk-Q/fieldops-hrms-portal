@@ -170,6 +170,36 @@
     .modal-actions button { width: 100%; }
     .list-plain { padding-left: 14px; }
   }
+
+  /* Full-screen, scrollable modals on phones */
+  body.modal-open { overflow: hidden; }
+  @media (max-width: 768px) {
+    .modal-shell {
+      padding: 0;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+    .modal {
+      width: 100%;
+      max-width: none;
+      height: 100%;
+      max-height: none;
+      border: none;
+      border-radius: 0;
+      padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    .modal.wide { max-width: none; }
+    .modal-actions {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      padding-top: 12px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      margin-top: 18px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -574,6 +604,20 @@
 (function () {
   'use strict';
 
+  /* Drop any service worker or cache left by an older portal build. */
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        registrations.forEach(function (registration) { registration.unregister(); });
+      }).catch(function () {});
+    }
+    if (window.caches && caches.keys) {
+      caches.keys().then(function (keys) {
+        keys.forEach(function (key) { caches.delete(key); });
+      }).catch(function () {});
+    }
+  } catch (error) {}
+
   /* ------------------------------------------------------------------ config */
   // The default endpoint is encoded so the hosting provider is not exposed in page source.
   var DEFAULT_ENDPOINT = (function () {
@@ -681,8 +725,17 @@
     node.textContent = message;
   }
 
-  function openModal(id) { var n = byId(id); if (n) n.classList.remove('hidden'); }
-  function closeModal(id) { var n = byId(id); if (n) n.classList.add('hidden'); }
+  function openModal(id) {
+    var n = byId(id);
+    if (!n) return;
+    n.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+  }
+  function closeModal(id) {
+    var n = byId(id);
+    if (n) n.classList.add('hidden');
+    if (!document.querySelector('.modal-shell:not(.hidden)')) document.body.classList.remove('modal-open');
+  }
 
   function confirmAction(title, text, onConfirm) {
     byId('confirmTitle').textContent = title;
@@ -932,7 +985,9 @@
     byId('exportBtn').classList.toggle('hidden', !signedIn);
     applyRoleNavigation_();
 
-    var needsCheckIn = signedIn && (state.session.role === 'StandardUser' || state.session.role === 'Technician') && !state.session.checkedIn;
+    var rights = rightsList_();
+    var canAttend = signedIn && (state.session.role === 'Administrator' || rights.indexOf('ALL') >= 0 || rights.indexOf('ATTENDANCE') >= 0);
+    var needsCheckIn = canAttend && !state.session.checkedIn;
     byId('checkInChip').classList.toggle('hidden', !needsCheckIn);
     byId('checkInChip').className = 'chip warn' + (needsCheckIn ? '' : ' hidden');
     byId('checkInBanner').classList.toggle('hidden', !needsCheckIn);
@@ -1018,6 +1073,7 @@
   function closeModals() {
     var shells = document.querySelectorAll('.modal-shell');
     for (var i = 0; i < shells.length; i++) shells[i].classList.add('hidden');
+    document.body.classList.remove('modal-open');
   }
 
   /* -------------------------------------------------------------------- views */
