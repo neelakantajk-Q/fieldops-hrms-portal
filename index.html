@@ -12,7 +12,7 @@
   /* GitHub Pages deployment configuration. */
   window.__PORTAL_CONFIG__ = {
     deploymentId: 'AKfycbzlfwtI9zeK0oUbOyZQ-ezT2FBlCKfzm94baeD9sRjAL7t-DTYY9W4i8dKK0NXfOBRewg',
-    api: 'https://script.google.com/macros/s/AKfycbzcssssrdUIRHhnapQDdYaQ4LblIQMEdiuY-T7c_O1smmaJ6yNyPtfTLRTkvb5GzTOO/exec',
+    api: 'https://script.google.com/macros/s/AKfycbzlfwtI9zeK0oUbOyZQ-ezT2FBlCKfzm94baeD9sRjAL7t-DTYY9W4i8dKK0NXfOBRewg/exec',
     live: 'https://quantum-99abd-default-rtdb.asia-southeast1.firebasedatabase.app/',
     assets: ''
   };
@@ -1305,6 +1305,11 @@
   /* ------------------------------------------------------------------ actions */
   function openJobModal(task) {
     task = task || {};
+    if (!state.session || !state.session.checkedIn) {
+      toast('Complete photo check-in first');
+      openModal('checkInModal');
+      return;
+    }
     byId('jobModalTitle').textContent = task.jobId ? 'Edit job ' + task.jobId : 'New job card';
     byId('jobId').value = task.jobId || '';
     byId('jobClient').value = task.client || '';
@@ -1482,6 +1487,16 @@
     } catch (error) { toast(error.message); }
   }
 
+  function resizeBase64_(image, max, quality) {
+    var scale = Math.min(1, max / Math.max(image.width, image.height));
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', quality).replace(/^data:[^,]+,/, '');
+  }
+
   function readFile(file) {
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
@@ -1490,14 +1505,10 @@
         var image = new Image();
         image.onload = function () {
           try {
-            var max = 1024;
-            var scale = Math.min(1, max / Math.max(image.width, image.height));
-            var canvas = document.createElement('canvas');
-            canvas.width = Math.max(1, Math.round(image.width * scale));
-            canvas.height = Math.max(1, Math.round(image.height * scale));
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/jpeg', 0.7).replace(/^data:[^,]+,/, ''));
+            resolve({
+              full: resizeBase64_(image, 1024, 0.7),
+              thumb: resizeBase64_(image, 256, 0.5)
+            });
           } catch (error) {
             reject(new Error('Could not prepare the selected image.'));
           }
@@ -1527,10 +1538,11 @@
     byId('checkInSubmit').disabled = true;
     setMsg('checkInMsg', 'Preparing photo�');
     try {
-      var base64 = await readFile(file);
+      var photo = await readFile(file);
       var position = byId('checkInGeo').checked ? await currentPosition() : null;
       var payload = {
-        photoBase64: base64,
+        photoBase64: photo.full,
+        photoThumbBase64: photo.thumb,
         lat: position ? position.coords.latitude : 0,
         lng: position ? position.coords.longitude : 0,
         accuracy: position ? position.coords.accuracy : 0,
