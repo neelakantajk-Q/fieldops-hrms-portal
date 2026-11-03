@@ -284,6 +284,8 @@
     <button class="nav-item" data-view="workflows" type="button">Workflows</button>
     <div class="nav-cat" id="adminNavCat">Admin</div>
     <button class="nav-item" id="adminNavBtn" data-view="admin" type="button">Admin Panel</button>
+    <div class="nav-cat hidden" id="platformNavCat">Platform</div>
+    <button class="nav-item" id="platformNavBtn" data-view="platform" type="button">Platform Console</button>
   </aside>
 
   <main class="content">
@@ -513,6 +515,57 @@
             <div class="field"><label for="closeNext">Next FY</label><input id="closeNext" placeholder="FY2027"></div>
           </div>
           <button class="danger" id="closeRun" type="button">Archive and start new year</button>
+        </div>
+      </section>
+
+      <section id="view-platform" class="view hidden">
+        <div class="page-head"><h2>Platform Console</h2><p>Product-owner controls: company, seats, commercial terms and stack endpoints.</p></div>
+        <div class="card">
+          <h3>Company</h3>
+          <div class="grid-2">
+            <div class="field"><label for="pcCompanyName">Company name</label><input id="pcCompanyName"></div>
+            <div class="field"><label for="pcCompanyCode">Company code</label><input id="pcCompanyCode" placeholder="QUANTUM"></div>
+          </div>
+          <button id="pcCompanySave" type="button">Save company</button>
+          <div id="pcCompanyMsg" class="msg hidden"></div>
+        </div>
+        <div class="card">
+          <h3>Seats &amp; commercial</h3>
+          <p class="small muted" id="pcSeatUsage">Loading…</p>
+          <div class="grid-2">
+            <div class="field"><label for="pcSeatLimit">Seat limit</label><input id="pcSeatLimit" type="number" min="1" step="1"></div>
+            <div class="field"><label for="pcContractRef">Contract reference</label><input id="pcContractRef" placeholder="PO / agreement reference"></div>
+            <div class="field"><label for="pcContractStart">Contract start</label><input id="pcContractStart" type="date"></div>
+            <div class="field"><label for="pcContractEnd">Contract end</label><input id="pcContractEnd" type="date"></div>
+            <div class="field"><label for="pcGraceDays">Grace days</label><input id="pcGraceDays" type="number" min="0" step="1"></div>
+            <div class="field"><label for="pcPaymentStatus">Payment status</label><select id="pcPaymentStatus"><option>Paid</option><option>Pending</option><option>Overdue</option></select></div>
+            <div class="field"><label for="pcTenantStatus">Tenant status</label><select id="pcTenantStatus"><option>Active</option><option>Trial</option><option>Suspended</option><option>Expired</option></select></div>
+          </div>
+          <button id="pcSeatsSave" type="button">Update seats &amp; contract</button>
+          <div id="pcSeatsMsg" class="msg hidden"></div>
+          <p class="small muted" id="pcSeatMeta"></p>
+        </div>
+        <div class="card">
+          <h3>Stack endpoints</h3>
+          <div class="grid-2">
+            <div class="field"><label for="pcApi">API endpoint</label><input id="pcApi" placeholder="https://app.brand.com/api"></div>
+            <div class="field"><label for="pcLive">Live sync endpoint</label><input id="pcLive" placeholder="https://…firebasedatabase.app/"></div>
+            <div class="field"><label for="pcAssets">Asset base</label><input id="pcAssets" placeholder="https://app.brand.com/media/"></div>
+            <div class="field"><label for="pcRealtime">Real-time channel</label><select id="pcRealtime"><option value="false">Disabled</option><option value="true">Enabled</option></select></div>
+          </div>
+          <button id="pcStackSave" type="button">Save stack</button>
+          <div id="pcStackMsg" class="msg hidden"></div>
+        </div>
+        <div class="card">
+          <h3>Demo &amp; load test</h3>
+          <p class="small muted">Seeds 100 demo users (25 per click), 3 days of attendance/jobs, 2,000 map points and optional Firebase live points. Everything is tagged DEMO and removable.</p>
+          <div class="modal-actions" style="justify-content:flex-start">
+            <button id="pcDemoUsers" type="button">Seed users (25)</button>
+            <button id="pcDemoActivity" type="button">Seed activity</button>
+            <button id="pcDemoLive" type="button">Seed live points</button>
+            <button class="danger" id="pcDemoClear" type="button">Clear demo data</button>
+          </div>
+          <pre id="pcDemoOut" class="small mono" style="white-space:pre-wrap;background:#f1f5f9;padding:10px;border-radius:8px;max-height:260px;overflow:auto"></pre>
         </div>
       </section>
     </div>
@@ -1083,6 +1136,8 @@
 
   function canView_(view) {
     if (!state.session) return false;
+    if (view === 'platform') return Boolean(state.session.isSuperAdmin);
+    if (state.session.isSuperAdmin) return false;
     var rank = roleRank_(state.session.role);
     var rights = rightsList_();
     if (view === 'overview' || view === 'attendance') return true;
@@ -1109,6 +1164,7 @@
     if (byId('fleetNavCat')) byId('fleetNavCat').classList.toggle('hidden', !fleetVisible);
     if (byId('adminNavCat')) byId('adminNavCat').classList.toggle('hidden', !(signedIn && canView_('admin')));
     if (byId('adminNavBtn')) byId('adminNavBtn').classList.toggle('hidden', !(signedIn && canView_('admin')));
+    if (byId('platformNavCat')) byId('platformNavCat').classList.toggle('hidden', !(signedIn && Boolean(state.session.isSuperAdmin)));
   }
 
   function mockActive_() {
@@ -1213,6 +1269,9 @@
       state.session.hub = res.session.hub;
       state.session.scope = res.session.scope;
       state.session.moduleRights = res.session.moduleRights;
+      state.session.isSuperAdmin = Boolean(res.session.isSuperAdmin);
+      state.session.companyCode = res.session.companyCode || '';
+      state.session.companyName = res.session.companyName || '';
       saveSession(state.session);
     }
     if (res.settings) {
@@ -1257,7 +1316,10 @@
         expiresAt: res.expiresAt,
         sessionDate: res.sessionDate,
         checkedIn: Boolean(res.checkedIn),
-        allowLogout: res.allowLogout !== false
+        allowLogout: res.allowLogout !== false,
+        isSuperAdmin: Boolean(res.isSuperAdmin),
+        companyCode: res.companyCode || '',
+        companyName: res.companyName || ''
       });
       adoptNative();
       try {
@@ -1267,7 +1329,7 @@
       } catch (e) {}
       byId('password').value = '';
       await refreshBootstrap();
-      await route('overview');
+      await route(res.isSuperAdmin ? 'platform' : 'overview');
       toast('Signed in as ' + res.username);
     } catch (error) {
       setMsg('loginMsg', error.message || 'Sign in failed.', true);
@@ -1323,6 +1385,7 @@
       if (view === 'vehicles') { await loadVehicles(); await loadCaptures(); }
       if (view === 'workflows') await loadWorkflows();
       if (view === 'admin') await loadAdmin();
+      if (view === 'platform') await loadPlatform();
     } catch (error) {
       toast(error.message || 'Could not load this view.');
     }
@@ -1488,9 +1551,9 @@
     if (seatLabel) seatLabel.textContent = state.seats.used + ' / ' + state.seats.max + ' seats';
     var addUserBtn = byId('addUserBtn');
     if (addUserBtn) addUserBtn.disabled = state.seats.used >= state.seats.max;
-    state.platform = Boolean(data.platform);
-    if (byId('platformCard')) byId('platformCard').style.display = state.platform ? '' : 'none';
-    if (state.platform) {
+    state.platform = false;
+    if (byId('platformCard')) byId('platformCard').style.display = 'none';
+    if (false) {
       byId('pfApi').value = (data.settings && data.settings.apiEndpoint) || '';
       byId('pfLive').value = (data.settings && data.settings.firebaseDbUrl) || '';
       byId('pfAssets').value = (data.settings && data.settings.assetBase) || '';
@@ -1511,6 +1574,127 @@
         Safe.esc(timeOnly(user.checkInAt) || '-') + '</td><td><button class="secondary sm" data-edit-user="' + Safe.esc(user.username) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="9" class="muted">No users.</td></tr>';
     fillDatalists();
+  }
+
+  async function loadPlatform() {
+    var data = ensureOk(await Cloud.post('getPlatformSettings', {}));
+    state.platformSettings = data;
+    var company = data.company || {};
+    var seats = data.seats || {};
+    var contract = data.contract || {};
+    if (byId('pcCompanyName')) byId('pcCompanyName').value = company.name || '';
+    if (byId('pcCompanyCode')) byId('pcCompanyCode').value = company.code || '';
+    if (byId('pcSeatLimit')) byId('pcSeatLimit').value = seats.limit || seats.max || 30;
+    if (byId('pcSeatUsage')) byId('pcSeatUsage').textContent = (seats.used || 0) + ' active of ' + (seats.limit || seats.max || 30) + ' seats · tenant ' + (data.tenantStatus || 'Active') + ' · payment ' + (data.paymentStatus || 'Paid');
+    if (byId('pcContractRef')) byId('pcContractRef').value = contract.ref || '';
+    if (byId('pcContractStart')) byId('pcContractStart').value = contract.start || '';
+    if (byId('pcContractEnd')) byId('pcContractEnd').value = contract.end || '';
+    if (byId('pcGraceDays')) byId('pcGraceDays').value = contract.graceDays || 7;
+    if (byId('pcPaymentStatus')) byId('pcPaymentStatus').value = data.paymentStatus || 'Paid';
+    if (byId('pcTenantStatus')) byId('pcTenantStatus').value = data.tenantStatus || 'Active';
+    if (byId('pcSeatMeta')) byId('pcSeatMeta').textContent = data.seatUpdatedAt ? ('Last seat change: ' + data.seatUpdatedBy + ' · ' + dateTime(data.seatUpdatedAt)) : '';
+    var stack = data.platform || {};
+    if (byId('pcApi')) byId('pcApi').value = stack.apiEndpoint || '';
+    if (byId('pcLive')) byId('pcLive').value = stack.firebaseDbUrl || '';
+    if (byId('pcAssets')) byId('pcAssets').value = stack.assetBase || '';
+    if (byId('pcRealtime')) byId('pcRealtime').value = String(Boolean(stack.realtimeEnabled));
+  }
+
+  async function saveCompanyProfile() {
+    try {
+      ensureOk(await Cloud.post('updateCompanyProfile', {
+        companyName: byId('pcCompanyName').value.trim(),
+        companyCode: byId('pcCompanyCode').value.trim()
+      }));
+      setMsg('pcCompanyMsg', 'Company profile saved.');
+      await loadPlatform();
+    } catch (error) { setMsg('pcCompanyMsg', error.message, true); }
+  }
+
+  async function saveSeatAllocation() {
+    try {
+      ensureOk(await Cloud.post('updateSeatAllocation', {
+        seatLimit: byId('pcSeatLimit').value,
+        contractRef: byId('pcContractRef').value.trim(),
+        contractStart: byId('pcContractStart').value,
+        contractEnd: byId('pcContractEnd').value,
+        graceDays: byId('pcGraceDays').value,
+        paymentStatus: byId('pcPaymentStatus').value,
+        reason: 'Platform console update'
+      }));
+      ensureOk(await Cloud.post('setTenantStatus', {
+        tenantStatus: byId('pcTenantStatus').value,
+        reason: 'Platform console update'
+      }));
+      setMsg('pcSeatsMsg', 'Seats, contract and tenant status saved.');
+      await loadPlatform();
+    } catch (error) { setMsg('pcSeatsMsg', error.message, true); }
+  }
+
+  async function savePlatformStack() {
+    try {
+      ensureOk(await Cloud.post('updatePlatformUrls', {
+        apiEndpoint: byId('pcApi').value.trim(),
+        liveSyncUrl: byId('pcLive').value.trim(),
+        assetBase: byId('pcAssets').value.trim()
+      }));
+      ensureOk(await Cloud.post('updateFirebaseSettings', {
+        firebaseDbUrl: byId('pcLive').value.trim(),
+        realtimeEnabled: byId('pcRealtime').value === 'true'
+      }));
+      setMsg('pcStackMsg', 'Stack endpoints saved.');
+      await loadPlatform();
+    } catch (error) { setMsg('pcStackMsg', error.message, true); }
+  }
+
+  function demoOut(value) {
+    if (byId('pcDemoOut')) byId('pcDemoOut').textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  }
+
+  async function seedDemoUsersBatches() {
+    var offset = 0;
+    var total = 0;
+    var rounds = 0;
+    try {
+      while (offset !== null && rounds < 8) {
+        rounds++;
+        demoOut('Seeding users from offset ' + offset + '…');
+        var res = ensureOk(await Cloud.post('seedDemoData', { phase: 'users', offset: offset, limit: 25 }, { queue: false }));
+        total += res.created || 0;
+        demoOut('Seed progress: ' + total + ' users created. ' + JSON.stringify(res));
+        offset = res.nextOffset;
+      }
+      await loadPlatform();
+    } catch (error) {
+      demoOut('Seed failed: ' + error.message);
+    }
+  }
+
+  async function seedDemoActivity() {
+    try {
+      demoOut('Seeding attendance, jobs, vehicles, captures and telemetry…');
+      var res = ensureOk(await Cloud.post('seedDemoData', { phase: 'activity' }, { queue: false }));
+      demoOut(res);
+      await loadPlatform();
+    } catch (error) { demoOut('Seed failed: ' + error.message); }
+  }
+
+  async function seedDemoLive() {
+    try {
+      demoOut('Seeding Firebase live points…');
+      var res = ensureOk(await Cloud.post('seedDemoData', { phase: 'live' }, { queue: false }));
+      demoOut(res);
+    } catch (error) { demoOut('Seed failed: ' + error.message); }
+  }
+
+  async function clearDemoData() {
+    if (!confirm('Remove every DEMO user and DEMO row, clear live points and restore the seat limit to 30?')) return;
+    try {
+      demoOut('Clearing demo data…');
+      var res = ensureOk(await Cloud.post('clearDemoData', { restoreSeatLimit: 30 }, { queue: false }));
+      demoOut(res);
+      await loadPlatform();
+    } catch (error) { demoOut('Cleanup failed: ' + error.message); }
   }
 
   function applySettingsToForm(settings) {
@@ -2718,6 +2902,13 @@
     if (byId('mapSync')) byId('mapSync').addEventListener('click', startLiveSyncFromMap);
     byId('saveSplash').addEventListener('click', saveSplash);
     byId('saveFirebase').addEventListener('click', saveFirebase);
+    if (byId('pcCompanySave')) byId('pcCompanySave').addEventListener('click', saveCompanyProfile);
+    if (byId('pcSeatsSave')) byId('pcSeatsSave').addEventListener('click', saveSeatAllocation);
+    if (byId('pcStackSave')) byId('pcStackSave').addEventListener('click', savePlatformStack);
+    if (byId('pcDemoUsers')) byId('pcDemoUsers').addEventListener('click', seedDemoUsersBatches);
+    if (byId('pcDemoActivity')) byId('pcDemoActivity').addEventListener('click', seedDemoActivity);
+    if (byId('pcDemoLive')) byId('pcDemoLive').addEventListener('click', seedDemoLive);
+    if (byId('pcDemoClear')) byId('pcDemoClear').addEventListener('click', clearDemoData);
     byId('saveField').addEventListener('click', saveField);
     byId('closeRun').addEventListener('click', runClosing);
     byId('fpVerify').addEventListener('click', verifyPhone);
@@ -2849,7 +3040,7 @@
     if (state.session) {
       try {
         await refreshBootstrap();
-        await route('overview');
+        await route(state.session && state.session.isSuperAdmin ? 'platform' : 'overview');
         adoptNative();
       } catch (error) {
         if (error.code === 'AUTH_REVOKED' || error.code === 'AUTH_EXPIRED') {
