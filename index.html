@@ -110,11 +110,15 @@
   .mockbar{display:flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:11px;padding:9px 12px;margin-bottom:14px;font-size:12.5px;font-weight:600}
   .edit-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:3px 8px;white-space:nowrap}
   .edit-badge strong{color:#334155}
-  .cam-wrap{position:relative;background:#0b1220;border-radius:14px;overflow:hidden;margin-bottom:12px}
-  .cam-video{display:block;width:100%;max-height:58vh;object-fit:cover;background:#000}
-  .cam-hint{position:absolute;left:10px;right:10px;bottom:10px;color:#e2e8f0;background:rgba(2,8,23,.65);border-radius:9px;padding:7px 10px;font-size:11px;line-height:1.35}
-  .cam-actions{display:flex;gap:8px;flex-wrap:wrap}
-  .cam-actions button{flex:1;min-width:120px}
+  .cam-wrap{position:relative;display:flex;align-items:center;justify-content:center;background:#000;border-radius:16px;overflow:hidden;margin-bottom:12px;min-height:300px}
+  .cam-video{display:block;width:100%;height:52vh;min-height:300px;max-height:58vh;object-fit:cover;background:#000;transform:scaleX(-1)}
+  .cam-snapshot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+  .cam-guide{position:absolute;width:min(62%,260px);aspect-ratio:3/4;border:2px dashed rgba(255,255,255,.9);border-radius:22px;box-shadow:0 0 0 9999px rgba(2,8,23,.18);pointer-events:none}
+  .cam-hint{position:absolute;left:10px;right:10px;bottom:10px;color:#e2e8f0;background:rgba(2,8,23,.72);border-radius:9px;padding:7px 10px;font-size:11px;line-height:1.35}
+  .cam-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+  .cam-actions button{flex:1;min-width:96px}
+  #attCamCapture{flex:0 0 64px;width:64px;height:64px;min-width:64px;border-radius:50%;font-size:11px;padding:0}
+  @media (max-width:768px){.cam-video{height:48vh;min-height:280px}}
   .audit-list{margin:0;padding:0;list-style:none;display:grid;gap:8px;max-height:52vh;overflow-y:auto}
   .audit-item{border:1px solid var(--line);border-left:3px solid var(--wa);border-radius:9px;padding:9px 11px;background:#fff}
   .audit-item h4{margin:0 0 3px;font-size:12.5px}
@@ -233,6 +237,8 @@
     <span class="chip bad hidden" id="mockChip">Mock GPS</span>
     <span class="chip" id="userChip">Signed out</span>
     <button class="secondary sm" id="exportBtn" type="button">Export</button>
+    <button class="secondary sm hidden" id="bubbleBtn" type="button">Hide bubble</button>
+    <button class="secondary sm hidden" id="deviceSettingsBtn" type="button">Device</button>
     <button class="danger sm" id="logoutBtn" type="button">Logout</button>
   </div>
 </header>
@@ -464,13 +470,16 @@
     <h3>Photo attendance</h3>
     <div class="cam-wrap">
       <video id="attCamVideo" class="cam-video" autoplay playsinline muted></video>
-      <canvas id="attCamCanvas" style="display:none"></canvas>
-      <div class="cam-hint" id="attCamHint">Look at the camera and tap Capture. The photo is watermarked before upload.</div>
+      <canvas id="attCamCanvas" class="cam-snapshot" style="display:none"></canvas>
+      <div class="cam-guide" id="attCamGuide"></div>
+      <div class="cam-hint" id="attCamHint">Position your face inside the frame, then tap the shutter.</div>
     </div>
     <div class="cam-actions">
       <button class="secondary" id="attCamClose" type="button">Cancel</button>
+      <button class="secondary" id="attCamSwitch" type="button">Switch</button>
       <button id="attCamCapture" type="button">Capture</button>
-      <button id="attCamSubmit" type="button" style="display:none">Upload &amp; check in</button>
+      <button class="secondary" id="attCamRetake" type="button" style="display:none">Retake</button>
+      <button id="attCamSubmit" type="button" style="display:none">OK / Upload</button>
     </div>
     <div id="attCamMsg" class="msg hidden"></div>
   </div>
@@ -584,6 +593,7 @@
       <div class="field"><label for="userRights">Module rights</label><input id="userRights" placeholder="Tasks,Attendance,Vehicles"></div>
       <div class="field"><label for="userPassword">Set new password</label><input id="userPassword" type="password" placeholder="Leave blank to keep"></div>
       <div class="field"><label for="userPhone">Phone (password reset)</label><input id="userPhone" placeholder="Full number"></div>
+      <div class="field"><label><input type="checkbox" id="userAllowLogout" style="width:auto"> Allow this user to log out</label></div>
     </div>
     <div class="modal-actions">
       <button class="secondary" data-close="userModal" type="button">Cancel</button>
@@ -974,7 +984,8 @@
           hub: state.session.hub,
           expiresAt: state.session.expiresAt,
           checkedIn: Boolean(state.session.checkedIn),
-          attendanceSynced: Boolean(state.session.attendanceSynced)
+          attendanceSynced: Boolean(state.session.attendanceSynced),
+          allowLogout: state.session.allowLogout !== false
         }));
       }
       if (typeof bridge.setLoggedIn === 'function') bridge.setLoggedIn(Boolean(state.session));
@@ -1056,6 +1067,41 @@
     return mock;
   }
 
+  function nativeBubbleAvailable() {
+    return Boolean(window.AndroidBridge && typeof window.AndroidBridge.hideBubble === 'function');
+  }
+
+  function refreshBubbleButton() {
+    var btn = byId('bubbleBtn');
+    if (!btn) return;
+    if (!nativeBubbleAvailable()) {
+      btn.classList.add('hidden');
+      return;
+    }
+    var visible = true;
+    try { visible = window.AndroidBridge.isBubbleVisible(); } catch (e) { visible = true; }
+    btn.classList.remove('hidden');
+    btn.textContent = visible ? 'Hide bubble' : 'Show bubble';
+  }
+
+  function toggleBubble() {
+    if (!nativeBubbleAvailable()) return;
+    try {
+      var visible = window.AndroidBridge.isBubbleVisible();
+      if (visible) window.AndroidBridge.hideBubble();
+      else window.AndroidBridge.showBubble();
+    } catch (e) {}
+    setTimeout(refreshBubbleButton, 250);
+  }
+
+  function openDeviceSettings() {
+    try {
+      if (window.AndroidBridge && typeof window.AndroidBridge.openDeviceSettings === 'function') {
+        window.AndroidBridge.openDeviceSettings();
+      }
+    } catch (e) {}
+  }
+
   function renderSession() {
     var signedIn = Boolean(state.session && state.session.token);
     byId('view-login').classList.toggle('hidden', signedIn);
@@ -1067,8 +1113,14 @@
       byId('backdrop').classList.add('hidden');
     }
     byId('userChip').textContent = signedIn ? (state.session.username + ' · ' + state.session.role) : 'Signed out';
-    byId('logoutBtn').classList.toggle('hidden', !signedIn);
+    var canLogout = signedIn && state.session.allowLogout !== false;
+    byId('logoutBtn').classList.toggle('hidden', !canLogout);
     byId('exportBtn').classList.toggle('hidden', !signedIn);
+    if (byId('deviceSettingsBtn')) byId('deviceSettingsBtn').classList.toggle('hidden', !(signedIn && nativeBubbleAvailable()));
+    if (byId('bubbleBtn')) {
+      if (!signedIn || !nativeBubbleAvailable()) byId('bubbleBtn').classList.add('hidden');
+      else refreshBubbleButton();
+    }
     applyRoleNavigation_();
 
     var rights = rightsList_();
@@ -1134,9 +1186,15 @@
         moduleRights: res.moduleRights,
         expiresAt: res.expiresAt,
         sessionDate: res.sessionDate,
-        checkedIn: Boolean(res.checkedIn)
+        checkedIn: Boolean(res.checkedIn),
+        allowLogout: res.allowLogout !== false
       });
       adoptNative();
+      try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.startFloatingBubble === 'function') {
+          window.AndroidBridge.startFloatingBubble();
+        }
+      } catch (e) {}
       byId('password').value = '';
       await refreshBootstrap();
       await route('overview');
@@ -1149,6 +1207,10 @@
   }
 
   async function logout() {
+    if (state.session && state.session.allowLogout === false) {
+      toast('Logout is disabled for this account. Contact an administrator.');
+      return;
+    }
     try { await Cloud.post('logout', {}, { queue: false, bridge: false }); } catch (e) {}
     saveSession(null);
     var bridge = window.AndroidBridge;
@@ -1545,6 +1607,7 @@
     byId('userRights').value = user.moduleRights || '';
     byId('userPhone').value = '';
     byId('userPassword').value = '';
+    if (byId('userAllowLogout')) byId('userAllowLogout').checked = user.allowLogout !== false;
     setMsg('userMsg', '');
     openModal('userModal');
   }
@@ -1562,6 +1625,7 @@
       };
       if (byId('userRegion')) payload.region = byId('userRegion').value.trim();
       if (byId('userReportsTo')) payload.reportsTo = byId('userReportsTo').value.trim();
+      if (byId('userAllowLogout')) payload.allowLogout = byId('userAllowLogout').checked;
       var phone = byId('userPhone').value.trim();
       if (phone) payload.phoneNumber = phone;
       ensureOk(await Cloud.post('adminUpdateUser', payload));
@@ -1678,6 +1742,7 @@
   }
 
   var attendanceStream = null;
+  var attendanceFacing = 'user';
   var pendingAttPhoto = '';
   var pendingAttThumb = '';
 
@@ -1690,14 +1755,63 @@
     if (video) video.srcObject = null;
   }
 
+  function showLiveAttendanceCamera() {
+    byId('attCamVideo').style.display = '';
+    byId('attCamGuide').style.display = '';
+    byId('attCamCanvas').style.display = 'none';
+    byId('attCamCapture').style.display = '';
+    byId('attCamRetake').style.display = 'none';
+    byId('attCamSubmit').style.display = 'none';
+  }
+
   function closeAttCamera() {
     stopAttendanceStream();
     closeModal('attCamModal');
     pendingAttPhoto = '';
     pendingAttThumb = '';
-    byId('attCamSubmit').style.display = 'none';
-    byId('attCamCapture').style.display = '';
+    showLiveAttendanceCamera();
     setMsg('attCamMsg', '');
+  }
+
+  async function startAttendanceStream(facing) {
+    stopAttendanceStream();
+    attendanceFacing = facing || 'user';
+    byId('attCamHint').textContent = 'Position your face inside the frame, then tap the shutter.';
+    byId('attCamCapture').disabled = true;
+    try {
+      attendanceStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: attendanceFacing },
+          width: { ideal: 1080 },
+          height: { ideal: 1440 }
+        },
+        audio: false
+      });
+      var video = byId('attCamVideo');
+      video.srcObject = attendanceStream;
+      video.style.transform = attendanceFacing === 'user' ? 'scaleX(-1)' : 'none';
+      await video.play().catch(function () {});
+      byId('attCamCapture').disabled = false;
+      byId('attCamHint').textContent = 'Position your face inside the frame, then tap the shutter.';
+    } catch (error) {
+      setMsg('attCamMsg', 'Camera permission was denied or no camera is available. Enable camera access and try again.', true);
+    }
+  }
+
+  function retakeAttFrame() {
+    pendingAttPhoto = '';
+    pendingAttThumb = '';
+    showLiveAttendanceCamera();
+    startAttendanceStream(attendanceFacing);
+    setMsg('attCamMsg', '');
+  }
+
+  function switchAttCamera() {
+    pendingAttPhoto = '';
+    pendingAttThumb = '';
+    attendanceFacing = attendanceFacing === 'user' ? 'environment' : 'user';
+    showLiveAttendanceCamera();
+    startAttendanceStream(attendanceFacing);
   }
 
   async function openAttCamera() {
@@ -1713,22 +1827,10 @@
     }
     pendingAttPhoto = '';
     pendingAttThumb = '';
-    byId('attCamSubmit').style.display = 'none';
-    byId('attCamCapture').style.display = '';
-    byId('attCamHint').textContent = 'Look at the camera and tap Capture. The photo is watermarked before upload.';
+    showLiveAttendanceCamera();
     setMsg('attCamMsg', '');
     openModal('attCamModal');
-    try {
-      attendanceStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1440 } },
-        audio: false
-      });
-      var video = byId('attCamVideo');
-      video.srcObject = attendanceStream;
-      await video.play().catch(function () {});
-    } catch (error) {
-      setMsg('attCamMsg', 'Camera permission was denied or no camera is available. Enable camera access and try again.', true);
-    }
+    await startAttendanceStream(attendanceFacing);
   }
 
   function captureAttFrame() {
@@ -1775,8 +1877,12 @@
     thumbCanvas.getContext('2d').drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
     pendingAttThumb = thumbCanvas.toDataURL('image/jpeg', 0.5).replace(/^data:[^,]+,/, '');
 
-    byId('attCamHint').textContent = 'Photo captured. Upload it to complete check-in.';
+    byId('attCamHint').textContent = 'Photo captured. Retake or upload it to complete check-in.';
+    byId('attCamVideo').style.display = 'none';
+    byId('attCamGuide').style.display = 'none';
+    byId('attCamCanvas').style.display = 'block';
     byId('attCamCapture').style.display = 'none';
+    byId('attCamRetake').style.display = '';
     byId('attCamSubmit').style.display = '';
     setMsg('attCamMsg', '');
   }
@@ -2224,6 +2330,8 @@
     byId('password').addEventListener('keydown', function (event) { if (event.key === 'Enter') login(false); });
     byId('logoutBtn').addEventListener('click', logout);
     byId('exportBtn').addEventListener('click', exportCsv);
+    if (byId('bubbleBtn')) byId('bubbleBtn').addEventListener('click', toggleBubble);
+    if (byId('deviceSettingsBtn')) byId('deviceSettingsBtn').addEventListener('click', openDeviceSettings);
     byId('menuBtn').addEventListener('click', function () {
       byId('sidebar').classList.toggle('open');
       byId('backdrop').classList.toggle('hidden', !byId('sidebar').classList.contains('open'));
@@ -2244,6 +2352,8 @@
     byId('checkInBtn').addEventListener('click', function () { openAttCamera(); });
     byId('checkInSubmit').addEventListener('click', submitCheckIn);
     byId('attCamCapture').addEventListener('click', captureAttFrame);
+    byId('attCamRetake').addEventListener('click', retakeAttFrame);
+    byId('attCamSwitch').addEventListener('click', switchAttCamera);
     byId('attCamSubmit').addEventListener('click', submitAttCamera);
     byId('attCamClose').addEventListener('click', closeAttCamera);
     window.addEventListener('focus', applyMockPolicy_);
