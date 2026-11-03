@@ -1236,7 +1236,7 @@
     byId('view-login').classList.toggle('hidden', signedIn);
     byId('appViews').classList.toggle('hidden', !signedIn);
     byId('sidebar').classList.toggle('hidden', !signedIn);
-    if (byId('mobileNav')) byId('mobileNav').classList.toggle('hidden', !signedIn);
+    if (byId('mobileNav')) byId('mobileNav').classList.toggle('hidden', !signedIn || Boolean(state.session.isSuperAdmin));
     byId('menuBtn').classList.toggle('hidden', !signedIn);
     if (!signedIn) {
       byId('sidebar').classList.remove('open');
@@ -1361,7 +1361,7 @@
   /* -------------------------------------------------------------------- views */
   async function route(view) {
     if (!state.session) { renderSession(); return; }
-    if (!canView_(view)) view = 'overview';
+    if (!canView_(view)) view = state.session.isSuperAdmin ? 'platform' : 'overview';
     state.view = view;
     var sections = document.querySelectorAll('.view');
     for (var i = 0; i < sections.length; i++) sections[i].classList.add('hidden');
