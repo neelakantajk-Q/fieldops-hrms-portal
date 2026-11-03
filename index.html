@@ -2109,7 +2109,7 @@
         else if (state.view === 'jobs') await loadJobs();
         else if (state.view === 'team') await loadTeam();
         else if (state.view === 'reports') await loadReports();
-        else if (state.view === 'map') await loadMap();
+        else if (state.view === 'map') await loadLiveOverlay();
       } catch (error) {
         // polling is best effort during the window
       }
@@ -2382,12 +2382,32 @@
     try {
       var res = ensureOk(await Cloud.post('broadcastSync', {}));
       startLiveWindow(res.liveSeconds || 180);
-      await loadMap();
+      await loadLiveOverlay();
       toast('Live sync started');
     } catch (error) {
       toast(error.message || 'Could not start live sync.');
     } finally {
       byId('mapSync').disabled = false;
+    }
+  }
+
+  async function loadLiveOverlay() {
+    try {
+      var data = ensureOk(await Cloud.post('getLiveLocations', {}));
+      var live = data.points || [];
+      var existing = state.mapPoints || [];
+      var seen = {};
+      existing.forEach(function (point) {
+        seen[point.userId + '|' + point.at + '|' + point.lat + '|' + point.lng] = true;
+      });
+      live.forEach(function (point) {
+        var key = point.userId + '|' + point.at + '|' + point.lat + '|' + point.lng;
+        if (!seen[key]) { existing.push(point); seen[key] = true; }
+      });
+      state.mapPoints = existing;
+      renderMap();
+    } catch (error) {
+      await loadMap();
     }
   }
 
