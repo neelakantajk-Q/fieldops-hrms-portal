@@ -90,10 +90,6 @@
   .auth{max-width:400px;margin:48px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 20px 50px rgba(16,24,40,.1);text-align:center}
   .auth h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
   .auth p{margin:0 0 16px;font-size:13px;color:var(--muted)}
-  .auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 0 18px}
-  .auth-brand img{width:180px;max-width:100%;height:auto;display:block;border-radius:12px;background:#000;object-fit:contain;box-shadow:0 6px 18px rgba(0,0,0,.18)}
-  .auth-brand strong{display:block;font-size:16px;color:var(--ink);letter-spacing:-.2px}
-  .auth-brand span{display:block;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-top:2px}
   .auth-loader{height:4px;background:#fff;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:0 0 18px}
   .auth-loader span{display:block;height:100%;width:42%;border-radius:999px;background:linear-gradient(90deg,#a6ce39,#25d366);animation:auth-loader-move 1.5s ease-in-out infinite}
   @keyframes auth-loader-move{0%{transform:translateX(-110%)}50%{transform:translateX(85%)}100%{transform:translateX(250%)}}
@@ -204,7 +200,6 @@
   }
 
 @media (max-width: 480px) {
-    .auth-brand img{width:150px}
     .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stat { padding: 12px; }
     .stat h4 { font-size: 9.5px; letter-spacing: .5px; }
@@ -295,12 +290,9 @@
   <main class="content">
 <section id="view-login">
 <div class="auth">
-  <div class="auth-brand" aria-label="Quantum Field Operations">
-    <img src="assets/quantum-logo.png" alt="Quantum EV">
-    <div><strong>Quantum</strong><span>Field Operations</span></div>
-  </div>
+<img src="assets/quantum-logo.png" alt="Quantum EV" style="width:240px;max-width:100%;display:block;margin:0 auto 18px;border-radius:10px">
 <h2>Sign In</h2>
-        <div class="auth-loader" aria-hidden="true"><span></span></div>
+        <div class="auth-loader hidden" id="authLoader" aria-hidden="true"><span></span></div>
         <p>Secure enterprise authentication</p>
         <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" placeholder="Enter username"></div>
         <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter password"></div>
@@ -975,11 +967,38 @@
     } catch (e) { return null; }
   }
 
-  function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
+function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
+
+  var netBusy = 0;
+
+  function setAuthLoading(active) {
+    var loader = byId('authLoader');
+    if (!loader) return;
+    loader.classList.toggle('hidden', !active);
+  }
+
+  function beginNet() {
+    netBusy++;
+    setAuthLoading(true);
+  }
+
+  function endNet() {
+    netBusy = Math.max(0, netBusy - 1);
+    if (netBusy === 0) setAuthLoading(false);
+  }
 
   function fetchOnce(body) {
     return new Promise(function (resolve, reject) {
       var controller = null;
+      var timer = null;
+      var settled = false;
+      function finish(ok, value) {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        endNet();
+        if (ok) resolve(value); else reject(value);
+      }
       var options = {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -991,9 +1010,10 @@
         controller = new AbortController();
         options.signal = controller.signal;
       }
-      var timer = setTimeout(function () {
+      beginNet();
+      timer = setTimeout(function () {
         if (controller) { try { controller.abort(); } catch (e) {} }
-        reject(new Error('Cloud request timed out. Check the connection and retry.'));
+        finish(false, new Error('Cloud request timed out. Check the connection and retry.'));
       }, CFG.timeoutMs);
 
       fetch(CFG.endpoint + (CFG.endpoint.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(), options)
@@ -1002,13 +1022,12 @@
           return response.text();
         })
         .then(function (text) {
-          clearTimeout(timer);
           var data;
           try { data = JSON.parse(text); }
           catch (e) { throw new Error('The deployment did not return JSON. Publish the web app with anonymous access.'); }
-          resolve(data);
+          finish(true, data);
         })
-        .catch(function (error) { clearTimeout(timer); reject(error); });
+        .catch(function (error) { finish(false, error); });
     });
   }
 
