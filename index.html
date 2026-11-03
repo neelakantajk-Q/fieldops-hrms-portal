@@ -1107,6 +1107,7 @@
     byId('view-login').classList.toggle('hidden', signedIn);
     byId('appViews').classList.toggle('hidden', !signedIn);
     byId('sidebar').classList.toggle('hidden', !signedIn);
+    if (byId('mobileNav')) byId('mobileNav').classList.toggle('hidden', !signedIn);
     byId('menuBtn').classList.toggle('hidden', !signedIn);
     if (!signedIn) {
       byId('sidebar').classList.remove('open');
