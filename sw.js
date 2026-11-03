@@ -1,4 +1,4 @@
-/*
+﻿/*
   Offline shell for the Field Operations portal.
 
   Only same-origin GET requests are cached. Backend calls are POSTs to another
@@ -6,7 +6,7 @@
   queue and retries when the connection returns.
 */
 
-const VERSION = 'fieldops-shell-v5';
+const VERSION = 'fieldops-shell-v6';
 const SHELL = [
   './',
   './index.html',
@@ -87,4 +87,5 @@ async function cacheFirst(request) {
 self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
 });
+
 
