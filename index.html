@@ -564,6 +564,7 @@
             <button id="pcDemoActivity" type="button">Seed activity</button>
             <button id="pcDemoLive" type="button">Seed live points</button>
             <button class="danger" id="pcDemoClear" type="button">Clear demo data</button>
+            <button class="secondary" id="pcSmoke" type="button">Run smoke test</button>
           </div>
           <pre id="pcDemoOut" class="small mono" style="white-space:pre-wrap;background:#f1f5f9;padding:10px;border-radius:8px;max-height:260px;overflow:auto"></pre>
         </div>
@@ -1695,6 +1696,53 @@
       demoOut(res);
       await loadPlatform();
     } catch (error) { demoOut('Cleanup failed: ' + error.message); }
+  }
+
+  async function runSmokeTest() {
+    var report = {};
+    async function step(name, fn) {
+      var started = Date.now();
+      try {
+        var value = await fn();
+        report[name] = { ok: true, ms: Date.now() - started, result: value };
+      } catch (error) {
+        report[name] = { ok: false, ms: Date.now() - started, error: error.message };
+      }
+    }
+    function counts(value) {
+      if (!value) return value;
+      return {
+        users: value.users ? value.users.length : undefined,
+        seats: value.seats,
+        tree: value.tree ? value.tree.length : undefined,
+        points: value.points ? value.points.length : undefined,
+        attendance: value.report && value.report.attendance ? value.report.attendance.length : undefined,
+        jobs: value.report && value.report.jobs ? value.report.jobs : undefined,
+        compliance: value.report ? value.report.compliance : undefined
+      };
+    }
+    demoOut('Running smoke test…');
+    await step('platform', async function () {
+      return counts(ensureOk(await Cloud.post('getPlatformSettings', {}, { queue: false })));
+    });
+    await step('users', async function () {
+      return counts(ensureOk(await Cloud.post('getUsers', {}, { queue: false })));
+    });
+    await step('orgTree', async function () {
+      return counts(ensureOk(await Cloud.post('getOrgTree', {}, { queue: false })));
+    });
+    await step('misReport', async function () {
+      var today = Safe.today();
+      var from = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+      return counts(ensureOk(await Cloud.post('getMisReport', { from: from, to: today }, { queue: false })));
+    });
+    await step('telemetry', async function () {
+      return counts(ensureOk(await Cloud.post('getTelemetry', { date: Safe.today(), limit: 2000 }, { queue: false })));
+    });
+    await step('liveLocations', async function () {
+      return counts(ensureOk(await Cloud.post('getLiveLocations', {}, { queue: false })));
+    });
+    demoOut(report);
   }
 
   function applySettingsToForm(settings) {
@@ -2909,6 +2957,7 @@
     if (byId('pcDemoActivity')) byId('pcDemoActivity').addEventListener('click', seedDemoActivity);
     if (byId('pcDemoLive')) byId('pcDemoLive').addEventListener('click', seedDemoLive);
     if (byId('pcDemoClear')) byId('pcDemoClear').addEventListener('click', clearDemoData);
+    if (byId('pcSmoke')) byId('pcSmoke').addEventListener('click', runSmokeTest);
     byId('saveField').addEventListener('click', saveField);
     byId('closeRun').addEventListener('click', runClosing);
     byId('fpVerify').addEventListener('click', verifyPhone);
