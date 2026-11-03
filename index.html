@@ -32,7 +32,7 @@
   .small{font-size:12px}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   header.appbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(166,206,57,.20);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(166,206,57,.35);position:sticky;top:0;z-index:60}
-  .brand-band{width:auto;height:30px;border-radius:6px;display:block;background:#000;object-fit:contain;flex:0 0 auto}
+  
   header.appbar h1{margin:0;font-size:15px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
   .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#f8fafc;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;color:#475569}
@@ -90,6 +90,10 @@
   .auth{max-width:400px;margin:48px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 20px 50px rgba(16,24,40,.1);text-align:center}
   .auth h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
   .auth p{margin:0 0 16px;font-size:13px;color:var(--muted)}
+  .auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 0 18px}
+  .auth-brand img{width:180px;max-width:100%;height:auto;display:block;border-radius:12px;background:#000;object-fit:contain;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .auth-brand strong{display:block;font-size:16px;color:var(--ink);letter-spacing:-.2px}
+  .auth-brand span{display:block;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-top:2px}
   .auth-loader{height:4px;background:#fff;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:0 0 18px}
   .auth-loader span{display:block;height:100%;width:42%;border-radius:999px;background:linear-gradient(90deg,#a6ce39,#25d366);animation:auth-loader-move 1.5s ease-in-out infinite}
   @keyframes auth-loader-move{0%{transform:translateX(-110%)}50%{transform:translateX(85%)}100%{transform:translateX(250%)}}
@@ -199,7 +203,8 @@
     #netDetail { display: none; }
   }
 
-  @media (max-width: 480px) {
+@media (max-width: 480px) {
+    .auth-brand img{width:150px}
     .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stat { padding: 12px; }
     .stat h4 { font-size: 9.5px; letter-spacing: .5px; }
@@ -254,8 +259,7 @@
 </div>
 
 <header class="appbar">
-  <button class="secondary sm" id="menuBtn" type="button" aria-label="Menu">?</button>
-  <img class="brand-band" src="assets/quantum-logo.png" alt="Quantum EV">
+<button class="secondary sm" id="menuBtn" type="button" aria-label="Menu">?</button>
   <h1>Field Operations &amp; HRMS</h1>
   <div class="bar-actions">
     <span class="chip bad hidden" id="mockChip">Mock GPS</span>
@@ -291,6 +295,10 @@
   <main class="content">
 <section id="view-login">
 <div class="auth">
+  <div class="auth-brand" aria-label="Quantum Field Operations">
+    <img src="assets/quantum-logo.png" alt="Quantum EV">
+    <div><strong>Quantum</strong><span>Field Operations</span></div>
+  </div>
 <h2>Sign In</h2>
         <div class="auth-loader" aria-hidden="true"><span></span></div>
         <p>Secure enterprise authentication</p>
@@ -2462,7 +2470,6 @@
           '<div class="team-avatar" style="' + photoStyle + '">' + Safe.esc(initials(name)) + '</div>' +
           '<div class="team-name"><strong>' + Safe.esc(name) + '</strong><span>' + Safe.esc(person.username || person.userId) +
             ' \u00b7 ' + Safe.esc(person.role) + '</span></div>' +
-          '<span class="badge ' + (person.onDuty ? 'ok' : 'gray') + '">' + (person.onDuty ? 'On duty' : 'Off duty') + '</span>' +
           '<span class="team-chev">\u25b6</span>' +
         '</div>' +
         '<div class="team-body">' +
