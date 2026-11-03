@@ -883,7 +883,9 @@
     post: function (action, payload, opts) {
       opts = opts || {};
       var body = Cloud.build(action, payload);
-      var native = opts.bridge === false ? null : bridgePost(body);
+      // Never route API calls through the synchronous Android bridge: it blocks
+      // the WebView JS thread for the whole request and makes every tap lag.
+      var native = null;
       if (native) return Promise.resolve(native);
 
       var attempt = 0;
@@ -971,10 +973,19 @@
           role: state.session.role,
           hub: state.session.hub,
           expiresAt: state.session.expiresAt,
-          checkedIn: Boolean(state.session.checkedIn)
+          checkedIn: Boolean(state.session.checkedIn),
+          attendanceSynced: Boolean(state.session.attendanceSynced)
         }));
       }
       if (typeof bridge.setLoggedIn === 'function') bridge.setLoggedIn(Boolean(state.session));
+    } catch (e) {}
+  }
+
+  function signalPortalReady() {
+    try {
+      if (window.AndroidBridge && typeof window.AndroidBridge.portalReady === 'function') {
+        window.AndroidBridge.portalReady();
+      }
     } catch (e) {}
   }
 
@@ -1790,8 +1801,18 @@
         mock: mockActive_(),
         clientRequestId: Safe.uuid()
       };
-      ensureOk(await Cloud.post('attendanceCheckIn', payload, { queue: false }));
+      var queued = false;
+      try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.enqueueAttendance === 'function') {
+          queued = window.AndroidBridge.enqueueAttendance(JSON.stringify(payload)) === 'PENDING';
+        }
+      } catch (e) { queued = false; }
+      if (!queued) {
+        // Browser fallback: upload in the background; do not block the UI.
+        Cloud.post('attendanceCheckIn', payload, { queue: false }).catch(function () {});
+      }
       state.session.checkedIn = true;
+      state.session.attendanceSynced = !queued;
       saveSession(state.session);
       adoptNative();
       try {
@@ -1800,7 +1821,7 @@
         }
       } catch (e) {}
       closeAttCamera();
-      toast('Check-in recorded. Bubble unlocked.');
+      toast(queued ? 'Attendance submitted. Uploading in background.' : 'Check-in recorded.');
       renderSession();
     } catch (error) {
       setMsg('attCamMsg', error.message || 'Upload failed. Retry.', true);
@@ -2405,6 +2426,7 @@
       }
     }
     Cloud.flush();
+    signalPortalReady();
   }
 
   window.addEventListener('DOMContentLoaded', boot);

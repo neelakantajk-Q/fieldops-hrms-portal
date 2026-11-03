@@ -6,7 +6,7 @@
   queue and retries when the connection returns.
 */
 
-const VERSION = 'fieldops-shell-v3';
+const VERSION = 'fieldops-shell-v4';
 const SHELL = [
   './',
   './index.html',
