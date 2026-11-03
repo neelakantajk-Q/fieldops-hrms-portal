@@ -107,6 +107,19 @@
   nav.mobile{display:none}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#0f172a;color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw}
   .banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:11px;padding:10px 12px;margin-bottom:14px;font-size:13px}
+  .mockbar{display:flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:11px;padding:9px 12px;margin-bottom:14px;font-size:12.5px;font-weight:600}
+  .edit-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:3px 8px;white-space:nowrap}
+  .edit-badge strong{color:#334155}
+  .cam-wrap{position:relative;background:#0b1220;border-radius:14px;overflow:hidden;margin-bottom:12px}
+  .cam-video{display:block;width:100%;max-height:58vh;object-fit:cover;background:#000}
+  .cam-hint{position:absolute;left:10px;right:10px;bottom:10px;color:#e2e8f0;background:rgba(2,8,23,.65);border-radius:9px;padding:7px 10px;font-size:11px;line-height:1.35}
+  .cam-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .cam-actions button{flex:1;min-width:120px}
+  .audit-list{margin:0;padding:0;list-style:none;display:grid;gap:8px;max-height:52vh;overflow-y:auto}
+  .audit-item{border:1px solid var(--line);border-left:3px solid var(--wa);border-radius:9px;padding:9px 11px;background:#fff}
+  .audit-item h4{margin:0 0 3px;font-size:12.5px}
+  .audit-item p{margin:0;font-size:11px;color:var(--muted)}
+  .toolbar .search-wide{flex:2 1 280px}
   @media (max-width:900px){
     aside.sidebar{position:fixed;top:0;bottom:0;left:0;transform:translateX(-105%);transition:transform .2s ease;z-index:80;height:100%}
     aside.sidebar.open{transform:translateX(0)}
@@ -217,6 +230,7 @@
   <h1>Field Operations &amp; HRMS</h1>
   <div class="bar-actions">
     <span class="chip hidden" id="checkInChip">Check-in required</span>
+    <span class="chip bad hidden" id="mockChip">Mock GPS</span>
     <span class="chip" id="userChip">Signed out</span>
     <button class="secondary sm" id="exportBtn" type="button">Export</button>
     <button class="danger sm" id="logoutBtn" type="button">Logout</button>
@@ -260,6 +274,10 @@
         <span>Complete the check-in to unlock job cards and the floating bubble.</span>
         <button class="sm" id="checkInBtn" type="button">Check in now</button>
       </div>
+      <div id="mockBar" class="mockbar hidden">
+        <strong>Mock GPS detected.</strong>
+        <span>Disable fake location to check in or start/stop a job. Team, attendance history, job history and job edits remain available.</span>
+      </div>
 
       <section id="view-overview" class="view">
         <div class="page-head"><h2>Overview &amp; Analytics</h2><p id="overviewSub">Live metrics for your scope.</p></div>
@@ -296,7 +314,7 @@
           <button id="jobNew" type="button">New Job</button>
           <button class="secondary" id="jobRetake" type="button">Retake interrupted</button>
         </div>
-        <div class="card"><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Client</th><th>Assigned</th><th>Status</th><th>Elapsed</th><th>Source</th><th></th></tr></thead><tbody id="jobsBody"></tbody></table></div></div>
+        <div class="card"><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Client</th><th>Assigned</th><th>Status</th><th>Elapsed</th><th>Source</th><th>Last edit</th><th></th></tr></thead><tbody id="jobsBody"></tbody></table></div></div>
       </section>
 
       <section id="view-vehicles" class="view hidden">
@@ -439,6 +457,35 @@
   <button data-view="vehicles" type="button">Fleet</button>
   <button id="mobileMore" type="button">More</button>
 </nav>
+
+<!-- Attendance camera (in-browser) -->
+<div class="modal-shell hidden" id="attCamModal">
+  <div class="modal">
+    <h3>Photo attendance</h3>
+    <div class="cam-wrap">
+      <video id="attCamVideo" class="cam-video" autoplay playsinline muted></video>
+      <canvas id="attCamCanvas" style="display:none"></canvas>
+      <div class="cam-hint" id="attCamHint">Look at the camera and tap Capture. The photo is watermarked before upload.</div>
+    </div>
+    <div class="cam-actions">
+      <button class="secondary" id="attCamClose" type="button">Cancel</button>
+      <button id="attCamCapture" type="button">Capture</button>
+      <button id="attCamSubmit" type="button" style="display:none">Upload &amp; check in</button>
+    </div>
+    <div id="attCamMsg" class="msg hidden"></div>
+  </div>
+</div>
+
+<!-- Job audit -->
+<div class="modal-shell hidden" id="jobAuditModal">
+  <div class="modal wide">
+    <h3 id="jobAuditTitle">Job audit</h3>
+    <ul class="audit-list" id="jobAuditList"></ul>
+    <div class="modal-actions">
+      <button class="secondary" data-close="jobAuditModal" type="button">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- Job editor -->
 <div class="modal-shell hidden" id="jobModal">
@@ -946,8 +993,8 @@
     var rank = roleRank_(state.session.role);
     var rights = rightsList_();
     if (view === 'overview' || view === 'attendance') return true;
-    if (view === 'jobs') return rank >= 2 || rights.indexOf('TASKS') >= 0;
-    if (view === 'team') return rank >= 2;
+    if (view === 'jobs') return true;
+    if (view === 'team') return true;
     if (view === 'vehicles') return rank >= 2 || rights.indexOf('VEHICLES') >= 0;
     if (view === 'masters') return rank >= 3;
     if (view === 'workflows') return rank >= 2;
@@ -968,6 +1015,34 @@
     if (byId('fleetNavCat')) byId('fleetNavCat').classList.toggle('hidden', !fleetVisible);
     if (byId('adminNavCat')) byId('adminNavCat').classList.toggle('hidden', !(signedIn && canView_('admin')));
     if (byId('adminNavBtn')) byId('adminNavBtn').classList.toggle('hidden', !(signedIn && canView_('admin')));
+  }
+
+  function mockActive_() {
+    try {
+      if (window.AndroidBridge && typeof window.AndroidBridge.isMockLocationDetected === 'function') {
+        return Boolean(window.AndroidBridge.isMockLocationDetected());
+      }
+      if (window.AndroidBridge && typeof window.AndroidBridge.getGeofenceState === 'function') {
+        var raw = window.AndroidBridge.getGeofenceState();
+        if (raw) return Boolean(JSON.parse(raw).isMock);
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function applyMockPolicy_() {
+    var mock = mockActive_();
+    state.mock = mock;
+    var chip = byId('mockChip');
+    var bar = byId('mockBar');
+    if (chip) chip.classList.toggle('hidden', !mock);
+    if (bar) bar.classList.toggle('hidden', !mock);
+    var btn = byId('checkInBtn');
+    if (btn) {
+      btn.disabled = mock;
+      btn.textContent = mock ? 'Disable mock GPS to check in' : 'Check in now';
+    }
+    return mock;
   }
 
   function renderSession() {
@@ -991,6 +1066,7 @@
     byId('checkInChip').classList.toggle('hidden', !needsCheckIn);
     byId('checkInChip').className = 'chip warn' + (needsCheckIn ? '' : ' hidden');
     byId('checkInBanner').classList.toggle('hidden', !needsCheckIn);
+    applyMockPolicy_();
   }
 
   async function refreshBootstrap() {
@@ -1173,12 +1249,17 @@
         (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '�');
       var badge = task.status === 'Completed' ? 'ok' : (task.status === 'InProgress' ? '' : 'warn');
       var overtime = !task.endTime && task.startTime && (Date.now() - new Date(task.startTime).getTime()) > 3600000;
+      var lastEdit = task.updatedByName || task.updatedBy || '';
+      var lastEditHtml = lastEdit
+        ? '<span class="edit-badge">Edited by <strong>' + Safe.esc(lastEdit) + '</strong>' +
+          (task.updatedAt ? ' &middot; ' + Safe.esc(dateTime(task.updatedAt)) : '') + '</span>'
+        : '<span class="muted small">&mdash;</span>';
       return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td>' + Safe.esc(plate(task.vehicleNo) || '�') +
         '</td><td>' + Safe.esc(task.client || '�') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
         badge + '">' + Safe.esc(task.status) + '</span>' + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
         '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '�') +
-        '</td><td><button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button></td></tr>';
-    }).join('') || '<tr><td colspan="8" class="muted">No job cards.</td></tr>';
+        '</td><td>' + lastEditHtml + '</td><td><button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button> <button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button></td></tr>';
+    }).join('') || '<tr><td colspan="9" class="muted">No job cards.</td></tr>';
   }
 
   async function loadVehicles() {
@@ -1303,15 +1384,35 @@
   }
 
   /* ------------------------------------------------------------------ actions */
+  async function openJobAudit(jobId) {
+    byId('jobAuditTitle').textContent = 'Audit · ' + jobId;
+    byId('jobAuditList').innerHTML = '<li class="audit-item"><p>Loading audit…</p></li>';
+    openModal('jobAuditModal');
+    try {
+      var data = ensureOk(await Cloud.post('getJobAudit', { jobId: jobId }));
+      var rows = data.audit || [];
+      byId('jobAuditList').innerHTML = rows.map(function (entry) {
+        return '<li class="audit-item"><h4>' + Safe.esc(entry.activityType) + ' · ' +
+          Safe.esc(entry.username || entry.userId || '—') + '</h4><p>' + Safe.esc(dateTime(entry.timestamp)) +
+          (entry.details ? ' · ' + Safe.esc(entry.details) : '') + '</p>' +
+          (entry.disruption ? '<p><span class="badge bad">Flagged</span></p>' : '') + '</li>';
+      }).join('') || '<li class="audit-item"><p>No audit entries yet.</p></li>';
+    } catch (error) {
+      byId('jobAuditList').innerHTML = '<li class="audit-item"><p>' + Safe.esc(error.message) + '</p></li>';
+    }
+  }
+
   function openJobModal(task) {
     task = task || {};
-    if (!state.session || !state.session.checkedIn) {
+    if (!state.session) { toast('Sign in first'); return; }
+    if (!task.jobId && !state.session.checkedIn) {
       toast('Complete photo check-in first');
-      openModal('checkInModal');
+      openAttCamera();
       return;
     }
     byId('jobModalTitle').textContent = task.jobId ? 'Edit job ' + task.jobId : 'New job card';
     byId('jobId').value = task.jobId || '';
+    state.editingJobVersion = task.version || 1;
     byId('jobClient').value = task.client || '';
     if (byId('jobClientSel')) byId('jobClientSel').value = task.clientId || '';
     byId('jobHub').value = task.hub || (state.session ? state.session.hub : '');
@@ -1346,6 +1447,7 @@
     try {
       if (jobId) {
         payload.jobId = jobId;
+        payload.expectedVersion = state.editingJobVersion || 1;
         ensureOk(await Cloud.post('updateTaskStatus', payload));
         toast('Job updated');
       } else {
@@ -1564,6 +1666,149 @@
     }
   }
 
+  var attendanceStream = null;
+  var pendingAttPhoto = '';
+  var pendingAttThumb = '';
+
+  function stopAttendanceStream() {
+    if (attendanceStream) {
+      attendanceStream.getTracks().forEach(function (track) { try { track.stop(); } catch (e) {} });
+      attendanceStream = null;
+    }
+    var video = byId('attCamVideo');
+    if (video) video.srcObject = null;
+  }
+
+  function closeAttCamera() {
+    stopAttendanceStream();
+    closeModal('attCamModal');
+    pendingAttPhoto = '';
+    pendingAttThumb = '';
+    byId('attCamSubmit').style.display = 'none';
+    byId('attCamCapture').style.display = '';
+    setMsg('attCamMsg', '');
+  }
+
+  async function openAttCamera() {
+    if (!state.session) { toast('Sign in first'); return; }
+    if (applyMockPolicy_()) {
+      toast('Mock GPS detected. Disable fake location to check in.');
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMsg('attCamMsg', 'Camera is not available in this browser.', true);
+      openModal('attCamModal');
+      return;
+    }
+    pendingAttPhoto = '';
+    pendingAttThumb = '';
+    byId('attCamSubmit').style.display = 'none';
+    byId('attCamCapture').style.display = '';
+    byId('attCamHint').textContent = 'Look at the camera and tap Capture. The photo is watermarked before upload.';
+    setMsg('attCamMsg', '');
+    openModal('attCamModal');
+    try {
+      attendanceStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1440 } },
+        audio: false
+      });
+      var video = byId('attCamVideo');
+      video.srcObject = attendanceStream;
+      await video.play().catch(function () {});
+    } catch (error) {
+      setMsg('attCamMsg', 'Camera permission was denied or no camera is available. Enable camera access and try again.', true);
+    }
+  }
+
+  function captureAttFrame() {
+    var video = byId('attCamVideo');
+    var canvas = byId('attCamCanvas');
+    if (!video || !video.videoWidth) {
+      setMsg('attCamMsg', 'Camera is still starting. Try again in a moment.', true);
+      return;
+    }
+    var maxW = 1024;
+    var scale = Math.min(1, maxW / video.videoWidth);
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    var now = new Date();
+    var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+    var stamp = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()) + ' ' +
+      pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
+    var geo = state.lastPosition || null;
+    var coords = geo ? (geo.latitude.toFixed(5) + ', ' + geo.longitude.toFixed(5)) : 'GPS pending';
+    var lines = [
+      'Field Operations & HRMS',
+      (state.session.username || state.session.userId) + ' · ' + (state.session.role || ''),
+      'Hub: ' + (state.session.hub || '—'),
+      'Time: ' + stamp,
+      'GPS: ' + coords
+    ];
+    var boxH = 18 + lines.length * 19;
+    ctx.fillStyle = 'rgba(2, 8, 23, 0.72)';
+    ctx.fillRect(0, canvas.height - boxH, canvas.width, boxH);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '600 13px Inter, system-ui, sans-serif';
+    lines.forEach(function (line, i) {
+      ctx.fillText(line, 12, canvas.height - boxH + 22 + i * 19);
+    });
+
+    pendingAttPhoto = canvas.toDataURL('image/jpeg', 0.72).replace(/^data:[^,]+,/, '');
+    var thumbCanvas = document.createElement('canvas');
+    var thumbW = Math.min(256, canvas.width);
+    thumbCanvas.width = thumbW;
+    thumbCanvas.height = Math.max(1, Math.round(canvas.height * thumbW / canvas.width));
+    thumbCanvas.getContext('2d').drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+    pendingAttThumb = thumbCanvas.toDataURL('image/jpeg', 0.5).replace(/^data:[^,]+,/, '');
+
+    byId('attCamHint').textContent = 'Photo captured. Upload it to complete check-in.';
+    byId('attCamCapture').style.display = 'none';
+    byId('attCamSubmit').style.display = '';
+    setMsg('attCamMsg', '');
+  }
+
+  async function submitAttCamera() {
+    if (!pendingAttPhoto) { setMsg('attCamMsg', 'Capture a photo first.', true); return; }
+    if (applyMockPolicy_()) { setMsg('attCamMsg', 'Mock GPS detected. Disable fake location to check in.', true); return; }
+    var btn = byId('attCamSubmit');
+    btn.disabled = true;
+    setMsg('attCamMsg', 'Uploading attendance…');
+    try {
+      var position = await currentPosition();
+      state.lastPosition = position ? { latitude: position.coords.latitude, longitude: position.coords.longitude } : null;
+      var payload = {
+        photoBase64: pendingAttPhoto,
+        photoThumbBase64: pendingAttThumb,
+        lat: position ? position.coords.latitude : 0,
+        lng: position ? position.coords.longitude : 0,
+        accuracy: position ? position.coords.accuracy : 0,
+        withinGeoFence: Boolean(position),
+        hubName: state.session ? state.session.hub : '',
+        mock: mockActive_(),
+        clientRequestId: Safe.uuid()
+      };
+      ensureOk(await Cloud.post('attendanceCheckIn', payload, { queue: false }));
+      state.session.checkedIn = true;
+      saveSession(state.session);
+      adoptNative();
+      try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.startFloatingBubble === 'function') {
+          window.AndroidBridge.startFloatingBubble();
+        }
+      } catch (e) {}
+      closeAttCamera();
+      toast('Check-in recorded. Bubble unlocked.');
+      renderSession();
+    } catch (error) {
+      setMsg('attCamMsg', error.message || 'Upload failed. Retry.', true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   async function checkOut() {
     var position = await currentPosition();
     try {
@@ -1571,6 +1816,7 @@
         lat: position ? position.coords.latitude : 0,
         lng: position ? position.coords.longitude : 0,
         accuracy: position ? position.coords.accuracy : 0,
+        mock: mockActive_(),
         clientRequestId: Safe.uuid()
       }));
       state.session.checkedIn = false;
@@ -1974,8 +2220,13 @@
       closers[c].addEventListener('click', function () { closeModal(this.getAttribute('data-close')); });
     }
 
-    byId('checkInBtn').addEventListener('click', function () { openModal('checkInModal'); });
+    byId('checkInBtn').addEventListener('click', function () { openAttCamera(); });
     byId('checkInSubmit').addEventListener('click', submitCheckIn);
+    byId('attCamCapture').addEventListener('click', captureAttFrame);
+    byId('attCamSubmit').addEventListener('click', submitAttCamera);
+    byId('attCamClose').addEventListener('click', closeAttCamera);
+    window.addEventListener('focus', applyMockPolicy_);
+    setInterval(applyMockPolicy_, 5000);
     byId('attCheckOut').addEventListener('click', checkOut);
     byId('attRefresh').addEventListener('click', loadAttendance);
     byId('attDate').addEventListener('change', loadAttendance);
@@ -2030,6 +2281,7 @@
       while (node && node !== document.body) {
         if (node.getAttribute) {
           if (node.getAttribute('data-save-master')) { saveMasterLine(node.getAttribute('data-save-master')); return; }
+          if (node.getAttribute('data-job-audit')) { openJobAudit(node.getAttribute('data-job-audit')); return; }
           if (node.getAttribute('data-edit-job')) {
             var jobId = node.getAttribute('data-edit-job');
             var task = null;
