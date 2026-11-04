@@ -88,15 +88,10 @@
   .auth{max-width:400px;margin:48px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 20px 50px rgba(16,24,40,.1);text-align:center}
   .auth h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
   .auth p{margin:0 0 16px;font-size:13px;color:var(--muted)}
-  .auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 0 18px}
-  .auth-brand img{width:180px;max-width:100%;height:auto;display:block;border-radius:12px;background:#000;object-fit:contain;box-shadow:0 6px 18px rgba(0,0,0,.18)}
-  .auth-brand strong{display:block;font-size:16px;color:var(--ink);letter-spacing:-.2px}
-  .auth-brand span{display:block;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-top:2px}
-  .auth-progress{height:6px;background:#eef2f7;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:0 0 6px}
-  .auth-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#a6ce39,#25d366);border-radius:999px;transition:width .25s ease}
-  .auth-progress[data-state="error"] span{background:var(--danger)}
-  .auth-progress-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:14px}
-  @media (max-width:480px){.auth-brand img{width:150px}}
+  .auth-brand{display:block;margin:0 0 18px}
+  .auth-brand img{width:100%;max-width:100%;height:auto;display:block;border-radius:12px;background:#000;object-fit:contain;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .appbar-progress{position:absolute;left:0;right:0;bottom:-3px;height:3px;background:#dbeafe;overflow:hidden;z-index:61}
+  .appbar-progress span{display:block;height:100%;width:0;background:#2563eb;transition:width .25s linear}
   .msg{border-radius:9px;padding:10px 12px;font-size:13px;margin-top:12px}
   .msg.bad{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
   .msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
@@ -268,6 +263,9 @@
     <button class="secondary sm hidden" id="deviceSettingsBtn" type="button">Device</button>
     <button class="danger sm" id="logoutBtn" type="button">Logout</button>
   </div>
+  <div class="appbar-progress hidden" id="appProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-state="loading">
+    <span id="appProgressBar"></span>
+  </div>
 </header>
 
 <div class="layout">
@@ -296,17 +294,8 @@
 <div class="auth">
         <div class="auth-brand" aria-label="Quantum Field Operations">
           <img src="assets/quantum-logo.png" alt="Quantum EV">
-          <div><strong>Quantum</strong><span>Field Operations</span></div>
         </div>
         <h2>Sign In</h2>
-        <div class="auth-progress hidden" id="authProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <span id="authProgressBar"></span>
-        </div>
-        <div class="auth-progress-meta hidden" id="authProgressMeta">
-          <span id="authProgressText">Starting workspace</span>
-          <span id="authProgressPct">0%</span>
-        </div>
-        <p>Secure enterprise authentication</p>
         <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" placeholder="Enter username"></div>
         <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter password"></div>
         <button id="loginBtn" type="button" style="width:100%">Sign In</button>
@@ -986,31 +975,23 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   var netBusy = 0;
 
   function setAuthProgress(percent, label, status) {
-    var wrap = byId('authProgress');
-    var bar = byId('authProgressBar');
-    var meta = byId('authProgressMeta');
-    var text = byId('authProgressText');
-    var pctEl = byId('authProgressPct');
+    var wrap = byId('appProgress');
+    var bar = byId('appProgressBar');
     if (!wrap || !bar) return;
     var pct = Math.max(0, Math.min(100, Number(percent) || 0));
     state.authProgress = pct;
     wrap.classList.remove('hidden');
-    if (meta) meta.classList.remove('hidden');
     wrap.dataset.state = status || 'loading';
     bar.style.width = pct + '%';
     wrap.setAttribute('aria-valuenow', String(Math.round(pct)));
-    if (text) text.textContent = label || 'Working...';
-    if (pctEl) pctEl.textContent = Math.round(pct) + '%';
   }
 
   function hideAuthProgress() {
-    var wrap = byId('authProgress');
-    var bar = byId('authProgressBar');
-    var meta = byId('authProgressMeta');
+    var wrap = byId('appProgress');
+    var bar = byId('appProgressBar');
     if (!wrap) return;
     if (bar) bar.style.width = '0%';
     wrap.classList.add('hidden');
-    if (meta) meta.classList.add('hidden');
     wrap.dataset.state = 'loading';
     wrap.setAttribute('aria-valuenow', '0');
   }
