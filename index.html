@@ -9,15 +9,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Field Operations &amp; HRMS Portal</title>
 <script>
-  /* GitHub Pages deployment configuration. */
+  /* Deployment configuration.
+     Set brandApi (and brandLive when needed) to the whitelabel edge proxy in
+     cloudflare/ so the browser never receives a Google or Firebase host. When
+     both are empty the encoded fallback below is used. */
   window.__PORTAL_CONFIG__ = {
-    deploymentId: 'AKfycbzlfwtI9zeK0oUbOyZQ-ezT2FBlCKfzm94baeD9sRjAL7t-DTYY9W4i8dKK0NXfOBRewg',
-    // Whitelabel edge endpoint, e.g. 'https://app.brand.com/api'. When set,
-    // the browser never contacts a Google host for API calls.
     brandApi: '',
-    // Legacy direct endpoint retained only as a fallback while branding is set up.
-    api: 'https://script.google.com/macros/s/AKfycbzlfwtI9zeK0oUbOyZQ-ezT2FBlCKfzm94baeD9sRjAL7t-DTYY9W4i8dKK0NXfOBRewg/exec',
-    live: 'https://quantum-99abd-default-rtdb.asia-southeast1.firebasedatabase.app/',
+    brandLive: '',
     assets: ''
   };
 </script>
@@ -508,7 +506,7 @@
         <div class="card" id="platformCard" style="display:none">
           <h3>Connections &amp; sample data</h3>
           <div class="grid-2">
-            <div class="field"><label for="pfApi">API endpoint</label><input id="pfApi" placeholder="https://.../exec"></div>
+            <div class="field"><label for="pfApi">API endpoint</label><input id="pfApi" placeholder="https://api.yourbrand.com/"></div>
             <div class="field"><label for="pfLive">Live sync endpoint</label><input id="pfLive" placeholder="https://sync.yourbrand.com/"></div>
             <div class="field"><label for="pfAssets">Asset base</label><input id="pfAssets" placeholder="https://cdn.yourbrand.com/img/"></div>
             <div class="field"><label for="pfSeats">User seat limit</label><input id="pfSeats" type="number" min="1" step="1"></div>
@@ -564,7 +562,7 @@
           <h3>Stack endpoints</h3>
           <div class="grid-2">
             <div class="field"><label for="pcApi">API endpoint</label><input id="pcApi" placeholder="https://app.brand.com/api"></div>
-            <div class="field"><label for="pcLive">Live sync endpoint</label><input id="pcLive" placeholder="https://…firebasedatabase.app/"></div>
+            <div class="field"><label for="pcLive">Live sync endpoint</label><input id="pcLive" placeholder="https://live.yourbrand.com/"></div>
             <div class="field"><label for="pcAssets">Asset base</label><input id="pcAssets" placeholder="https://app.brand.com/media/"></div>
             <div class="field"><label for="pcRealtime">Real-time channel</label><select id="pcRealtime"><option value="false">Disabled</option><option value="true">Enabled</option></select></div>
           </div>
@@ -810,17 +808,16 @@
   } catch (error) {}
 
   /* ------------------------------------------------------------------ config */
-  // The default endpoint is encoded so the hosting provider is not exposed in page source.
+  // Encoded fallback used only when brandApi is empty. The raw Google URL is
+  // not printed in the page source. For real endpoint hiding, set brandApi to
+  // the Cloudflare Worker in cloudflare/.
   var DEFAULT_ENDPOINT = (function () {
-    try { return atob('aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4MnJQSnJienZGNHV2d21NV29rU0lPbXdTWXktQWZ6emRUOTN6Wlc2UzVzUUpzel83eVRtMU9majBKSkNKdll0cS9leGVj'); }
+    try { return atob('aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6bGZ3dEk5emVLMG9VYk95WlEtZXpUMkZCbENLZnptOTRiYWVEOXNSakFMN3QtRFRZWTlXNGk4ZEtLME5YZk9CUmV3Zy9leGVj'); }
     catch (e) { return ''; }
   })();
 
   var CFG = {
     endpoint: (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.brandApi) ||
-      (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.api) ||
-      window.__PORTAL_ENDPOINT__ ||
-      (function () { try { return window.localStorage.getItem('cloud_endpoint') || ''; } catch (e) { return ''; } })() ||
       DEFAULT_ENDPOINT,
     timeoutMs: 45000,
     backoff: [800, 2000, 5000],
