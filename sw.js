@@ -6,11 +6,12 @@
   queue and retries when the connection returns.
 */
 
-const VERSION = 'fieldops-shell-v12';
+const VERSION = 'fieldops-shell-v13';
 const SHELL = [
   './',
   './index.html',
   './manifest.json',
+  './assets/quantum-logo.png',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png'
@@ -27,7 +28,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== VERSION).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys
+        .filter((key) => key.indexOf('fieldops-shell-') === 0 && key !== VERSION)
+        .map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -55,8 +58,10 @@ self.addEventListener('fetch', (event) => {
 async function networkFirstShell(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(VERSION);
-    cache.put('./index.html', response.clone());
+    if (response && response.ok) {
+      const cache = await caches.open(VERSION);
+      cache.put('./index.html', response.clone());
+    }
     return response;
   } catch (error) {
     const cached = await caches.match('./index.html');

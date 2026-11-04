@@ -90,9 +90,15 @@
   .auth{max-width:400px;margin:48px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 20px 50px rgba(16,24,40,.1);text-align:center}
   .auth h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
   .auth p{margin:0 0 16px;font-size:13px;color:var(--muted)}
-  .auth-loader{height:4px;background:#fff;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:0 0 18px}
-  .auth-loader span{display:block;height:100%;width:42%;border-radius:999px;background:linear-gradient(90deg,#a6ce39,#25d366);animation:auth-loader-move 1.5s ease-in-out infinite}
-  @keyframes auth-loader-move{0%{transform:translateX(-110%)}50%{transform:translateX(85%)}100%{transform:translateX(250%)}}
+  .auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 0 18px}
+  .auth-brand img{width:180px;max-width:100%;height:auto;display:block;border-radius:12px;background:#000;object-fit:contain;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .auth-brand strong{display:block;font-size:16px;color:var(--ink);letter-spacing:-.2px}
+  .auth-brand span{display:block;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .auth-progress{height:6px;background:#eef2f7;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:0 0 6px}
+  .auth-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#a6ce39,#25d366);border-radius:999px;transition:width .25s ease}
+  .auth-progress[data-state="error"] span{background:var(--danger)}
+  .auth-progress-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:14px}
+  @media (max-width:480px){.auth-brand img{width:150px}}
   .msg{border-radius:9px;padding:10px 12px;font-size:13px;margin-top:12px}
   .msg.bad{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
   .msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
@@ -248,7 +254,7 @@
 <body>
 
 <div id="statusStrip">
-  <strong id="netLabel">Connecting�</strong>
+  <strong id="netLabel">Connecting-</strong>
   <span id="netDetail" class="small">Checking cloud service</span>
   <span id="queueBadge" class="chip warn hidden">0 queued</span>
 </div>
@@ -290,9 +296,18 @@
   <main class="content">
 <section id="view-login">
 <div class="auth">
-<img src="assets/quantum-logo.png" alt="Quantum EV" style="width:240px;max-width:100%;display:block;margin:0 auto 18px;border-radius:10px">
-<h2>Sign In</h2>
-        <div class="auth-loader hidden" id="authLoader" aria-hidden="true"><span></span></div>
+        <div class="auth-brand" aria-label="Quantum Field Operations">
+          <img src="assets/quantum-logo.png" alt="Quantum EV">
+          <div><strong>Quantum</strong><span>Field Operations</span></div>
+        </div>
+        <h2>Sign In</h2>
+        <div class="auth-progress hidden" id="authProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="authProgressBar"></span>
+        </div>
+        <div class="auth-progress-meta hidden" id="authProgressMeta">
+          <span id="authProgressText">Starting workspace</span>
+          <span id="authProgressPct">0%</span>
+        </div>
         <p>Secure enterprise authentication</p>
         <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" placeholder="Enter username"></div>
         <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter password"></div>
@@ -435,7 +450,7 @@
 
       <section id="view-workflows" class="view hidden">
         <div class="page-head"><h2>Workflows &amp; Commercials</h2><p>Filtered by your access level on the server.</p></div>
-        <div class="card" id="workflowList"><p class="small muted">Loading�</p></div>
+        <div class="card" id="workflowList"><p class="small muted">Loading-</p></div>
       </section>
 
       <section id="view-admin" class="view hidden">
@@ -444,12 +459,12 @@
         <div class="card">
           <h3>Operational Policy</h3>
           <div class="grid-2">
-            <div class="field"><label for="setPlateFormat">Vehicle number display</label><select id="setPlateFormat"><option value="compact">Compact � KA01AB1234</option><option value="dashed">Dashed � KA-01-AB-1234</option><option value="spaced">Spaced � KA 01 AB 1234</option></select></div>
+            <div class="field"><label for="setPlateFormat">Vehicle number display</label><select id="setPlateFormat"><option value="compact">Compact - KA01AB1234</option><option value="dashed">Dashed - KA-01-AB-1234</option><option value="spaced">Spaced - KA 01 AB 1234</option></select></div>
             <div class="field"><label for="setFy">Active financial year</label><input id="setFy" placeholder="FY2026"></div>
             <div class="field"><label for="setRadius">Geofence radius (m)</label><input id="setRadius" type="number" min="0" step="10"></div>
             <div class="field"><label for="setBuffer">Outside-fence alert buffer (m)</label><input id="setBuffer" type="number" min="0" step="10"></div>
             <div class="field"><label for="setTelemetry">Telemetry push interval (minutes)</label><input id="setTelemetry" type="number" min="5" step="5"></div>
-            <div class="field"><label for="setRealtime">Real-time channel</label><select id="setRealtime"><option value="false">Disabled � 30 min batch only</option><option value="true">Enabled � live alerts to bubble</option></select></div>
+            <div class="field"><label for="setRealtime">Real-time channel</label><select id="setRealtime"><option value="false">Disabled - 30 min batch only</option><option value="true">Enabled - live alerts to bubble</option></select></div>
           </div>
           <div class="modal-actions" style="justify-content:flex-start">
             <button id="saveSettings" type="button">Save policy</button>
@@ -465,8 +480,8 @@
         <div class="card">
           <h3>Splash &amp; Integrations</h3>
           <div class="grid-2">
-            <div class="field"><label for="setSplashUrl">Splash image URL</label><input id="setSplashUrl" placeholder="https://�"></div>
-            <div class="field"><label for="setSplashMsg">Splash message</label><input id="setSplashMsg" placeholder="Loading portal�"></div>
+            <div class="field"><label for="setSplashUrl">Splash image URL</label><input id="setSplashUrl" placeholder="https://-"></div>
+            <div class="field"><label for="setSplashMsg">Splash message</label><input id="setSplashMsg" placeholder="Loading portal-"></div>
             <div class="field"><label for="setSymbols">Splash animation</label><select id="setSplashAnim"><option value="anim-breathing">Breathing</option><option value="anim-fade">Fade</option><option value="anim-pulse">Pulse</option><option value="anim-none">None</option></select></div>
             <div class="field"><label for="setFirebase">Live sync endpoint</label><input id="setFirebase" placeholder="https://sync.yourbrand.com/"></div>
           </div>
@@ -625,7 +640,7 @@
       <div class="field"><label for="jobAssigned">Assigned user ID</label><input id="jobAssigned"></div>
       <div class="field"><label for="jobVehicle">Vehicle number</label><input id="jobVehicle" placeholder="KA01AB1234"></div>
       <div class="field"><label for="jobStatusInput">Status</label><select id="jobStatusInput"><option>InProgress</option><option>Delayed</option><option>Interrupted</option><option>Completed</option><option>Cancelled</option></select></div>
-      <div class="field"><label for="jobDelayCat">Delay category</label><select id="jobDelayCat"><option value="">�</option><option>Traffic</option><option>Customer delay</option><option>Parts shortage</option><option>Weather</option><option>Other</option></select></div>
+      <div class="field"><label for="jobDelayCat">Delay category</label><select id="jobDelayCat"><option value="">-</option><option>Traffic</option><option>Customer delay</option><option>Parts shortage</option><option>Weather</option><option>Other</option></select></div>
     </div>
     <div class="field"><label for="jobDelayReason">Delay reason</label><input id="jobDelayReason" maxlength="280"></div>
     <div class="field"><label for="jobChecklist">Checklist</label><textarea id="jobChecklist" rows="2"></textarea></div>
@@ -833,6 +848,8 @@
     platform: false,
     liveUntil: 0,
     liveTimer: null,
+    livePoints: [],
+    liveTickBusy: false,
     report: null,
     mapPoints: [],
     mapUserFilter: '',
@@ -971,20 +988,42 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   var netBusy = 0;
 
-  function setAuthLoading(active) {
-    var loader = byId('authLoader');
-    if (!loader) return;
-    loader.classList.toggle('hidden', !active);
+  function setAuthProgress(percent, label, status) {
+    var wrap = byId('authProgress');
+    var bar = byId('authProgressBar');
+    var meta = byId('authProgressMeta');
+    var text = byId('authProgressText');
+    var pctEl = byId('authProgressPct');
+    if (!wrap || !bar) return;
+    var pct = Math.max(0, Math.min(100, Number(percent) || 0));
+    state.authProgress = pct;
+    wrap.classList.remove('hidden');
+    if (meta) meta.classList.remove('hidden');
+    wrap.dataset.state = status || 'loading';
+    bar.style.width = pct + '%';
+    wrap.setAttribute('aria-valuenow', String(Math.round(pct)));
+    if (text) text.textContent = label || 'Working...';
+    if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  }
+
+  function hideAuthProgress() {
+    var wrap = byId('authProgress');
+    var bar = byId('authProgressBar');
+    var meta = byId('authProgressMeta');
+    if (!wrap) return;
+    if (bar) bar.style.width = '0%';
+    wrap.classList.add('hidden');
+    if (meta) meta.classList.add('hidden');
+    wrap.dataset.state = 'loading';
+    wrap.setAttribute('aria-valuenow', '0');
   }
 
   function beginNet() {
     netBusy++;
-    setAuthLoading(true);
   }
 
   function endNet() {
     netBusy = Math.max(0, netBusy - 1);
-    if (netBusy === 0) setAuthLoading(false);
   }
 
   function fetchOnce(body) {
@@ -1305,7 +1344,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (res.settings) {
       state.settings = res.settings;
     }
-    byId('overviewSub').textContent = 'Scope: ' + ((res.session && res.session.scope) || '�') + ' � Fiscal year ' + ((res.settings && res.settings.currentFy) || '�');
+    byId('overviewSub').textContent = 'Scope: ' + ((res.session && res.session.scope) || '-') + ' - Fiscal year ' + ((res.settings && res.settings.currentFy) || '-');
     applySettingsToForm();
     setNet(true, 'Session verified');
     return res;
@@ -1317,6 +1356,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (!username || !password) { setMsg('loginMsg', 'Enter your username and password.', true); return; }
     byId('loginBtn').disabled = true;
     setMsg('loginMsg', '');
+    setAuthProgress(12, 'Checking credentials');
     try {
       var res = await Cloud.post('login', {
         username: username,
@@ -1326,6 +1366,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       }, { queue: false });
 
       if (res && res.sessionConflict) {
+        hideAuthProgress();
         byId('loginBtn').disabled = false;
         confirmAction('Active session found',
           'This account is signed in on ' + res.activeDevice + '. Continue here and sign the other device out?',
@@ -1333,6 +1374,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         return;
       }
       ensureOk(res);
+      setAuthProgress(45, 'Opening session');
       saveSession({
         token: res.sessionToken,
         userId: res.userId,
@@ -1355,11 +1397,16 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           window.AndroidBridge.startFloatingBubble();
         }
       } catch (e) {}
+      setAuthProgress(70, 'Loading workspace');
       byId('password').value = '';
       await refreshBootstrap();
+      setAuthProgress(90, 'Preparing workspace');
       await route(res.isSuperAdmin ? 'platform' : 'overview');
+      setAuthProgress(100, 'Ready');
+      setTimeout(hideAuthProgress, 600);
       toast('Signed in as ' + res.username);
     } catch (error) {
+      setAuthProgress(state.authProgress || 12, 'Sign-in failed', 'error');
       setMsg('loginMsg', error.message || 'Sign in failed.', true);
     } finally {
       byId('loginBtn').disabled = false;
@@ -1372,7 +1419,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       return;
     }
     try { await Cloud.post('logout', {}, { queue: false, bridge: false }); } catch (e) {}
+    stopLiveWindow();
     saveSession(null);
+    hideAuthProgress();
     var bridge = window.AndroidBridge;
     try { if (bridge && typeof bridge.logout === 'function') bridge.logout(); } catch (e) {}
     closeModals();
@@ -1459,8 +1508,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('attBody').innerHTML = state.attendance.map(function (day) {
       var statusClass = day.status === 'Active' ? 'ok' : (day.status === 'LoggedOut' ? 'gray' : 'warn');
       var proof = day.checkInPhoto
-        ? '<button class="ghost sm" data-proof="' + Safe.esc(day.checkInPhoto) + '" data-meta="' + Safe.esc(day.userId + ' � ' + day.date + ' � ' + day.hubName) + '">View</button>'
-        : '<span class="muted">�</span>';
+        ? '<button class="ghost sm" data-proof="' + Safe.esc(day.checkInPhoto) + '" data-meta="' + Safe.esc(day.userId + ' - ' + day.date + ' - ' + day.hubName) + '">View</button>'
+        : '<span class="muted">-</span>';
       return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.userId) + '</td><td>' + Safe.esc(day.hubName) +
         '</td><td>' + Safe.esc(timeOnly(day.checkIn)) + '</td><td>' + Safe.esc(timeOnly(day.checkOut)) + '</td><td>' +
         Safe.esc(minutesToText(day.minutes)) + '</td><td><span class="badge ' + statusClass + '">' + Safe.esc(day.status) +
@@ -1482,7 +1531,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     });
     byId('jobsBody').innerHTML = rows.map(function (task) {
       var elapsed = task.endTime ? minutesToText(task.turnaroundMinutes) :
-        (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '�');
+        (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '-');
       var badge = task.status === 'Completed' ? 'ok' : (task.status === 'InProgress' ? '' : 'warn');
       var overtime = !task.endTime && task.startTime && (Date.now() - new Date(task.startTime).getTime()) > 3600000;
       var lastEdit = task.updatedByName || task.updatedBy || '';
@@ -1490,10 +1539,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         ? '<span class="edit-badge">Edited by <strong>' + Safe.esc(lastEdit) + '</strong>' +
           (task.updatedAt ? ' &middot; ' + Safe.esc(dateTime(task.updatedAt)) : '') + '</span>'
         : '<span class="muted small">&mdash;</span>';
-      return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td>' + Safe.esc(plate(task.vehicleNo) || '�') +
-        '</td><td>' + Safe.esc(task.client || '�') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
+      return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
+        '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
         badge + '">' + Safe.esc(task.status) + '</span>' + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
-        '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '�') +
+        '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '-') +
         '</td><td>' + lastEditHtml + '</td><td><button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button> <button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button></td></tr>';
     }).join('') || '<tr><td colspan="9" class="muted">No job cards.</td></tr>';
   }
@@ -1506,8 +1555,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var flags = (vehicle.anomalyFlags || []).map(function (flag) {
         return '<span class="badge ' + (flag === 'UNKNOWN_VEHICLE' ? 'warn' : 'bad') + '">' + Safe.esc(flag) + '</span>';
       }).join(' ');
-      return '<tr><td><strong>' + Safe.esc(vehicle.display) + '</strong></td><td>' + Safe.esc(vehicle.hub || '�') +
-        '</td><td><span class="badge gray">' + Safe.esc(vehicle.status) + '</span></td><td>' + (flags || '<span class="muted">�</span>') +
+      return '<tr><td><strong>' + Safe.esc(vehicle.display) + '</strong></td><td>' + Safe.esc(vehicle.hub || '-') +
+        '</td><td><span class="badge gray">' + Safe.esc(vehicle.status) + '</span></td><td>' + (flags || '<span class="muted">-</span>') +
         '</td><td><button class="secondary sm" data-vehicle="' + Safe.esc(vehicle.plateNo) + '">Details</button> ' +
         '<button class="secondary sm" data-edit-vehicle="' + Safe.esc(vehicle.plateNo) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="5" class="muted">Registry is empty. Captures will create vehicles automatically.</td></tr>';
@@ -1519,10 +1568,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('captureFeed').innerHTML = state.captures.map(function (capture) {
       var flagged = (capture.anomalyFlags || []).length > 0;
       return '<article class="feed-item ' + (capture.source === 'MANUAL' ? 'manual ' : '') + (flagged ? 'flagged' : '') +
-        '" data-capture="' + Safe.esc(capture.id) + '"><h4>' + Safe.esc(capture.display) + ' � ' +
+        '" data-capture="' + Safe.esc(capture.id) + '"><h4>' + Safe.esc(capture.display) + ' - ' +
         '<span class="badge ' + (capture.source === 'MANUAL' ? 'warn' : 'ok') + '">' + Safe.esc(capture.source) + '</span></h4>' +
-        '<p>' + Safe.esc(dateTime(capture.at)) + ' � ' + Safe.esc(capture.userId) + ' � confidence ' +
-        Safe.esc(Math.round((capture.confidence || 0) * 100)) + '%' + (capture.jobId ? ' � job ' + Safe.esc(capture.jobId) : '') +
+        '<p>' + Safe.esc(dateTime(capture.at)) + ' - ' + Safe.esc(capture.userId) + ' - confidence ' +
+        Safe.esc(Math.round((capture.confidence || 0) * 100)) + '%' + (capture.jobId ? ' - job ' + Safe.esc(capture.jobId) : '') +
         '</p><p>' + Safe.esc((capture.anomalyFlags || []).join(', ')) + '</p></article>';
     }).join('') || '<p class="small muted">No captures yet. Plate scans from the floating window appear here.</p>';
   }
@@ -1531,18 +1580,18 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var data = ensureOk(await Cloud.post('vehicleGet', { plateNo: plateNo }));
     var vehicle = data.vehicle;
     byId('vehDetailCard').classList.remove('hidden');
-    byId('vehDetailTitle').textContent = vehicle.display + ' � ' + (vehicle.make || '') + ' ' + (vehicle.model || '');
+    byId('vehDetailTitle').textContent = vehicle.display + ' - ' + (vehicle.make || '') + ' ' + (vehicle.model || '');
     var jobs = (data.jobs || []).map(function (job) {
-      return '<tr><td>' + Safe.esc(job.jobId) + '</td><td>' + Safe.esc(job.client || '�') + '</td><td>' + Safe.esc(job.status) +
+      return '<tr><td>' + Safe.esc(job.jobId) + '</td><td>' + Safe.esc(job.client || '-') + '</td><td>' + Safe.esc(job.status) +
         '</td><td>' + Safe.esc(dateTime(job.startTime)) + '</td><td><button class="secondary sm" data-edit-job="' +
         Safe.esc(job.jobId) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="5" class="muted">No job cards reference this vehicle.</td></tr>';
     var captures = (data.captures || []).map(function (capture) {
-      return '<li>' + Safe.esc(dateTime(capture.at)) + ' � ' + Safe.esc(capture.source) + ' � ' + Safe.esc(capture.userId) + '</li>';
+      return '<li>' + Safe.esc(dateTime(capture.at)) + ' - ' + Safe.esc(capture.source) + ' - ' + Safe.esc(capture.userId) + '</li>';
     }).join('');
     byId('vehDetail').innerHTML =
-      '<p class="small muted">Primary key: <span class="mono">' + Safe.esc(vehicle.plateNo) + '</span> � status ' +
-      Safe.esc(vehicle.status) + ' � hub ' + Safe.esc(vehicle.hub || '�') + ' � last seen ' + Safe.esc(dateTime(vehicle.lastSeen.at)) + '</p>' +
+      '<p class="small muted">Primary key: <span class="mono">' + Safe.esc(vehicle.plateNo) + '</span> - status ' +
+      Safe.esc(vehicle.status) + ' - hub ' + Safe.esc(vehicle.hub || '-') + ' - last seen ' + Safe.esc(dateTime(vehicle.lastSeen.at)) + '</p>' +
       '<h3 style="font-size:13px;margin:14px 0 8px">Job cards (foreign key)</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Client</th><th>Status</th><th>Start</th><th></th></tr></thead><tbody>' +
       jobs + '</tbody></table></div><h3 style="font-size:13px;margin:14px 0 8px">Captures</h3><ul class="list-plain">' +
       (captures || '<li class="muted">None</li>') + '</ul>';
@@ -1566,9 +1615,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     state.devices = data.devices || [];
     byId('deviceBody').innerHTML = state.devices.map(function (device) {
       var cls = device.batteryPct >= 0 && device.batteryPct < 20 ? 'bad' : (device.batteryPct >= 0 ? 'ok' : 'gray');
-      return '<tr><td>' + Safe.esc(device.userId) + '</td><td class="mono small">' + Safe.esc(device.deviceUUID || '�') +
+      return '<tr><td>' + Safe.esc(device.userId) + '</td><td class="mono small">' + Safe.esc(device.deviceUUID || '-') +
         '</td><td><span class="badge ' + cls + '">' + (device.batteryPct >= 0 ? device.batteryPct + '%' : 'n/a') +
-        '</span></td><td>' + Safe.esc(device.zone || '�') + '</td><td>' + Safe.esc(dateTime(device.at)) + '</td></tr>';
+        '</span></td><td>' + Safe.esc(device.zone || '-') + '</td><td>' + Safe.esc(dateTime(device.at)) + '</td></tr>';
     }).join('') || '<tr><td colspan="5" class="muted">No device telemetry yet.</td></tr>';
 
     var usersResponse = ensureOk(await Cloud.post('getUsers', {}));
@@ -2002,8 +2051,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       return task.status === 'Interrupted' || task.status === 'Delayed';
     });
     byId('retakeBody').innerHTML = retakeable.map(function (task) {
-      return '<tr><td>' + Safe.esc(task.jobId) + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '�') + '</td><td>' +
-        Safe.esc(task.interruptedReason || task.delayReason || '�') + '</td><td><button class="sm" data-resume="' +
+      return '<tr><td>' + Safe.esc(task.jobId) + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') + '</td><td>' +
+        Safe.esc(task.interruptedReason || task.delayReason || '-') + '</td><td><button class="sm" data-resume="' +
         Safe.esc(task.jobId) + '">Resume</button></td></tr>';
     }).join('') || '<tr><td colspan="4" class="muted">No interrupted jobs.</td></tr>';
     openModal('retakeModal');
@@ -2067,7 +2116,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var file = byId('checkInFile').files[0];
     if (!file) { setMsg('checkInMsg', 'Select the attendance photo first.', true); return; }
     byId('checkInSubmit').disabled = true;
-    setMsg('checkInMsg', 'Preparing photo�');
+    setMsg('checkInMsg', 'Preparing photo-');
     try {
       var photo = await readFile(file);
       var position = byId('checkInGeo').checked ? await currentPosition() : null;
@@ -2336,8 +2385,13 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('syncNow').disabled = true;
     try {
       var res = ensureOk(await Cloud.post('broadcastSync', {}));
+      if (!res.delivered) {
+        setMsg('settingsMsg', 'Live channel is disabled. Enable Realtime in Admin > Splash & Integrations.');
+        toast('Live channel is disabled');
+        return;
+      }
       startLiveWindow(res.liveSeconds || 180);
-      setMsg('settingsMsg', (res.delivered ? 'Sync command sent.' : 'Sync recorded; live channel is offline.') + ' Live window opened for 3 minutes.');
+      setMsg('settingsMsg', 'Sync command sent. Live window opened for 3 minutes.');
       toast('Live sync started');
     } catch (error) {
       setMsg('settingsMsg', error.message, true);
@@ -2346,31 +2400,49 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
   }
 
+  function stopLiveWindow() {
+    if (state.liveTimer) {
+      clearInterval(state.liveTimer);
+      state.liveTimer = null;
+    }
+    state.liveTickBusy = false;
+    state.liveUntil = 0;
+    state.livePoints = [];
+    if (byId('mapLiveLabel')) byId('mapLiveLabel').textContent = '';
+  }
+
   function startLiveWindow(seconds) {
     state.liveUntil = Date.now() + (seconds || 180) * 1000;
     if (state.liveTimer) clearInterval(state.liveTimer);
+    state.liveTickBusy = false;
     var tick = async function () {
-      var left = Math.round((state.liveUntil - Date.now()) / 1000);
-      if (left <= 0) {
-        clearInterval(state.liveTimer);
-        state.liveTimer = null;
-        setMsg('settingsMsg', 'Live window closed after 3 minutes.');
-        return;
-      }
-      var mm = Math.floor(left / 60);
-      var ss = left % 60;
-      var label = 'Live sync active \u2014 ' + mm + ':' + (ss < 10 ? '0' : '') + ss + ' remaining';
-      setMsg('settingsMsg', label);
-      if (byId('mapLiveLabel')) byId('mapLiveLabel').textContent = label;
+      if (state.liveTickBusy) return;
+      state.liveTickBusy = true;
       try {
-        if (state.view === 'overview') await loadOverview();
-        else if (state.view === 'attendance') await loadAttendance();
-        else if (state.view === 'jobs') await loadJobs();
-        else if (state.view === 'team') await loadTeam();
-        else if (state.view === 'reports') await loadReports();
-        else if (state.view === 'map') await loadLiveOverlay();
-      } catch (error) {
-        // polling is best effort during the window
+        var left = Math.round((state.liveUntil - Date.now()) / 1000);
+        if (left <= 0) {
+          stopLiveWindow();
+          setMsg('settingsMsg', 'Live window closed after 3 minutes.');
+          renderMap();
+          return;
+        }
+        var mm = Math.floor(left / 60);
+        var ss = left % 60;
+        var label = 'Live sync active \u2014 ' + mm + ':' + (ss < 10 ? '0' : '') + ss + ' remaining';
+        setMsg('settingsMsg', label);
+        if (byId('mapLiveLabel')) byId('mapLiveLabel').textContent = label;
+        try {
+          if (state.view === 'overview') await loadOverview();
+          else if (state.view === 'attendance') await loadAttendance();
+          else if (state.view === 'jobs') await loadJobs();
+          else if (state.view === 'team') await loadTeam();
+          else if (state.view === 'reports') await loadReports();
+          else if (state.view === 'map') await loadLiveOverlay();
+        } catch (error) {
+          // polling is best effort during the window
+        }
+      } finally {
+        state.liveTickBusy = false;
       }
     };
     tick();
@@ -2466,8 +2538,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
     function card(person, depth) {
       var name = person.fullName || person.username || person.userId;
-      var loc = person.lastLocation;
-      var place = loc ? (loc.address || (loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5))) : 'No location reported';
+      var loc = person.lastLocation || null;
+      var rawLat = loc ? Number(loc.lat) : NaN;
+      var rawLng = loc ? Number(loc.lng) : NaN;
+      var hasCoords = isFinite(rawLat) && isFinite(rawLng) && !(rawLat === 0 && rawLng === 0);
+      var address = loc && loc.address ? String(loc.address) : '';
+      var place = address || (hasCoords ? (rawLat.toFixed(5) + ', ' + rawLng.toFixed(5)) : 'No location reported');
       var meta = [
         person.userId,
         person.hub || '',
@@ -2480,8 +2556,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var callBtn = person.phone && person.phone.indexOf('*') < 0
         ? '<button class="secondary sm" type="button" data-team-call="' + Safe.esc(person.phone) + '">Call</button>'
         : '';
-      var navBtn = loc
-        ? '<button class="sm" type="button" data-team-nav="' + loc.lat + ',' + loc.lng + '" data-team-label="' + Safe.esc(name) + '">Navigate</button>'
+      var navBtn = (hasCoords || address)
+        ? '<button class="sm" type="button" data-team-nav="' + (hasCoords ? rawLat + ',' + rawLng : '') + '" data-team-address="' + Safe.esc(address) + '" data-team-label="' + Safe.esc(name) + '">Navigate</button>'
         : '';
       var children = (person.children || []).map(function (child) { return card(child, depth + 1); }).join('');
       return '<div class="team-card' + (depth === 0 ? ' open' : '') + '">' +
@@ -2513,12 +2589,32 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     window.location.href = 'tel:' + phone;
   }
 
-  function navigateToTeamMember(lat, lng, label) {
-    if (window.AndroidBridge && typeof window.AndroidBridge.openNativeMaps === 'function') {
-      window.AndroidBridge.openNativeMaps(Number(lat), Number(lng), label || '');
+  function navigateToTeamMember(lat, lng, label, address) {
+    var latValue = Number(lat);
+    var lngValue = Number(lng);
+    var hasCoords = lat !== '' && lng !== '' && isFinite(latValue) && isFinite(lngValue) &&
+      !(latValue === 0 && lngValue === 0);
+    var place = String(address || '').trim();
+    var bridge = window.AndroidBridge;
+    if (bridge) {
+      if (hasCoords && typeof bridge.openNativeMaps === 'function') {
+        bridge.openNativeMaps(latValue, lngValue, label || '');
+        return;
+      }
+      if (!hasCoords && place && typeof bridge.openNativeAddress === 'function') {
+        bridge.openNativeAddress(place, label || '');
+        return;
+      }
+    }
+    if (hasCoords) {
+      window.open('https://www.openstreetmap.org/?mlat=' + encodeURIComponent(latValue) +
+        '&mlon=' + encodeURIComponent(lngValue) + '#map=16/' + encodeURIComponent(latValue) +
+        '/' + encodeURIComponent(lngValue), '_blank', 'noopener');
       return;
     }
-    window.open('https://www.openstreetmap.org/?mlat=' + encodeURIComponent(lat) + '&mlon=' + encodeURIComponent(lng) + '#map=16/' + encodeURIComponent(lat) + '/' + encodeURIComponent(lng), '_blank');
+    if (place) {
+      window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(place), '_blank', 'noopener');
+    }
   }
 
   async function loadReports() {
@@ -2595,13 +2691,21 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (!map) return;
     state.mapLayer.clearLayers();
     var grouped = {};
-    (state.mapPoints || []).forEach(function (point) {
+    var seen = {};
+    (state.mapPoints || []).concat(state.livePoints || []).forEach(function (point) {
+      var key = point.userId + '|' + point.at + '|' + point.lat + '|' + point.lng;
+      if (seen[key]) return;
+      seen[key] = true;
       if (!grouped[point.userId]) grouped[point.userId] = [];
       grouped[point.userId].push(point);
     });
     var bounds = [];
     Object.keys(grouped).forEach(function (userId) {
-      var points = grouped[userId].filter(function (p) { return Number(p.lat) && Number(p.lng); });
+      var points = grouped[userId].filter(function (p) {
+        var lat = Number(p.lat);
+        var lng = Number(p.lng);
+        return isFinite(lat) && isFinite(lng) && !(lat === 0 && lng === 0);
+      }).sort(function (a, b) { return String(a.at).localeCompare(String(b.at)); });
       if (!points.length) return;
       var coords = points.map(function (p) { return [Number(p.lat), Number(p.lng)]; });
       coords.forEach(function (c) { bounds.push(c); });
@@ -2627,6 +2731,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   }
 
   async function loadMap() {
+    stopLiveWindow();
     var date = byId('mapDate').value || Safe.today();
     var userId = byId('mapUser').value.trim();
     var data = ensureOk(await Cloud.post('getTelemetry', { date: date, userId: userId, limit: 2000 }));
@@ -2639,6 +2744,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('mapSync').disabled = true;
     try {
       var res = ensureOk(await Cloud.post('broadcastSync', {}));
+      if (!res.delivered) {
+        toast('Live channel is disabled. Enable Realtime in Admin.');
+        return;
+      }
       startLiveWindow(res.liveSeconds || 180);
       await loadLiveOverlay();
       toast('Live sync started');
@@ -2652,20 +2761,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function loadLiveOverlay() {
     try {
       var data = ensureOk(await Cloud.post('getLiveLocations', {}));
-      var live = data.points || [];
-      var existing = state.mapPoints || [];
-      var seen = {};
-      existing.forEach(function (point) {
-        seen[point.userId + '|' + point.at + '|' + point.lat + '|' + point.lng] = true;
-      });
-      live.forEach(function (point) {
-        var key = point.userId + '|' + point.at + '|' + point.lat + '|' + point.lng;
-        if (!seen[key]) { existing.push(point); seen[key] = true; }
-      });
-      state.mapPoints = existing;
+      state.livePoints = data.points || [];
       renderMap();
     } catch (error) {
-      await loadMap();
+      // Keep the existing history; the next live tick retries.
     }
   }
 
@@ -2688,7 +2787,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       return '<option value="' + Safe.esc(r.name) + '"></option>';
     }).join('');
     if (staff) staff.innerHTML = state.users.map(function (u) {
-      return '<option value="' + Safe.esc(u.userId) + '">' + Safe.esc(u.username + ' � ' + u.role) + '</option>';
+      return '<option value="' + Safe.esc(u.userId) + '">' + Safe.esc(u.username + ' - ' + u.role) + '</option>';
     }).join('');
     var hubOptions = state.masters.hubs.map(function (h) {
       return '<option value="' + Safe.esc(h.hubId) + '">' + Safe.esc(h.name) + '</option>';
@@ -2696,7 +2795,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var selector = byId('jobClientSel');
     if (selector) {
       selector.innerHTML = '<option value="">- none -</option>' + state.masters.clients.map(function (c) {
-        return '<option value="' + Safe.esc(c.clientId) + '">' + Safe.esc(c.name + ' � ' + (c.address || '')) + '</option>';
+        return '<option value="' + Safe.esc(c.clientId) + '">' + Safe.esc(c.name + ' - ' + (c.address || '')) + '</option>';
       }).join('');
     }
     var hubDraft = byId('draftHubRegion');
@@ -2840,7 +2939,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('seatHint').textContent = seats.used + ' of ' + seats.max + ' seats in use.';
     if (seats.used >= seats.max) {
       byId('cuSave').disabled = true;
-      byId('seatHint').textContent += ' No seats left � suspend an account or raise the limit.';
+      byId('seatHint').textContent += ' No seats left - suspend an account or raise the limit.';
     } else {
       byId('cuSave').disabled = false;
     }
@@ -2950,7 +3049,13 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         var nav = event.target.closest ? event.target.closest('[data-team-nav]') : null;
         if (nav) {
           var parts = String(nav.getAttribute('data-team-nav') || '').split(',');
-          if (parts.length === 2) navigateToTeamMember(parts[0], parts[1], nav.getAttribute('data-team-label') || '');
+          navigateToTeamMember(
+            parts[0] || '',
+            parts[1] || '',
+            nav.getAttribute('data-team-label') || '',
+            nav.getAttribute('data-team-address') || ''
+          );
+          return;
         }
       });
     }
@@ -3104,12 +3209,17 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('mapDate')) byId('mapDate').value = Safe.today();
     renderSession();
 
+    var showBootProgress = !state.session;
+    if (showBootProgress) setAuthProgress(10, 'Connecting to cloud');
+
     try {
       var splash = await Cloud.post('getSplashMetadata', {}, { queue: false, bridge: false });
       if (splash && splash.plateFormat) state.plateFormat = splash.plateFormat;
       setNet(true, 'Cloud service reachable');
+      if (showBootProgress) setAuthProgress(100, 'Ready');
     } catch (error) {
-      setNet(false, 'Offline � queued changes will sync later');
+      setNet(false, 'Offline - queued changes will sync later');
+      if (showBootProgress) setAuthProgress(10, 'Cloud unavailable', 'error');
     }
 
     if (state.session) {
@@ -3126,6 +3236,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         }
       }
     }
+    if (showBootProgress) setTimeout(hideAuthProgress, 900);
     Cloud.flush();
     signalPortalReady();
   }
