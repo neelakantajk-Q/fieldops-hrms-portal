@@ -1997,7 +1997,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('userRegion')) byId('userRegion').value = user.region || '';
     if (byId('userReportsTo')) byId('userReportsTo').value = user.reportsTo || '';
     byId('userRights').value = user.moduleRights || '';
-    byId('userPhone').value = '';
+    byId('userPhone').value = user.phone || '';
     byId('userPassword').value = '';
     if (byId('userPhoto')) byId('userPhoto').value = '';
     if (byId('userPhotoPreview')) {
