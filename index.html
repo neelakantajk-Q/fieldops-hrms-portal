@@ -265,7 +265,24 @@
   .cam-shutter{width:82px;height:82px;min-width:82px;border-radius:50%;border:4px solid #fff;background:var(--primary);box-shadow:0 0 0 6px rgba(255,255,255,.18);font-size:0;padding:0}
   .cam-round{width:82px;height:82px;min-width:82px;border-radius:50%;padding:0;font-size:12px;font-weight:700}
   .modal.camera #attCamMsg{margin:0 14px 10px;flex:0 0 auto}
-  @media (max-width:768px){.modal.camera .cam-video{height:100%;min-height:0}}</style>
+  @media (max-width:768px){.modal.camera .cam-video{height:100%;min-height:0}}  #view-admin .card > h3, #view-masters .card > h3{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none}
+  #view-admin .card > h3::after, #view-masters .card > h3::after{content:'\25be';font-size:11px;color:var(--muted);transition:transform .2s}
+  #view-admin .card.closed > *:not(h3), #view-masters .card.closed > *:not(h3){display:none}
+  #view-admin .card.closed > h3::after, #view-masters .card.closed > h3::after{transform:rotate(-90deg)}
+  .rights-box{display:grid;gap:8px;margin-top:4px}
+  .right-item{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#f8fafc}
+  .right-item input{margin-top:3px}
+  .right-item strong{display:block;font-size:12px;color:var(--ink)}
+  .right-item span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+  .audit-tree{max-height:60vh;overflow:auto;padding-left:4px}
+  .audit-node{position:relative;margin:0 0 12px 18px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:10px;background:#fff}
+  .audit-node::before{content:'';position:absolute;left:-18px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 4px #eef7d5}
+  .audit-node::after{content:'';position:absolute;left:-13px;top:-12px;bottom:-12px;width:2px;background:var(--line)}
+  .audit-node:first-child::after{top:18px}
+  .audit-node:last-child::after{bottom:calc(100% - 18px)}
+  .audit-node h4{margin:0 0 3px;font-size:12.5px}
+  .audit-node p{margin:0;font-size:11px;color:var(--muted)}
+  .audit-flow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}</style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -376,12 +393,12 @@
         <div class="page-head"><h2>Job Cards</h2><p>Vehicle number is the foreign key to the fleet registry.</p></div>
         <div class="toolbar">
           <div class="field"><label for="jobStatus">Status</label><select id="jobStatus"><option value="">All</option><option>InProgress</option><option>Delayed</option><option>Interrupted</option><option>HoldRequested</option><option>OnHold</option><option>Completed</option><option>Cancelled</option></select></div>
-          <div class="field"><label for="jobSearch">Vehicle / client</label><input id="jobSearch" placeholder="KA01AB1234"></div>
+          <div class="field"><label for="jobSearch">Job / complaint / vehicle</label><input id="jobSearch" placeholder="Job no, complaint no or plate"></div>
           <button class="secondary" id="jobRefresh" type="button">Refresh</button>
           <button id="jobNew" type="button">New Job</button>
           <button class="secondary" id="jobRetake" type="button">Retake interrupted</button>
         </div>
-        <div class="card"><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Client</th><th>Assigned</th><th>Status</th><th>Elapsed</th><th>Source</th><th>Last edit</th><th></th></tr></thead><tbody id="jobsBody"></tbody></table></div></div>
+        <div class="card"><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>Client</th><th>Assigned</th><th>Status</th><th>Elapsed</th><th>Source</th><th>Last edit</th><th></th></tr></thead><tbody id="jobsBody"></tbody></table></div></div>
       </section>
 
       <section id="view-pending" class="view hidden">
@@ -466,7 +483,7 @@
         </div>
         <div class="card"><h3>Daily attendance</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Shifts</th><th>Hours</th><th>Mock</th></tr></thead><tbody id="repDaily"></tbody></table></div></div>
         <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
-        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
+        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
         <div class="card"><h3>Engineer productivity</h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Completed</th><th>Hours</th></tr></thead><tbody id="repEngineers"></tbody></table></div></div>
       </section>
 
@@ -539,7 +556,7 @@
 
         <div class="card"><h3>Devices &amp; Battery</h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Device</th><th>Battery</th><th>Zone</th><th>Last fix</th></tr></thead><tbody id="deviceBody"></tbody></table></div></div>
 
-        <div class="card"><h3>Users <span class="small muted" id="seatUsage"></span> <button class="sm" id="addUserBtn" type="button">+ Add user</button></h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Hub</th><th>Region</th><th>Reports to</th><th>Level</th><th>Rights</th><th>Check-in</th><th></th></tr></thead><tbody id="userBody"></tbody></table></div></div>
+        <div class="card"><h3>Users <span class="small muted" id="seatUsage"></span> <button class="sm" id="addUserBtn" type="button">+ Add user</button></h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Category</th><th>Hub</th><th>Mode</th><th>Region</th><th>Reports to</th><th>Level</th><th>Rights</th><th>Check-in</th><th></th></tr></thead><tbody id="userBody"></tbody></table></div></div>
 
         <div class="card">
           <h3>Hierarchy &amp; Levels</h3>
@@ -566,22 +583,6 @@
             <button class="secondary" id="adminBroadcastBtn" type="button">Broadcast</button>
           </div>
           <div id="alertMsg" class="msg hidden"></div>
-        </div>
-
-        <div class="card">
-          <h3>Splash &amp; Integrations</h3>
-          <div class="grid-2">
-            <div class="field"><label for="setSplashUrl">Splash image URL</label><input id="setSplashUrl" placeholder="https://-"></div>
-            <div class="field"><label for="setSplashMsg">Splash message</label><input id="setSplashMsg" placeholder="Loading portal-"></div>
-            <div class="field"><label for="setSymbols">Splash animation</label><select id="setSplashAnim"><option value="anim-breathing">Breathing</option><option value="anim-fade">Fade</option><option value="anim-pulse">Pulse</option><option value="anim-none">None</option></select></div>
-            <div class="field hidden"><label for="setFirebase">Live sync endpoint</label><input id="setFirebase" placeholder="https://sync.yourbrand.com/"></div>
-          </div>
-          <p class="small muted">Stack endpoints are managed by the product owner in the Platform Console.</p>
-          <div class="modal-actions" style="justify-content:flex-start">
-            <button class="secondary" id="saveSplash" type="button">Save splash</button>
-            <button class="secondary hidden" id="saveFirebase" type="button">Save channel</button>
-          </div>
-          <div id="integrationMsg" class="msg hidden"></div>
         </div>
 
         <div class="card">
@@ -658,6 +659,8 @@
             <div class="field"><label for="pcApi">API endpoint</label><input id="pcApi" placeholder="https://app.brand.com/api"></div>
             <div class="field"><label for="pcLive">Live sync endpoint</label><input id="pcLive" placeholder="https://live.yourbrand.com/"></div>
             <div class="field"><label for="pcAssets">Asset base</label><input id="pcAssets" placeholder="https://app.brand.com/media/"></div>
+            <div class="field"><label for="pcMapTiles">Licensed map tile URL</label><input id="pcMapTiles" placeholder="https://tiles.provider.com/{z}/{x}/{y}.png"></div>
+            <div class="field"><label for="pcMapAttribution">Map attribution</label><input id="pcMapAttribution" placeholder="Tiles &copy; Provider"></div>
             <div class="field"><label for="pcRealtime">Real-time channel</label><select id="pcRealtime"><option value="false">Disabled</option><option value="true">Enabled</option></select></div>
           </div>
           <button id="pcStackSave" type="button">Save stack</button>
@@ -728,6 +731,7 @@
     <h3 id="jobModalTitle">Job Card</h3>
     <input type="hidden" id="jobId">
     <div class="grid-2">
+      <div class="field"><label for="jobComplaint">Complaint number</label><input id="jobComplaint" readonly placeholder="Auto-generated"></div>
       <div class="field"><label for="jobClientSel">Client site</label><select id="jobClientSel"><option value="">- none -</option></select></div>
       <div class="field"><label for="jobClient">Client</label><input id="jobClient"></div>
       <div class="field"><label for="jobHub">Hub</label><input id="jobHub" placeholder="Central Hub"></div>
@@ -863,6 +867,22 @@
   </div>
 </div>
 
+<!-- Supervisor hold decision -->
+<div class="modal-shell hidden" id="holdDecisionModal">
+  <div class="modal">
+    <h3 id="holdDecisionTitle">Hold decision</h3>
+    <input type="hidden" id="hdJobId"><input type="hidden" id="hdAction">
+    <div class="field"><label for="hdNote">Note</label><textarea id="hdNote" rows="2"></textarea></div>
+    <div class="field"><label for="hdReassign">Reassign to technician</label><select id="hdReassign"><option value="">Keep current technician</option></select></div>
+    <div class="field"><label for="hdFiles">Client approval / reassignment proof</label><input id="hdFiles" type="file" accept="image/*,application/pdf" multiple><div class="small muted">Images or PDF, multiple files allowed.</div></div>
+    <div id="holdDecisionMsg" class="msg hidden"></div>
+    <div class="modal-actions">
+      <button class="secondary" data-close="holdDecisionModal" type="button">Cancel</button>
+      <button id="hdSubmit" type="button">Submit decision</button>
+    </div>
+  </div>
+</div>
+
 <!-- User editor -->
 <div class="modal-shell hidden" id="userModal">
   <div class="modal">
@@ -870,13 +890,18 @@
     <div class="grid-2">
       <div class="field"><label for="userRole">Role</label><select id="userRole"><option>Technician</option><option>Supervisor</option><option>Moderator</option><option>Administrator</option></select></div>
       <div class="field"><label for="userStatus">Status</label><select id="userStatus"><option>Active</option><option>Suspended</option></select></div>
-      <div class="field"><label for="userHub">Hub</label><input id="userHub"></div>
+      <div class="field"><label for="userBusinessCategory">Business category</label><select id="userBusinessCategory"><option value="">- none -</option><option>B2B</option><option>B2C</option><option>Both</option></select></div>
+      <div class="field"><label for="userWorkMode">Work mode</label><select id="userWorkMode"><option>Fixed</option><option>Transit</option></select></div>
+      <div class="field"><label for="userHub">Hub</label><input id="userHub" list="hubList"></div>
       <div class="field"><label for="userRegion">Region</label><input id="userRegion" list="regionList" placeholder="Select or type"></div>
       <div class="field"><label for="userReportsTo">Reports to (user ID)</label><input id="userReportsTo" list="peopleList" placeholder="Supervisor user ID"></div>
       <div class="field"><label for="userLevelMode">Supervisor level mode</label><select id="userLevelMode"><option value="AUTO">Auto</option><option value="MANUAL">Manual</option></select></div>
       <div class="field"><label for="userLevel">Supervisor level</label><input id="userLevel" type="number" min="0" max="9" placeholder="Auto"></div>
       <div class="field"><label><input type="checkbox" id="userCanApprove" style="width:auto"> Can approve holds</label></div>
-      <div class="field"><label for="userRights">Module rights</label><input id="userRights" placeholder="Tasks,Attendance,Vehicles"></div>
+      <div class="field"><label for="userShiftStart">Shift start</label><input id="userShiftStart" type="time"></div>
+      <div class="field"><label for="userShiftEnd">Shift end</label><input id="userShiftEnd" type="time"></div>
+      <div class="field"><label><input type="checkbox" id="userGeofenceEnabled" style="width:auto"> Geofence enabled</label></div>
+      <div class="field" style="grid-column:1/-1"><label>Module access</label><div id="userRightsBox" class="rights-box"></div></div>
       <div class="field"><label for="userPassword">Set new password</label><input id="userPassword" type="password" placeholder="Leave blank to keep"></div>
       <div class="field"><label for="userPhone">Phone (password reset)</label><input id="userPhone" placeholder="Full number"></div>
       <div class="field"><label for="userPhoto">Profile photo</label><input id="userPhoto" type="file" accept="image/*"><div id="userPhotoPreview" class="small muted" style="margin-top:6px">No photo uploaded</div></div>
@@ -890,7 +915,27 @@
   </div>
 </div>
 
+<!-- Allot technician -->
+<div class="modal-shell hidden" id="allotModal">
+  <div class="modal">
+    <h3 id="allotTitle">Allot technician</h3>
+    <input type="hidden" id="allotUsername">
+    <div class="grid-2">
+      <div class="field"><label for="allotHub">Hub</label><select id="allotHub"></select></div>
+      <div class="field"><label for="allotWorkMode">Work mode</label><select id="allotWorkMode"><option>Fixed</option><option>Transit</option></select></div>
+      <div class="field"><label for="allotShiftStart">Shift start</label><input id="allotShiftStart" type="time"></div>
+      <div class="field"><label for="allotShiftEnd">Shift end</label><input id="allotShiftEnd" type="time"></div>
+    </div>
+    <div class="field"><label><input type="checkbox" id="allotGeofence" style="width:auto"> Geofence enabled</label></div>
+    <div id="allotMsg" class="msg hidden"></div>
+    <div class="modal-actions">
+      <button class="secondary" data-close="allotModal" type="button">Cancel</button>
+      <button id="allotSave" type="button">Save allotment</button>
+    </div>
+  </div>
+</div>
 <datalist id="regionList"></datalist>
+<datalist id="hubList"></datalist>
 <datalist id="staffList"></datalist>
 <datalist id="peopleList"></datalist>
 
@@ -904,13 +949,15 @@
       <div class="field"><label for="cuUsername">Username</label><input id="cuUsername" placeholder="tech.one"></div>
       <div class="field"><label for="cuPhone">Phone (password reset)</label><input id="cuPhone" inputmode="tel" placeholder="Full number"></div>
       <div class="field"><label for="cuRole">Role</label><select id="cuRole"><option>Technician</option><option>Supervisor</option><option>Moderator</option><option>Administrator</option></select></div>
-      <div class="field"><label for="cuHub">Hub</label><input id="cuHub" placeholder="Central Hub"></div>
+      <div class="field"><label for="cuBusinessCategory">Business category</label><select id="cuBusinessCategory"><option value="">- none -</option><option>B2B</option><option>B2C</option><option>Both</option></select></div>
+      <div class="field"><label for="cuWorkMode">Work mode</label><select id="cuWorkMode"><option>Fixed</option><option>Transit</option></select></div>
+      <div class="field"><label for="cuHub">Hub</label><input id="cuHub" list="hubList" placeholder="Central Hub"></div>
       <div class="field"><label for="cuRegion">Region</label><input id="cuRegion" list="regionList" placeholder="Select or type"></div>
       <div class="field"><label for="cuReportsTo">Reports to (user ID)</label><input id="cuReportsTo" list="peopleList" placeholder="Supervisor user ID"></div>
       <div class="field"><label for="cuPassword">Initial password</label><input id="cuPassword" type="password" placeholder="At least 8 characters"></div>
       <div class="field"><label for="cuPhoto">Profile photo</label><input id="cuPhoto" type="file" accept="image/*"></div>
     </div>
-    <div class="field"><label for="cuRights">Module rights</label><input id="cuRights" value="Tasks,Attendance,Vehicles,Bubble"></div>
+    <div class="field"><label>Module access</label><div id="cuRightsBox" class="rights-box"></div></div>
     <div id="cuMsg" class="msg hidden"></div>
     <div class="modal-actions">
       <button class="secondary" data-close="createUserModal" type="button">Cancel</button>
@@ -1009,6 +1056,9 @@
     mapUserFilter: '',
     mapInstance: null,
     mapLayer: null,
+    mapTiles: '',
+    mapAttribution: 'Tiles &copy; Esri',
+    mapTileErrors: 0,
     people: [],
     pending: { pending: [], onHold: [], history: [], analytics: {} },
     pendingTab: 'pending',
@@ -1468,7 +1518,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       byId('sidebar').classList.remove('open');
       byId('backdrop').classList.add('hidden');
     }
-    byId('userChip').textContent = signedIn ? (state.session.username + ' Â· ' + state.session.role) : 'Signed out';
+    byId('userChip').textContent = signedIn ? ((state.session.fullName || state.session.username) + ' \u00b7 ' + state.session.role) : 'Signed out';
     var canLogout = signedIn && state.session.allowLogout !== false;
     byId('logoutBtn').classList.toggle('hidden', !canLogout);
     byId('exportBtn').classList.toggle('hidden', !signedIn);
@@ -1494,7 +1544,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     state.plateFormat = (res.settings && res.settings.plateFormat) || res.plateFormat || 'compact';
     if (res.session) {
       state.session.checkedIn = res.session.checkedIn;
-      state.session.role = res.session.role;
+      state.session.fullName = res.session.fullName || state.session.fullName || '';
+      state.session.businessCategory = res.session.businessCategory || state.session.businessCategory || '';
       state.session.hub = res.session.hub;
       state.session.scope = res.session.scope;
       state.session.moduleRights = res.session.moduleRights;
@@ -1541,6 +1592,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         token: res.sessionToken,
         userId: res.userId,
         username: res.username,
+        fullName: res.fullName || '',
+        businessCategory: res.businessCategory || '',
         role: res.role,
         hub: res.hub,
         scope: res.scope,
@@ -1708,15 +1761,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function loadJobs() {
     var data = ensureOk(await Cloud.post('getTasks', {
       status: byId('jobStatus').value,
-      vehicleNo: byId('jobSearch').value.trim()
+      query: byId('jobSearch').value.trim()
     }));
     state.tasks = data.tasks || [];
-    var query = byId('jobSearch').value.trim().toUpperCase();
-    var rows = state.tasks.filter(function (task) {
-      if (!query) return true;
-      return String(task.vehicleDisplay || '').toUpperCase().indexOf(query) >= 0 ||
-        String(task.client || '').toUpperCase().indexOf(query) >= 0;
-    });
+    var rows = state.tasks;
     byId('jobsBody').innerHTML = rows.map(function (task) {
       var elapsed = task.endTime ? minutesToText(task.turnaroundMinutes) :
         (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '-');
@@ -1734,12 +1782,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         '<button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button> ' +
         '<button class="ghost sm" data-job-proofs="' + Safe.esc(task.jobId) + '">Proofs</button>';
       if (task.status === 'InProgress' || task.status === 'Delayed') actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
-      return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
+      return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td class="small mono">' + Safe.esc(task.complaintNo || '-') + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
         '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
         badge + '">' + Safe.esc(task.status) + '</span>' + holdBadge + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
         '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '-') +
         '</td><td>' + lastEditHtml + '</td><td>' + actions + '</td></tr>';
-    }).join('') || '<tr><td colspan="9" class="muted">No job cards.</td></tr>';
+    }).join('') || '<tr><td colspan="10" class="muted">No job cards.</td></tr>';
   }
 
   async function loadVehicles() {
@@ -1841,17 +1889,19 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       return '<tr><td><div style="display:flex;align-items:center;gap:8px">' + avatar + '<div><strong>' + Safe.esc(label) +
         '</strong><div class="small muted">' + Safe.esc(user.username) + ' \u00b7 ' + Safe.esc(user.userId) + '</div></div></div></td><td>' +
         Safe.esc(user.role) + '</td><td><span class="badge ' + (user.status === 'Active' ? 'ok' : 'bad') + '">' + Safe.esc(user.status) +
-        '</span></td><td>' + Safe.esc(user.assignedHub || '-') + '</td><td>' + Safe.esc(user.region || '-') + '</td><td class="small">' +
+        '</span></td><td>' + Safe.esc(user.businessCategory || '-') + '</td><td>' + Safe.esc(user.assignedHub || '-') + '</td><td>' + Safe.esc(user.workMode || '-') + '</td><td>' + Safe.esc(user.region || '-') + '</td><td class="small">' +
         Safe.esc(user.reportsTo || '-') + '</td><td class="small">L' + Safe.esc(user.supervisorLevel || 0) + '</td><td class="small">' + Safe.esc(user.moduleRights) + '</td><td class="small">' +
         Safe.esc(timeOnly(user.checkInAt) || '-') + '</td><td><button class="secondary sm" data-edit-user="' + Safe.esc(user.username) + '">Edit</button> ' +
+        '<button class="sm" data-allot-user="' + Safe.esc(user.username) + '">Allot</button> ' +
+        '<button class="ghost sm" data-audit-entity="' + Safe.esc('User|' + user.userId + '|' + label) + '">Audit</button> ' +
         '<button class="' + (user.status === 'Active' ? 'danger' : '') + ' sm" data-toggle-user="' + Safe.esc(user.username + '|' + (user.status === 'Active' ? 'Suspended' : 'Active')) + '">' +
         (user.status === 'Active' ? 'Disable' : 'Enable') + '</button></td></tr>';
-    }).join('') || '<tr><td colspan="10" class="muted">No users.</td></tr>';
+    }).join('') || '<tr><td colspan="12" class="muted">No users.</td></tr>';
     fillDatalists();
     applyAlertSettings(data.settings || {});
-    loadHierarchy();
+    loadHierarchy(users);
+    initExpandableCards_();
   }
-
   async function loadPlatform() {
     var data = ensureOk(await Cloud.post('getPlatformSettings', {}));
     state.platformSettings = data;
@@ -1873,6 +1923,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('pcApi')) byId('pcApi').value = stack.apiEndpoint || '';
     if (byId('pcLive')) byId('pcLive').value = stack.firebaseDbUrl || '';
     if (byId('pcAssets')) byId('pcAssets').value = stack.assetBase || '';
+    if (byId('pcMapTiles')) byId('pcMapTiles').value = stack.mapTiles || '';
+    if (byId('pcMapAttribution')) byId('pcMapAttribution').value = stack.mapAttribution || '';
     if (byId('pcRealtime')) byId('pcRealtime').value = String(Boolean(stack.realtimeEnabled));
   }
 
@@ -1912,7 +1964,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       ensureOk(await Cloud.post('updatePlatformUrls', {
         apiEndpoint: byId('pcApi').value.trim(),
         liveSyncUrl: byId('pcLive').value.trim(),
-        assetBase: byId('pcAssets').value.trim()
+        assetBase: byId('pcAssets').value.trim(),
+        mapTiles: byId('pcMapTiles') ? byId('pcMapTiles').value.trim() : '',
+        mapAttribution: byId('pcMapAttribution') ? byId('pcMapAttribution').value.trim() : ''
       }));
       ensureOk(await Cloud.post('updateFirebaseSettings', {
         firebaseDbUrl: byId('pcLive').value.trim(),
@@ -2041,21 +2095,54 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   }
 
   /* ------------------------------------------------------------------ actions */
+  function auditNodeHtml_(entry) {
+    var actor = entry.username || entry.userId || 'System';
+    var meta = [dateTime(entry.timestamp), entry.actorRole || '', entry.actorLevel ? ('Actor L' + entry.actorLevel) : '', entry.approvalLevel ? ('Approval L' + entry.approvalLevel) : ''].filter(Boolean).join(' \u00b7 ');
+    return '<div class="audit-node"><h4>' + Safe.esc(entry.activityType || 'Action') + ' \u00b7 ' + Safe.esc(actor) + '</h4><p>' + Safe.esc(meta) + '</p>' +
+      (entry.details ? '<p>' + Safe.esc(entry.details) + '</p>' : '') +
+      (entry.disruption || entry.disruptionFlag ? '<p><span class="badge bad">Flagged</span></p>' : '') + '</div>';
+  }
+
+  function auditFlowHtml_(entries) {
+    var steps = (entries || []).filter(function (entry) {
+      var type = String(entry.activityType || '');
+      return ['JobCreated', 'JobHoldRequested', 'JobHoldApproved', 'JobHoldRejected', 'JobHoldReleased', 'JobResumed', 'JobUpdated'].indexOf(type) >= 0;
+    }).map(function (entry) {
+      return '<span class="chip">' + Safe.esc(entry.activityType) + '</span>';
+    });
+    return steps.length ? '<div class="audit-flow">' + steps.join('<span class="muted">\u2192</span>') + '</div>' : '';
+  }
+
+  function renderAuditTree_(title, entries) {
+    byId('jobAuditTitle').textContent = title || 'Audit timeline';
+    byId('jobAuditList').className = 'audit-tree';
+    var list = entries || [];
+    byId('jobAuditList').innerHTML = auditFlowHtml_(list) + (list.map(auditNodeHtml_).join('') || '<p class="small muted">No audit entries yet.</p>');
+  }
+
   async function openJobAudit(jobId) {
-    byId('jobAuditTitle').textContent = 'Audit Â· ' + jobId;
-    byId('jobAuditList').innerHTML = '<li class="audit-item"><p>Loading auditâ€¦</p></li>';
+    byId('jobAuditTitle').textContent = 'Audit \u00b7 ' + jobId;
+    byId('jobAuditList').className = 'audit-tree';
+    byId('jobAuditList').innerHTML = '<p class="small muted">Loading audit...</p>';
     openModal('jobAuditModal');
     try {
       var data = ensureOk(await Cloud.post('getJobAudit', { jobId: jobId }));
-      var rows = data.audit || [];
-      byId('jobAuditList').innerHTML = rows.map(function (entry) {
-        return '<li class="audit-item"><h4>' + Safe.esc(entry.activityType) + ' Â· ' +
-          Safe.esc(entry.username || entry.userId || 'â€”') + '</h4><p>' + Safe.esc(dateTime(entry.timestamp)) +
-          (entry.details ? ' Â· ' + Safe.esc(entry.details) : '') + '</p>' +
-          (entry.disruption ? '<p><span class="badge bad">Flagged</span></p>' : '') + '</li>';
-      }).join('') || '<li class="audit-item"><p>No audit entries yet.</p></li>';
+      renderAuditTree_('Chronology \u00b7 ' + jobId, data.audit || []);
     } catch (error) {
-      byId('jobAuditList').innerHTML = '<li class="audit-item"><p>' + Safe.esc(error.message) + '</p></li>';
+      byId('jobAuditList').innerHTML = '<p class="small muted">' + Safe.esc(error.message) + '</p>';
+    }
+  }
+
+  async function openEntityAudit(entityType, entityId, title) {
+    openModal('jobAuditModal');
+    byId('jobAuditTitle').textContent = 'Audit \u00b7 ' + (title || entityId);
+    byId('jobAuditList').className = 'audit-tree';
+    byId('jobAuditList').innerHTML = '<p class="small muted">Loading audit...</p>';
+    try {
+      var data = ensureOk(await Cloud.post('getAuditLogs', { entityType: entityType, entityId: entityId, limit: 300 }));
+      renderAuditTree_('Chronology \u00b7 ' + (title || entityId), data.logs || []);
+    } catch (error) {
+      byId('jobAuditList').innerHTML = '<p class="small muted">' + Safe.esc(error.message) + '</p>';
     }
   }
 
@@ -2069,6 +2156,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
     byId('jobModalTitle').textContent = task.jobId ? 'Edit job ' + task.jobId : 'New job card';
     byId('jobId').value = task.jobId || '';
+    if (byId('jobComplaint')) byId('jobComplaint').value = task.complaintNo || '';
     state.editingJobVersion = task.version || 1;
     byId('jobClient').value = task.client || '';
     if (byId('jobClientSel')) byId('jobClientSel').value = task.clientId || '';
@@ -2197,6 +2285,93 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     });
   }
 
+  var RIGHT_DEFS_ = [
+    { key: 'Tasks', label: 'Tasks', purpose: 'Create, hold, resolve and close job cards.' },
+    { key: 'Attendance', label: 'Attendance', purpose: 'Photo check-in/out and shift records.' },
+    { key: 'Vehicles', label: 'Vehicles', purpose: 'Fleet registry, OCR captures and vehicle edits.' },
+    { key: 'Bubble', label: 'Bubble', purpose: 'Floating timer, geofence alerts and quick actions.' },
+    { key: 'Reports', label: 'Reports', purpose: 'View and download MIS, uptime and audit reports.' },
+    { key: 'Masters', label: 'Master Data', purpose: 'Manage regions, hubs and client sites.' },
+    { key: 'Audit', label: 'Audit', purpose: 'View approval and action chronology.' },
+    { key: 'Forms', label: 'Forms', purpose: 'Manage dynamic form fields.' },
+    { key: 'Docs', label: 'Documents', purpose: 'View workflow and commercial documents.' }
+  ];
+
+  function renderRightsBox_(containerId, selected) {
+    var box = byId(containerId);
+    if (!box) return;
+    var active = String(selected || '').toUpperCase().split(',').map(function (item) { return item.trim(); });
+    var all = active.indexOf('ALL') >= 0;
+    box.innerHTML = RIGHT_DEFS_.map(function (def) {
+      var checked = all || active.indexOf(def.key.toUpperCase()) >= 0;
+      return '<label class="right-item"><input type="checkbox" data-right="' + Safe.esc(def.key) + '"' + (checked ? ' checked' : '') + '>' +
+        '<span><strong>' + Safe.esc(def.label) + '</strong><span>' + Safe.esc(def.purpose) + '</span></span></label>';
+    }).join('');
+  }
+
+  function selectedRights_(containerId) {
+    var box = byId(containerId);
+    if (!box) return '';
+    var checked = box.querySelectorAll('input[data-right]:checked');
+    var values = [];
+    for (var i = 0; i < checked.length; i++) values.push(checked[i].getAttribute('data-right'));
+    if (!values.length) return '';
+    if (values.length === RIGHT_DEFS_.length) return 'ALL';
+    return values.join(',');
+  }
+
+  function fillHubSelect_(selectId) {
+    var select = byId(selectId);
+    if (!select) return;
+    var names = {};
+    (state.masters.hubs || []).forEach(function (hub) { if (hub.name) names[hub.name] = true; });
+    (state.users || []).forEach(function (user) { if (user.assignedHub) names[user.assignedHub] = true; });
+    select.innerHTML = '<option value="">- select hub -</option>' + Object.keys(names).sort().map(function (name) {
+      return '<option>' + Safe.esc(name) + '</option>';
+    }).join('');
+  }
+
+  function openAllotModal(username) {
+    var user = null;
+    for (var i = 0; i < (state.users || []).length; i++) {
+      if (state.users[i].username === username) { user = state.users[i]; break; }
+    }
+    if (!user) { toast('User not found.'); return; }
+    byId('allotUsername').value = user.username;
+    byId('allotTitle').textContent = 'Allot ' + (user.fullName || user.username) + ' (' + user.userId + ')';
+    fillHubSelect_('allotHub');
+    byId('allotHub').value = user.assignedHub || '';
+    byId('allotWorkMode').value = user.workMode || 'Fixed';
+    byId('allotShiftStart').value = user.shiftStart || '';
+    byId('allotShiftEnd').value = user.shiftEnd || '';
+    byId('allotGeofence').checked = user.geofenceEnabled !== false;
+    setMsg('allotMsg', '');
+    openModal('allotModal');
+  }
+
+  async function saveAllotment() {
+    var username = byId('allotUsername').value;
+    if (!username) return;
+    byId('allotSave').disabled = true;
+    try {
+      ensureOk(await Cloud.post('adminUpdateUser', {
+        targetUsername: username,
+        assignedHub: byId('allotHub').value,
+        workMode: byId('allotWorkMode').value,
+        shiftStart: byId('allotShiftStart').value,
+        shiftEnd: byId('allotShiftEnd').value,
+        geofenceEnabled: byId('allotGeofence').checked
+      }));
+      closeModal('allotModal');
+      toast('Technician allotment saved');
+      await loadAdmin();
+    } catch (error) {
+      setMsg('allotMsg', error.message, true);
+    } finally {
+      byId('allotSave').disabled = false;
+    }
+  }
+
   function openUserModal(user) {
     state.editingUser = user.username;
     byId('userModalTitle').textContent = user.username + ' (' + user.userId + ')';
@@ -2208,7 +2383,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('userLevelMode')) byId('userLevelMode').value = user.supervisorLevelMode || 'AUTO';
     if (byId('userLevel')) byId('userLevel').value = user.supervisorLevel || '';
     if (byId('userCanApprove')) byId('userCanApprove').checked = Boolean(user.canApproveHolds);
-    byId('userRights').value = user.moduleRights || '';
+    if (byId('userBusinessCategory')) byId('userBusinessCategory').value = user.businessCategory || '';
+    if (byId('userWorkMode')) byId('userWorkMode').value = user.workMode || 'Fixed';
+    if (byId('userShiftStart')) byId('userShiftStart').value = user.shiftStart || '';
+    if (byId('userShiftEnd')) byId('userShiftEnd').value = user.shiftEnd || '';
+    if (byId('userGeofenceEnabled')) byId('userGeofenceEnabled').checked = user.geofenceEnabled !== false;
+    renderRightsBox_('userRightsBox', user.moduleRights || '');
     byId('userPhone').value = user.phone || '';
     byId('userPassword').value = '';
     if (byId('userPhoto')) byId('userPhoto').value = '';
@@ -2231,7 +2411,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         role: byId('userRole').value,
         status: byId('userStatus').value,
         assignedHub: byId('userHub').value,
-        moduleRights: byId('userRights').value
+        workMode: byId('userWorkMode') ? byId('userWorkMode').value : 'Fixed',
+        shiftStart: byId('userShiftStart') ? byId('userShiftStart').value : '',
+        shiftEnd: byId('userShiftEnd') ? byId('userShiftEnd').value : '',
+        businessCategory: byId('userBusinessCategory') ? byId('userBusinessCategory').value : '',
+        geofenceEnabled: byId('userGeofenceEnabled') ? byId('userGeofenceEnabled').checked : true,
+        moduleRights: selectedRights_('userRightsBox')
       };
       if (byId('userRegion')) payload.region = byId('userRegion').value.trim();
       if (byId('userReportsTo')) payload.reportsTo = byId('userReportsTo').value.trim();
@@ -2862,9 +3047,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       }
     }
     if (hasCoords) {
-      window.open('https://www.openstreetmap.org/?mlat=' + encodeURIComponent(latValue) +
-        '&mlon=' + encodeURIComponent(lngValue) + '#map=16/' + encodeURIComponent(latValue) +
-        '/' + encodeURIComponent(lngValue), '_blank', 'noopener');
+      window.open('https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent(latValue + ',' + lngValue), '_blank', 'noopener');
       return;
     }
     if (place) {
@@ -2902,7 +3086,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('repJobs').innerHTML = (jobs.rows || []).map(function (job) {
       var hold = job.holdCategory || job.delayCategory || job.interruptedReason || '';
       var approved = job.holdApprovedBy ? (job.holdApprovedBy + (job.holdApprovedLevel ? ' L' + job.holdApprovedLevel : '')) : '';
-      return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
+      return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td class="small mono">' + Safe.esc(job.complaintNo || '-') + '</td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
         Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.status) + '</td><td>' +
         (job.startProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">Start</button>' : '-') +
         '</td><td>' + (job.endProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">End</button>' : '-') +
@@ -2944,39 +3128,20 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
     if (!state.mapInstance) {
       state.mapInstance = L.map('liveMap').setView([12.9716, 77.5946], 11);
-      var configured = (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.mapTiles) || '';
-      var sources = configured ? [{ url: configured, attribution: 'Map provider' }] : [
-        { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri' },
-        { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
-        { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap contributors' }
-      ];
-      var sourceIndex = 0;
-      var errors = 0;
-      function addTiles() {
-        if (sourceIndex >= sources.length) return;
-        var source = sources[sourceIndex];
-        var layer = L.tileLayer(source.url, {
-          maxZoom: 19,
-          attribution: source.attribution,
-          subdomains: ['a', 'b', 'c', 'd']
-        });
-        layer.on('tileerror', function () {
-          errors++;
-          if (errors === 6) {
-            sourceIndex++;
-            errors = 0;
-            if (sourceIndex < sources.length) {
-              try { state.mapInstance.removeLayer(layer); } catch (e) {}
-              addTiles();
-              if (byId('mapLiveLabel')) byId('mapLiveLabel').textContent = 'Map provider fallback active';
-            } else if (byId('mapLiveLabel')) {
-              byId('mapLiveLabel').textContent = 'Map tiles blocked (403/network). Try another network.';
-            }
-          }
-        });
-        layer.addTo(state.mapInstance);
-      }
-      addTiles();
+      var configured = state.mapTiles || (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.mapTiles) || '';
+      var tileUrl = configured || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+      var attribution = state.mapAttribution || (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.mapAttribution) || 'Tiles &copy; Esri';
+      var layer = L.tileLayer(tileUrl, {
+        maxZoom: 19,
+        attribution: attribution
+      });
+      layer.on('tileerror', function () {
+        state.mapTileErrors = (state.mapTileErrors || 0) + 1;
+        if (state.mapTileErrors === 6 && byId('mapLiveLabel')) {
+          byId('mapLiveLabel').textContent = 'Map tiles unavailable. Configure a licensed tile provider in the Platform Console.';
+        }
+      });
+      layer.addTo(state.mapInstance);
       state.mapLayer = L.layerGroup().addTo(state.mapInstance);
     }
     return state.mapInstance;
@@ -3074,8 +3239,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     };
     renderMasters();
     fillDatalists();
+    initExpandableCards_();
   }
-
   function fillDatalists() {
     var regions = byId('regionList');
     var staff = byId('staffList');
@@ -3100,6 +3265,13 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }).join('');
     var clientDraft = byId('draftClientHub');
     if (clientDraft) clientDraft.innerHTML = '<option value="">- hub -</option>' + hubOptions;
+    var hubList = byId('hubList');
+    if (hubList) {
+      var names = {};
+      state.masters.hubs.forEach(function (h) { if (h.name) names[h.name] = true; });
+      state.users.forEach(function (u) { if (u.assignedHub) names[u.assignedHub] = true; });
+      hubList.innerHTML = Object.keys(names).sort().map(function (name) { return '<option value="' + Safe.esc(name) + '"></option>'; }).join('');
+    }
     fillPeopleDatalist();
   }
 
@@ -3107,9 +3279,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var editable = state.masters.canEdit;
 
     function actions(kind, id, active) {
-      if (!editable) return '';
+      var audit = '<button class="ghost sm" data-audit-entity="' + Safe.esc('Master|' + id + '|' + kind + ' ' + id) + '">Audit</button>';
+      if (!editable) return audit;
       return '<button class="secondary sm" data-edit-master="' + Safe.esc(kind + '|' + id) + '">Edit</button> ' +
-        '<button class="sm" data-toggle-master="' + Safe.esc(kind + '|' + id + '|' + (active ? 'false' : 'true')) + '">' + (active ? 'Archive' : 'Enable') + '</button>';
+        '<button class="sm" data-toggle-master="' + Safe.esc(kind + '|' + id + '|' + (active ? 'false' : 'true')) + '">' + (active ? 'Archive' : 'Enable') + '</button> ' + audit;
     }
 
     byId('regionBody').innerHTML = state.masters.regions.map(function (r) {
@@ -3250,7 +3423,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       byId(id).value = '';
     });
     byId('cuRole').value = 'Technician';
-    byId('cuRights').value = 'Tasks,Attendance,Vehicles,Bubble';
+    renderRightsBox_('cuRightsBox', 'Tasks,Attendance,Vehicles,Bubble');
+    if (byId('cuBusinessCategory')) byId('cuBusinessCategory').value = '';
+    if (byId('cuWorkMode')) byId('cuWorkMode').value = 'Fixed';
     if (byId('cuPhoto')) byId('cuPhoto').value = '';
     setMsg('cuMsg', '');
     openModal('createUserModal');
@@ -3267,7 +3442,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         assignedHub: byId('cuHub').value.trim(),
         region: byId('cuRegion').value.trim(),
         reportsTo: byId('cuReportsTo').value.trim(),
-        moduleRights: byId('cuRights').value.trim(),
+        businessCategory: byId('cuBusinessCategory') ? byId('cuBusinessCategory').value : '',
+        workMode: byId('cuWorkMode') ? byId('cuWorkMode').value : 'Fixed',
+        moduleRights: selectedRights_('cuRightsBox'),
         password: byId('cuPassword').value
       };
       var photoBase64 = await readFileBase64(byId('cuPhoto'));
@@ -3340,8 +3517,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     } else {
       gallery.innerHTML = state.proofItems.map(function (item, index) {
         var src = proofDisplayUrl_(item);
+        var isPdf = String(item.mimeType || '').toLowerCase() === 'application/pdf' || String(item.fileName || '').toLowerCase().slice(-4) === '.pdf';
         return '<div class="proof-card"><h4>' + Safe.esc(item.label || ('Proof ' + (index + 1))) + '</h4>' +
-          (src ? '<img src="' + Safe.esc(src) + '" alt="' + Safe.esc(item.label || 'proof') + '" data-proof-index="' + index + '">' : '<p class="small muted">File unavailable</p>') +
+          (isPdf ? '<a class="button" target="_blank" rel="noopener" href="' + Safe.esc(item.url || '') + '">Open PDF</a>' :
+            (src ? '<img src="' + Safe.esc(src) + '" alt="' + Safe.esc(item.label || 'proof') + '" data-proof-index="' + index + '">' : '<p class="small muted">File unavailable</p>')) +
           '</div>';
       }).join('');
     }
@@ -3529,6 +3708,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var action = '';
       if (tab === 'pending' && job.canApprove) {
         action = '<button class="sm" data-hold-approve="' + Safe.esc(job.jobId) + '">Approve</button> <button class="danger sm" data-hold-reject="' + Safe.esc(job.jobId) + '">Reject</button>';
+      } else if (tab === 'onHold' && job.assignedUserId === state.session.userId && !job.reassignedAcceptedAt) {
+        action = '<button class="sm" data-hold-start="' + Safe.esc(job.jobId) + '">Start job</button>';
       } else if (tab === 'onHold' && job.canApprove) {
         action = '<button class="secondary sm" data-hold-release="' + Safe.esc(job.jobId) + '">Release</button>';
       } else {
@@ -3584,6 +3765,98 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       clearInterval(state.pendingTimer);
       state.pendingTimer = null;
     }
+  }
+
+  function readFilePayload_(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        resolve({
+          base64: String(reader.result || '').replace(/^data:[^,]+,/, ''),
+          mimeType: file.type || 'application/octet-stream',
+          fileName: file.name || 'attachment'
+        });
+      };
+      reader.onerror = function () { reject(new Error('Could not read the selected file.')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function findPendingJob_(jobId) {
+    var buckets = ['pending', 'onHold', 'history'];
+    for (var b = 0; b < buckets.length; b++) {
+      var rows = state.pending[buckets[b]] || [];
+      for (var i = 0; i < rows.length; i++) if (rows[i].jobId === jobId) return rows[i];
+    }
+    return null;
+  }
+
+  function openHoldDecision(jobId, action) {
+    var job = findPendingJob_(jobId);
+    state.hdVersion = job ? job.version : 1;
+    byId('hdJobId').value = jobId;
+    byId('hdAction').value = action;
+    byId('holdDecisionTitle').textContent = (action === 'approve' ? 'Approve' : 'Reject') + ' hold · ' + jobId;
+    byId('hdNote').value = '';
+    byId('hdFiles').value = '';
+    var select = byId('hdReassign');
+    select.innerHTML = '<option value="">Keep current technician</option>';
+    var people = (state.people || []).concat(state.users || []);
+    var seen = {};
+    people.forEach(function (person) {
+      var id = person.userId || '';
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      if (person.role !== 'Technician' && person.role !== 'Supervisor') return;
+      select.innerHTML += '<option value="' + Safe.esc(id) + '">' + Safe.esc((person.username || person.fullName || id) + ' (' + id + ')') + '</option>';
+    });
+    setMsg('holdDecisionMsg', '');
+    openModal('holdDecisionModal');
+  }
+
+  async function submitHoldDecision() {
+    var jobId = byId('hdJobId').value;
+    var action = byId('hdAction').value;
+    var note = byId('hdNote').value.trim();
+    var files = byId('hdFiles').files || [];
+    var attachmentIds = [];
+    byId('hdSubmit').disabled = true;
+    setMsg('holdDecisionMsg', 'Uploading proof…');
+    try {
+      for (var i = 0; i < files.length; i++) {
+        var file = await readFilePayload_(files[i]);
+        var uploaded = ensureOk(await Cloud.post('jobAttachmentUpload', {
+          jobId: jobId, attachmentType: 'CLIENT_APPROVAL', fileBase64: file.base64,
+          mimeType: file.mimeType, fileName: file.fileName, note: note
+        }));
+        attachmentIds.push(uploaded.attachment.attachmentId);
+      }
+      ensureOk(await Cloud.post('jobHoldDecision', {
+        jobId: jobId, decision: action, note: note,
+        reassignToUserId: byId('hdReassign').value || '',
+        attachmentIds: attachmentIds, expectedVersion: state.hdVersion || 1
+      }));
+      closeModal('holdDecisionModal');
+      toast(action === 'approve' ? 'Hold approved' : 'Hold rejected');
+      await loadPending();
+      await loadTeam();
+      await loadOverview();
+      await loadNotifications();
+    } catch (error) {
+      setMsg('holdDecisionMsg', error.message, true);
+    } finally {
+      byId('hdSubmit').disabled = false;
+    }
+  }
+
+  async function startReassignedJob(jobId) {
+    try {
+      ensureOk(await Cloud.post('jobAcceptReassigned', { jobId: jobId }));
+      toast('Reassigned job started');
+      await loadPending();
+      await loadJobs();
+      await loadTeam();
+    } catch (error) { toast(error.message); }
   }
 
   async function holdAction(jobId, action) {
@@ -3704,10 +3977,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   }
 
   /* --------------------------------------------------------------- hierarchy / alerts */
-  async function loadHierarchy() {
+  async function loadHierarchy(users) {
     try {
-      var data = ensureOk(await Cloud.post('getUsers', {}));
-      state.hierarchy = data.users || [];
+      var list = users || state.users || [];
+      if (!list.length) {
+        var data = ensureOk(await Cloud.post('getUsers', {}));
+        list = data.users || [];
+      }
+      state.hierarchy = list;
       byId('hierarchyBody').innerHTML = state.hierarchy.map(function (user) {
         return '<tr><td><strong>' + Safe.esc(user.fullName || user.username) + '</strong><div class="small muted">' + Safe.esc(user.userId) + '</div></td><td>' +
           Safe.esc(user.role) + '</td><td class="small">' + Safe.esc(user.reportsTo || '-') + '</td><td>L' + Safe.esc(user.supervisorLevel || 0) + '</td><td>' +
@@ -3863,6 +4140,25 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     } catch (error) {}
   }
 
+  function initExpandableCards_() {
+    var cards = document.querySelectorAll('#view-admin .card, #view-masters .card');
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      if (card.getAttribute('data-expandable') === '1') continue;
+      card.setAttribute('data-expandable', '1');
+      var head = null;
+      for (var h = 0; h < card.children.length; h++) {
+        if (card.children[h].tagName === 'H3') { head = card.children[h]; break; }
+      }
+      if (!head) continue;
+      head.addEventListener('click', function (event) {
+        var target = event.target;
+        if (target && target.closest && target.closest('button,a,input,select,textarea')) return;
+        this.parentElement.classList.toggle('closed');
+      });
+    }
+  }
+
   /* ------------------------------------------------------------------- wiring */
   function bind() {
     byId('loginBtn').addEventListener('click', function () { login(false); });
@@ -3938,6 +4234,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('pendingRefresh')) byId('pendingRefresh').addEventListener('click', loadPending);
     if (byId('upRun')) byId('upRun').addEventListener('click', loadUptime);
     if (byId('upCsv')) byId('upCsv').addEventListener('click', exportUptimeCsv);
+    if (byId('allotSave')) byId('allotSave').addEventListener('click', saveAllotment);
+    if (byId('hdSubmit')) byId('hdSubmit').addEventListener('click', submitHoldDecision);
     if (byId('proofDownload')) byId('proofDownload').addEventListener('click', function () { downloadProofItem_(0); });
     if (byId('proofCollage')) byId('proofCollage').addEventListener('click', downloadProofCollage_);
     if (byId('masterSave')) byId('masterSave').addEventListener('click', saveMasterEdit);
@@ -4003,8 +4301,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('repPrint')) byId('repPrint').addEventListener('click', function () { window.print(); });
     if (byId('mapLoad')) byId('mapLoad').addEventListener('click', loadMap);
     if (byId('mapSync')) byId('mapSync').addEventListener('click', startLiveSyncFromMap);
-    byId('saveSplash').addEventListener('click', saveSplash);
-    byId('saveFirebase').addEventListener('click', saveFirebase);
+    if (byId('saveSplash')) byId('saveSplash').addEventListener('click', saveSplash);
+    if (byId('saveFirebase')) byId('saveFirebase').addEventListener('click', saveFirebase);
     if (byId('pcCompanySave')) byId('pcCompanySave').addEventListener('click', saveCompanyProfile);
     if (byId('pcSeatsSave')) byId('pcSeatsSave').addEventListener('click', saveSeatAllocation);
     if (byId('pcStackSave')) byId('pcStackSave').addEventListener('click', savePlatformStack);
@@ -4038,6 +4336,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
             toggleMaster(toggleParts[0], toggleParts[1], toggleParts[2] === 'true');
             return;
           }
+          if (node.getAttribute('data-allot-user')) { openAllotModal(node.getAttribute('data-allot-user')); return; }
+          if (node.getAttribute('data-audit-entity')) {
+            var auditParts = String(node.getAttribute('data-audit-entity')).split('|');
+            openEntityAudit(auditParts[0], auditParts[1], auditParts[2] || auditParts[1]);
+            return;
+          }
           if (node.getAttribute('data-toggle-user')) {
             var userParts = String(node.getAttribute('data-toggle-user')).split('|');
             Cloud.post('adminUpdateUser', { targetUsername: userParts[0], status: userParts[1] }).then(function () {
@@ -4053,8 +4357,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
             return;
           }
           if (node.getAttribute('data-hold-request')) { openHoldModal(node.getAttribute('data-hold-request')); return; }
-          if (node.getAttribute('data-hold-approve')) { holdAction(node.getAttribute('data-hold-approve'), 'approve'); return; }
-          if (node.getAttribute('data-hold-reject')) { holdAction(node.getAttribute('data-hold-reject'), 'reject'); return; }
+          if (node.getAttribute('data-hold-approve')) { openHoldDecision(node.getAttribute('data-hold-approve'), 'approve'); return; }
+          if (node.getAttribute('data-hold-reject')) { openHoldDecision(node.getAttribute('data-hold-reject'), 'reject'); return; }
+          if (node.getAttribute('data-hold-start')) { startReassignedJob(node.getAttribute('data-hold-start')); return; }
           if (node.getAttribute('data-hold-release')) { holdAction(node.getAttribute('data-hold-release'), 'release'); return; }
           if (node.getAttribute('data-notif-action')) { notifAction(node.getAttribute('data-notif-id'), node.getAttribute('data-notif-action')); return; }
           if (node.getAttribute('data-team-holds')) {
@@ -4200,6 +4505,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     try {
       var splash = await Cloud.post('getSplashMetadata', {}, { queue: false, bridge: false });
       if (splash && splash.plateFormat) state.plateFormat = splash.plateFormat;
+      if (splash) {
+        state.mapTiles = splash.mapTiles || '';
+        state.mapAttribution = splash.mapAttribution || 'Tiles &copy; Esri';
+      }
       setNet(true, 'Cloud service reachable');
       if (showBootProgress) setAuthProgress(100, 'Ready');
     } catch (error) {
@@ -4235,6 +4544,28 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
