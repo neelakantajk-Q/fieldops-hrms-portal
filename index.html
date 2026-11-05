@@ -2377,6 +2377,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('attCamCapture').style.display = '';
     byId('attCamRetake').style.display = 'none';
     byId('attCamSubmit').style.display = 'none';
+    byId('attCamSubmit').disabled = false;
+    byId('attCamCapture').disabled = true;
   }
 
   function closeAttCamera() {
@@ -4233,6 +4235,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 </script>
 </body>
 </html>
+
 
 
 
