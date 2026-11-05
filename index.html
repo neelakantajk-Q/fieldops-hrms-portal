@@ -3469,7 +3469,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (tab === 'analytics') { renderPendingAnalytics(); return; }
     var rows = (state.pending[tab] || []);
     if (state.pendingUserFilter) {
-      rows = rows.filter(function (job) { return job.assignedUserId === state.pendingUserFilter; });
+      rows = rows.filter(function (job) { return job.assignedUserId === state.pendingUserFilter || job.approverId === state.pendingUserFilter; });
     }
     var tableRows = rows.map(function (job) {
       var resolution = job.resolutionNotes || job.holdDecisionNote || '';
