@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -240,7 +240,18 @@
       margin-top: auto;
     }
   }
-</style>
+  .tabbtn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;color:#475569;cursor:pointer}
+  .tabbtn.active{background:var(--primary);border-color:var(--primary);color:#102008}
+  .notif-badge{background:#dc2626;color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;margin-left:4px}
+  .proof-card{border:1px solid var(--line);border-radius:12px;padding:8px;background:#f8fafc}
+  .proof-card img{width:100%;border-radius:8px;display:block;background:#e2e8f0;cursor:zoom-in}
+  .proof-card h4{margin:0 0 6px;font-size:12px;color:#334155}
+  .notif-card{border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:10px;padding:10px 12px;background:#fff}
+  .notif-card.High{border-left-color:#f59e0b}
+  .notif-card.Critical{border-left-color:#dc2626}
+  .notif-card h4{margin:0 0 4px;font-size:13px}
+  .notif-card p{margin:0 0 6px;font-size:12px;color:var(--muted)}
+  .notif-card .actions{display:flex;gap:6px;flex-wrap:wrap}</style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -258,6 +269,7 @@
   <div class="bar-actions">
     <span class="chip bad hidden" id="mockChip">Mock GPS</span>
     <span class="chip" id="userChip">Signed out</span>
+    <button class="secondary sm hidden" id="notifBtn" type="button">Notifications <span class="chip bad hidden" id="notifBadge">0</span></button>
     <button class="secondary sm" id="exportBtn" type="button">Export</button>
     <button class="secondary sm hidden" id="bubbleBtn" type="button">Hide bubble</button>
     <button class="secondary sm hidden" id="deviceSettingsBtn" type="button">Device</button>
@@ -276,8 +288,11 @@
     <button class="nav-item active" data-view="overview" type="button">Overview</button>
     <button class="nav-item" data-view="attendance" type="button">Attendance</button>
     <button class="nav-item" data-view="jobs" type="button">Job Cards</button>
+    <button class="nav-item" data-view="pending" type="button">Pending Jobs</button>
     <button class="nav-item" data-view="team" type="button">Team</button>
     <button class="nav-item" data-view="reports" type="button">Reports &amp; MIS</button>
+    <button class="nav-item" data-view="uptime" type="button">Vehicle Uptime</button>
+    <button class="nav-item" data-view="notifications" type="button">Notifications</button>
     <button class="nav-item" data-view="map" type="button">Live Map</button>
     <div class="nav-cat" id="fleetNavCat">Fleet</div>
     <button class="nav-item" data-view="vehicles" type="button">Vehicles &amp; OCR</button>
@@ -321,12 +336,14 @@
           <div class="stat"><h4>Total Jobs</h4><p class="value" id="kpiTotal">0</p></div>
           <div class="stat blue"><h4>Completed</h4><p class="value" id="kpiDone">0</p></div>
           <div class="stat amber"><h4>Open / Delayed</h4><p class="value" id="kpiOpen">0</p></div>
+          <div class="stat amber"><h4>Pending Holds</h4><p class="value" id="kpiHolds">0</p></div>
           <div class="stat red"><h4>Mock GPS Flags</h4><p class="value" id="kpiMock">0</p></div>
         </div>
         <div class="grid-2">
           <div class="card"><h3>Hub Workload</h3><div id="hubWorkload" class="small muted">No data</div></div>
           <div class="card"><h3>Engineer Productivity</h3><div id="engineerProductivity" class="small muted">No data</div></div>
         </div>
+        <div class="card"><h3>Hold reasons</h3><div id="holdReasons" class="small muted">No data</div></div>
         <div class="card"><h3>Recent Audit</h3><div class="table-wrap"><table><thead><tr><th>Time</th><th>User</th><th>Activity</th><th>Details</th><th>Flag</th></tr></thead><tbody id="auditBody"></tbody></table></div></div>
       </section>
 
@@ -334,7 +351,7 @@
         <div class="page-head"><h2>Attendance &amp; Shifts</h2><p>Photo check-in is the shift start event.</p></div>
         <div class="toolbar">
           <div class="field"><label for="attDate">Date</label><input id="attDate" type="date"></div>
-          <div class="field"><label for="attSearch">Search</label><input id="attSearch" placeholder="User ID"></div>
+          <div class="field"><label for="attSearch">Search</label><input id="attSearch" list="peopleList" placeholder="User ID"></div>
           <button class="secondary" id="attRefresh" type="button">Refresh</button>
           <button class="secondary" id="attCheckOut" type="button">Check out</button>
         </div>
@@ -342,15 +359,60 @@
       </section>
 
       <section id="view-jobs" class="view hidden">
-        <div class="page-head"><h2>JXXXX Job Cards</h2><p>Vehicle number is the foreign key to the fleet registry.</p></div>
+        <div class="page-head"><h2>Job Cards</h2><p>Vehicle number is the foreign key to the fleet registry.</p></div>
         <div class="toolbar">
-          <div class="field"><label for="jobStatus">Status</label><select id="jobStatus"><option value="">All</option><option>InProgress</option><option>Delayed</option><option>Interrupted</option><option>Completed</option></select></div>
+          <div class="field"><label for="jobStatus">Status</label><select id="jobStatus"><option value="">All</option><option>InProgress</option><option>Delayed</option><option>Interrupted</option><option>HoldRequested</option><option>OnHold</option><option>Completed</option><option>Cancelled</option></select></div>
           <div class="field"><label for="jobSearch">Vehicle / client</label><input id="jobSearch" placeholder="KA01AB1234"></div>
           <button class="secondary" id="jobRefresh" type="button">Refresh</button>
           <button id="jobNew" type="button">New Job</button>
           <button class="secondary" id="jobRetake" type="button">Retake interrupted</button>
         </div>
         <div class="card"><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Client</th><th>Assigned</th><th>Status</th><th>Elapsed</th><th>Source</th><th>Last edit</th><th></th></tr></thead><tbody id="jobsBody"></tbody></table></div></div>
+      </section>
+
+      <section id="view-pending" class="view hidden">
+        <div class="page-head"><h2>Pending Jobs</h2><p>Real-time hold approvals, downtime and supervisor resolution.</p></div>
+        <div class="toolbar">
+          <button class="tabbtn active" data-pending-tab="pending" type="button">Pending approval</button>
+          <button class="tabbtn" data-pending-tab="onHold" type="button">On hold</button>
+          <button class="tabbtn" data-pending-tab="history" type="button">History</button>
+          <button class="tabbtn" data-pending-tab="analytics" type="button">Analytics</button>
+          <button class="tabbtn" data-pending-tab="log" type="button">Notification log</button>
+          <button class="secondary" id="pendingRefresh" type="button">Refresh</button>
+          <button class="secondary" id="broadcastBtn" type="button">Broadcast</button>
+        </div>
+        <div id="pendingSummary" class="grid-3" style="margin-bottom:16px"></div>
+        <div id="pendingPanel" class="card"><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Requester</th><th>Reason</th><th>Age</th><th>Supervisor</th><th>Level</th><th>Resolution</th><th></th></tr></thead><tbody id="pendingBody"></tbody></table></div></div>
+      </section>
+
+      <section id="view-uptime" class="view hidden">
+        <div class="page-head"><h2>Vehicle Uptime</h2><p>Primary fleet report: uptime, downtime, service TAT and supervisor resolution.</p></div>
+        <div class="toolbar">
+          <div class="field"><label for="upFrom">From</label><input id="upFrom" type="date"></div>
+          <div class="field"><label for="upTo">To</label><input id="upTo" type="date"></div>
+          <div class="field"><label for="upHub">Hub</label><input id="upHub" placeholder="All hubs"></div>
+          <div class="field"><label for="upUser">User ID</label><input id="upUser" list="peopleList" placeholder="All users"></div>
+          <div class="field"><label for="upVehicle">Vehicle</label><input id="upVehicle" placeholder="KA01AB1234"></div>
+          <button id="upRun" type="button">Run report</button>
+          <button class="secondary" id="upCsv" type="button">Export CSV</button>
+        </div>
+        <div class="grid-3" id="uptimeSummary" style="margin-bottom:16px"></div>
+        <div class="card"><h3>Fleet uptime</h3><div class="table-wrap"><table><thead><tr><th>Vehicle</th><th>Status</th><th>Uptime</th><th>Downtime</th><th>Held</th><th>Jobs</th><th>Avg TAT</th><th>Reason</th><th>Resolution</th><th>Supervisor</th><th></th></tr></thead><tbody id="upBody"></tbody></table></div></div>
+        <div class="grid-2" style="margin-top:16px">
+          <div class="card"><h3>Downtime reasons</h3><div id="upReasons" class="small muted">No data</div></div>
+          <div class="card"><h3>Resolution by supervisor</h3><div id="upResolutions" class="small muted">No data</div></div>
+        </div>
+      </section>
+
+      <section id="view-notifications" class="view hidden">
+        <div class="page-head"><h2>Notifications</h2><p>Broadcasts, hold alerts and supervisor actions.</p></div>
+        <div class="toolbar">
+          <button class="secondary" id="notifRefresh" type="button">Refresh</button>
+          <button class="secondary" id="notifUnreadBtn" type="button">Unread only</button>
+          <button class="secondary" id="notifBroadcastBtn" type="button">Broadcast</button>
+          <span id="notifLiveLabel" class="small muted"></span>
+        </div>
+        <div class="card"><div id="notifList" class="feed"><p class="small muted">No notifications.</p></div></div>
       </section>
 
       <section id="view-vehicles" class="view hidden">
@@ -376,7 +438,7 @@
           <div class="toolbar">
             <div class="field"><label for="repFrom">From</label><input id="repFrom" type="date"></div>
             <div class="field"><label for="repTo">To</label><input id="repTo" type="date"></div>
-            <div class="field"><label for="repUser">User ID</label><input id="repUser" placeholder="All users"></div>
+            <div class="field"><label for="repUser">User ID</label><input id="repUser" list="peopleList" placeholder="All users"></div>
             <button id="repRun" type="button">Run report</button>
             <button class="secondary" id="repCsv" type="button">Export CSV</button>
             <button class="secondary" id="repPrint" type="button">Print / PDF</button>
@@ -389,7 +451,8 @@
           <div class="stat red"><h4>Mock / Breach</h4><p class="value" id="repCompliance">0 / 0</p></div>
         </div>
         <div class="card"><h3>Daily attendance</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Shifts</th><th>Hours</th><th>Mock</th></tr></thead><tbody id="repDaily"></tbody></table></div></div>
-        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
+        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
+        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
         <div class="card"><h3>Engineer productivity</h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Completed</th><th>Hours</th></tr></thead><tbody id="repEngineers"></tbody></table></div></div>
       </section>
 
@@ -398,7 +461,7 @@
         <div class="card">
           <div class="toolbar">
             <div class="field"><label for="mapDate">Date</label><input id="mapDate" type="date"></div>
-            <div class="field"><label for="mapUser">User ID</label><input id="mapUser" placeholder="All visible users"></div>
+            <div class="field"><label for="mapUser">User ID</label><input id="mapUser" list="peopleList" placeholder="All visible users"></div>
             <button id="mapLoad" type="button">Load trail</button>
             <button class="secondary" id="mapSync" type="button">Sync now (3 min live)</button>
             <span id="mapLiveLabel" class="small muted"></span>
@@ -462,7 +525,34 @@
 
         <div class="card"><h3>Devices &amp; Battery</h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Device</th><th>Battery</th><th>Zone</th><th>Last fix</th></tr></thead><tbody id="deviceBody"></tbody></table></div></div>
 
-        <div class="card"><h3>Users <span class="small muted" id="seatUsage"></span> <button class="sm" id="addUserBtn" type="button">+ Add user</button></h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Hub</th><th>Region</th><th>Reports to</th><th>Rights</th><th>Check-in</th><th></th></tr></thead><tbody id="userBody"></tbody></table></div></div>
+        <div class="card"><h3>Users <span class="small muted" id="seatUsage"></span> <button class="sm" id="addUserBtn" type="button">+ Add user</button></h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Hub</th><th>Region</th><th>Reports to</th><th>Level</th><th>Rights</th><th>Check-in</th><th></th></tr></thead><tbody id="userBody"></tbody></table></div></div>
+
+        <div class="card">
+          <h3>Hierarchy &amp; Levels</h3>
+          <p class="small muted">L1 is the direct supervisor. A larger number is higher authority. Changes are audited with the actor level.</p>
+          <div class="table-wrap"><table><thead><tr><th>User</th><th>Role</th><th>Reports to</th><th>Level</th><th>Mode</th><th>Can approve</th><th></th></tr></thead><tbody id="hierarchyBody"></tbody></table></div>
+        </div>
+
+        <div class="card">
+          <h3>Notifications &amp; Alerts</h3>
+          <div class="grid-2">
+            <div class="field"><label><input type="checkbox" id="alertUptimeEnabled" style="width:auto"> Every 2-hour uptime digest</label></div>
+            <div class="field"><label><input type="checkbox" id="alertHoldEnabled" style="width:auto"> Daily hold digest</label></div>
+            <div class="field"><label for="alertHoldHour">Hold digest hour (IST)</label><input id="alertHoldHour" type="number" min="0" max="23"></div>
+            <div class="field"><label for="alertStartHour">Uptime start hour (IST)</label><input id="alertStartHour" type="number" min="0" max="23"></div>
+            <div class="field"><label for="alertEndHour">Uptime end hour (IST)</label><input id="alertEndHour" type="number" min="0" max="23"></div>
+            <div class="field"><label for="alertInterval">Uptime interval (hours)</label><input id="alertInterval" type="number" min="1" max="12"></div>
+            <div class="field"><label><input type="checkbox" id="allowL1Broadcast" style="width:auto"> Allow L1 to broadcast to all</label></div>
+          </div>
+          <div class="modal-actions" style="justify-content:flex-start">
+            <button id="saveAlertSettings" type="button">Save alert settings</button>
+            <button class="secondary" id="installTriggers" type="button">Install schedules</button>
+            <button class="secondary" id="sendUptimeNow" type="button">Send uptime now</button>
+            <button class="secondary" id="sendHoldNow" type="button">Send hold digest now</button>
+            <button class="secondary" id="adminBroadcastBtn" type="button">Broadcast</button>
+          </div>
+          <div id="alertMsg" class="msg hidden"></div>
+        </div>
 
         <div class="card">
           <h3>Splash &amp; Integrations</h3>
@@ -470,11 +560,12 @@
             <div class="field"><label for="setSplashUrl">Splash image URL</label><input id="setSplashUrl" placeholder="https://-"></div>
             <div class="field"><label for="setSplashMsg">Splash message</label><input id="setSplashMsg" placeholder="Loading portal-"></div>
             <div class="field"><label for="setSymbols">Splash animation</label><select id="setSplashAnim"><option value="anim-breathing">Breathing</option><option value="anim-fade">Fade</option><option value="anim-pulse">Pulse</option><option value="anim-none">None</option></select></div>
-            <div class="field"><label for="setFirebase">Live sync endpoint</label><input id="setFirebase" placeholder="https://sync.yourbrand.com/"></div>
+            <div class="field hidden"><label for="setFirebase">Live sync endpoint</label><input id="setFirebase" placeholder="https://sync.yourbrand.com/"></div>
           </div>
+          <p class="small muted">Stack endpoints are managed by the product owner in the Platform Console.</p>
           <div class="modal-actions" style="justify-content:flex-start">
             <button class="secondary" id="saveSplash" type="button">Save splash</button>
-            <button class="secondary" id="saveFirebase" type="button">Save channel</button>
+            <button class="secondary hidden" id="saveFirebase" type="button">Save channel</button>
           </div>
           <div id="integrationMsg" class="msg hidden"></div>
         </div>
@@ -533,7 +624,7 @@
         </div>
         <div class="card">
           <h3>Seats &amp; commercial</h3>
-          <p class="small muted" id="pcSeatUsage">Loading…</p>
+          <p class="small muted" id="pcSeatUsage">Loadingâ€¦</p>
           <div class="grid-2">
             <div class="field"><label for="pcSeatLimit">Seat limit</label><input id="pcSeatLimit" type="number" min="1" step="1"></div>
             <div class="field"><label for="pcContractRef">Contract reference</label><input id="pcContractRef" placeholder="PO / agreement reference"></div>
@@ -624,18 +715,25 @@
       <div class="field"><label for="jobClientSel">Client site</label><select id="jobClientSel"><option value="">- none -</option></select></div>
       <div class="field"><label for="jobClient">Client</label><input id="jobClient"></div>
       <div class="field"><label for="jobHub">Hub</label><input id="jobHub" placeholder="Central Hub"></div>
-      <div class="field"><label for="jobAssigned">Assigned user ID</label><input id="jobAssigned"></div>
+      <div class="field"><label for="jobAssigned">Assigned user ID</label><input id="jobAssigned" list="peopleList"></div>
       <div class="field"><label for="jobVehicle">Vehicle number</label><input id="jobVehicle" placeholder="KA01AB1234"></div>
-      <div class="field"><label for="jobStatusInput">Status</label><select id="jobStatusInput"><option>InProgress</option><option>Delayed</option><option>Interrupted</option><option>Completed</option><option>Cancelled</option></select></div>
+      <div class="field"><label for="jobStatusInput">Status</label><select id="jobStatusInput"><option>InProgress</option><option>Delayed</option><option>Interrupted</option><option>HoldRequested</option><option>OnHold</option><option>Completed</option><option>Cancelled</option></select></div>
       <div class="field"><label for="jobDelayCat">Delay category</label><select id="jobDelayCat"><option value="">-</option><option>Traffic</option><option>Customer delay</option><option>Parts shortage</option><option>Weather</option><option>Other</option></select></div>
     </div>
     <div class="field"><label for="jobDelayReason">Delay reason</label><input id="jobDelayReason" maxlength="280"></div>
     <div class="field"><label for="jobChecklist">Checklist</label><textarea id="jobChecklist" rows="2"></textarea></div>
     <div class="field"><label for="jobParts">Parts used</label><input id="jobParts"></div>
     <div class="field"><label for="jobNotes">Service notes</label><textarea id="jobNotes" rows="2"></textarea></div>
+    <div class="grid-2">
+      <div class="field"><label for="jobRootCause">Root cause</label><input id="jobRootCause"></div>
+      <div class="field"><label for="jobResolution">Resolution notes</label><input id="jobResolution"></div>
+    </div>
     <div id="jobMsg" class="msg hidden"></div>
     <div class="modal-actions">
       <button class="secondary" data-close="jobModal" type="button">Cancel</button>
+      <button class="secondary" id="jobHold" type="button">Request hold</button>
+      <button class="danger" id="jobRejectHold" type="button">Reject hold</button>
+      <button class="secondary" id="jobApproveHold" type="button">Approve hold</button>
       <button id="jobSave" type="button">Save job</button>
     </div>
   </div>
@@ -691,11 +789,61 @@
 
 <!-- Photo evidence -->
 <div class="modal-shell hidden" id="photoModal">
-  <div class="modal">
-    <h3>Photo evidence</h3>
-    <img id="photoImg" alt="Proof" style="width:100%;border-radius:10px;border:1px solid var(--line);background:#e2e8f0">
+  <div class="modal wide">
+    <h3 id="photoTitle">Photo evidence</h3>
+    <div id="proofGallery" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px"></div>
     <pre id="photoMeta" class="small mono" style="white-space:pre-wrap;background:#f1f5f9;padding:10px;border-radius:8px"></pre>
-    <div class="modal-actions"><button class="secondary" data-close="photoModal" type="button">Close</button></div>
+    <div class="modal-actions">
+      <button class="secondary" id="proofDownload" type="button">Download</button>
+      <button class="secondary" id="proofCollage" type="button">Download collage</button>
+      <button class="secondary" data-close="photoModal" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Master editor -->
+<div class="modal-shell hidden" id="masterModal">
+  <div class="modal">
+    <h3 id="masterModalTitle">Master line</h3>
+    <div id="masterFields" class="grid-2"></div>
+    <div id="masterMsg" class="msg hidden"></div>
+    <div class="modal-actions">
+      <button class="secondary" data-close="masterModal" type="button">Cancel</button>
+      <button id="masterSave" type="button">Save line</button>
+    </div>
+  </div>
+</div>
+
+<!-- Broadcast -->
+<div class="modal-shell hidden" id="broadcastModal">
+  <div class="modal">
+    <h3>Broadcast notification</h3>
+    <div class="grid-2">
+      <div class="field"><label for="bcTitle">Title</label><input id="bcTitle" placeholder="Shift notice"></div>
+      <div class="field"><label for="bcAudience">Audience</label><select id="bcAudience"><option>ALL</option><option>ROLE</option><option>HUB</option><option>REGION</option><option>USER</option><option>TEAM</option></select></div>
+      <div class="field"><label for="bcTarget">Target (role/hub/region/user)</label><input id="bcTarget" placeholder="Leave blank for ALL"></div>
+      <div class="field"><label for="bcSeverity">Severity</label><select id="bcSeverity"><option>Info</option><option>High</option><option>Critical</option></select></div>
+    </div>
+    <div class="field"><label for="bcBody">Message</label><textarea id="bcBody" rows="3"></textarea></div>
+    <div id="bcMsg" class="msg hidden"></div>
+    <div class="modal-actions">
+      <button class="secondary" data-close="broadcastModal" type="button">Cancel</button>
+      <button id="bcSend" type="button">Send broadcast</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hold reason -->
+<div class="modal-shell hidden" id="holdModal">
+  <div class="modal">
+    <h3>Hold job card</h3>
+    <div class="field"><label for="holdCategory">Reason</label><select id="holdCategory"><option>Spare parts unavailable</option><option>Manpower / training</option><option>Client approval</option><option>Supervisor approval</option><option>Other</option></select></div>
+    <div class="field"><label for="holdReason">Details</label><textarea id="holdReason" rows="3"></textarea></div>
+    <div id="holdMsg" class="msg hidden"></div>
+    <div class="modal-actions">
+      <button class="secondary" data-close="holdModal" type="button">Cancel</button>
+      <button id="holdSubmit" type="button">Request hold</button>
+    </div>
   </div>
 </div>
 
@@ -708,7 +856,10 @@
       <div class="field"><label for="userStatus">Status</label><select id="userStatus"><option>Active</option><option>Suspended</option></select></div>
       <div class="field"><label for="userHub">Hub</label><input id="userHub"></div>
       <div class="field"><label for="userRegion">Region</label><input id="userRegion" list="regionList" placeholder="Select or type"></div>
-      <div class="field"><label for="userReportsTo">Reports to (user ID)</label><input id="userReportsTo" list="staffList" placeholder="Supervisor user ID"></div>
+      <div class="field"><label for="userReportsTo">Reports to (user ID)</label><input id="userReportsTo" list="peopleList" placeholder="Supervisor user ID"></div>
+      <div class="field"><label for="userLevelMode">Supervisor level mode</label><select id="userLevelMode"><option value="AUTO">Auto</option><option value="MANUAL">Manual</option></select></div>
+      <div class="field"><label for="userLevel">Supervisor level</label><input id="userLevel" type="number" min="0" max="9" placeholder="Auto"></div>
+      <div class="field"><label><input type="checkbox" id="userCanApprove" style="width:auto"> Can approve holds</label></div>
       <div class="field"><label for="userRights">Module rights</label><input id="userRights" placeholder="Tasks,Attendance,Vehicles"></div>
       <div class="field"><label for="userPassword">Set new password</label><input id="userPassword" type="password" placeholder="Leave blank to keep"></div>
       <div class="field"><label for="userPhone">Phone (password reset)</label><input id="userPhone" placeholder="Full number"></div>
@@ -725,6 +876,7 @@
 
 <datalist id="regionList"></datalist>
 <datalist id="staffList"></datalist>
+<datalist id="peopleList"></datalist>
 
 <!-- Create user -->
 <div class="modal-shell hidden" id="createUserModal">
@@ -738,7 +890,7 @@
       <div class="field"><label for="cuRole">Role</label><select id="cuRole"><option>Technician</option><option>Supervisor</option><option>Moderator</option><option>Administrator</option></select></div>
       <div class="field"><label for="cuHub">Hub</label><input id="cuHub" placeholder="Central Hub"></div>
       <div class="field"><label for="cuRegion">Region</label><input id="cuRegion" list="regionList" placeholder="Select or type"></div>
-      <div class="field"><label for="cuReportsTo">Reports to (user ID)</label><input id="cuReportsTo" list="staffList" placeholder="Supervisor user ID"></div>
+      <div class="field"><label for="cuReportsTo">Reports to (user ID)</label><input id="cuReportsTo" list="peopleList" placeholder="Supervisor user ID"></div>
       <div class="field"><label for="cuPassword">Initial password</label><input id="cuPassword" type="password" placeholder="At least 8 characters"></div>
       <div class="field"><label for="cuPhoto">Profile photo</label><input id="cuPhoto" type="file" accept="image/*"></div>
     </div>
@@ -840,7 +992,20 @@
     mapPoints: [],
     mapUserFilter: '',
     mapInstance: null,
-    mapLayer: null
+    mapLayer: null,
+    people: [],
+    pending: { pending: [], onHold: [], history: [], analytics: {} },
+    pendingTab: 'pending',
+    pendingUserFilter: '',
+    pendingTimer: null,
+    notifications: [],
+    notifUnread: 0,
+    notifUnreadOnly: false,
+    notifTimer: null,
+    proofItems: [],
+    editingMaster: null,
+    liveSource: null,
+    hierarchy: []
   };
 
   /* -------------------------------------------------------------- utilities */
@@ -1188,7 +1353,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (view === 'overview' || view === 'attendance') return true;
     if (view === 'jobs') return true;
     if (view === 'team') return true;
-    if (view === 'reports' || view === 'map') return rank >= 2;
+    if (view === 'pending' || view === 'notifications') return true;
+    if (view === 'reports' || view === 'map' || view === 'uptime') return rank >= 2;
     if (view === 'vehicles') return rank >= 2 || rights.indexOf('VEHICLES') >= 0;
     if (view === 'masters') return rank >= 3;
     if (view === 'workflows') return rank >= 2;
@@ -1286,10 +1452,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       byId('sidebar').classList.remove('open');
       byId('backdrop').classList.add('hidden');
     }
-    byId('userChip').textContent = signedIn ? (state.session.username + ' · ' + state.session.role) : 'Signed out';
+    byId('userChip').textContent = signedIn ? (state.session.username + ' Â· ' + state.session.role) : 'Signed out';
     var canLogout = signedIn && state.session.allowLogout !== false;
     byId('logoutBtn').classList.toggle('hidden', !canLogout);
     byId('exportBtn').classList.toggle('hidden', !signedIn);
+    if (byId('notifBtn')) byId('notifBtn').classList.toggle('hidden', !signedIn);
+    if (!signedIn) { state.notifUnread = 0; updateNotifBadge(); }
     if (byId('deviceSettingsBtn')) byId('deviceSettingsBtn').classList.toggle('hidden', !(signedIn && nativeBubbleAvailable()));
     if (byId('bubbleBtn')) {
       if (!signedIn || !nativeBubbleAvailable()) byId('bubbleBtn').classList.add('hidden');
@@ -1366,6 +1534,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         checkedIn: Boolean(res.checkedIn),
         allowLogout: res.allowLogout !== false,
         isSuperAdmin: Boolean(res.isSuperAdmin),
+        supervisorLevel: res.supervisorLevel || 0,
+        supervisorLevelMode: res.supervisorLevelMode || 'AUTO',
+        canApproveHolds: Boolean(res.canApproveHolds),
         companyCode: res.companyCode || '',
         companyName: res.companyName || ''
       });
@@ -1380,6 +1551,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       await refreshBootstrap();
       setAuthProgress(90, 'Preparing workspace');
       await route(res.isSuperAdmin ? 'platform' : 'overview');
+      loadNotifications();
+      loadPeople();
+      startRealtimeStream();
+      openNativePendingView_();
       setAuthProgress(100, 'Ready');
       setTimeout(hideAuthProgress, 600);
       toast('Signed in as ' + res.username);
@@ -1398,6 +1573,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
     try { await Cloud.post('logout', {}, { queue: false, bridge: false }); } catch (e) {}
     stopLiveWindow();
+    stopPendingLive();
+    if (state.notifTimer) { clearInterval(state.notifTimer); state.notifTimer = null; }
+    if (state.liveSource) { try { state.liveSource.close(); } catch (e) {} state.liveSource = null; }
     saveSession(null);
     hideAuthProgress();
     var bridge = window.AndroidBridge;
@@ -1416,6 +1594,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function route(view) {
     if (!state.session) { renderSession(); return; }
     if (!canView_(view)) view = state.session.isSuperAdmin ? 'platform' : 'overview';
+    var previousView = state.view;
+    if (previousView === 'pending' && view !== 'pending') stopPendingLive();
     state.view = view;
     var sections = document.querySelectorAll('.view');
     for (var i = 0; i < sections.length; i++) sections[i].classList.add('hidden');
@@ -1428,13 +1608,20 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     for (var m = 0; m < mobile.length; m++) mobile[m].classList.toggle('active', mobile[m].getAttribute('data-view') === view);
     byId('sidebar').classList.remove('open');
     byId('backdrop').classList.add('hidden');
+    if (['jobs', 'reports', 'uptime', 'map', 'pending', 'notifications'].indexOf(view) >= 0) {
+      if (!state.people || !state.people.length) await loadPeople();
+    }
+    startRealtimeStream();
 
     try {
       if (view === 'overview') await loadOverview();
       if (view === 'attendance') await loadAttendance();
       if (view === 'jobs') await loadJobs();
+      if (view === 'pending') await loadPending();
       if (view === 'team') await loadTeam();
       if (view === 'reports') await loadReports();
+      if (view === 'uptime') await loadUptime();
+      if (view === 'notifications') await loadNotifications();
       if (view === 'map') await loadMap();
       if (view === 'masters') await loadMasters();
       if (view === 'vehicles') { await loadVehicles(); await loadCaptures(); }
@@ -1452,7 +1639,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('kpiTotal').textContent = a.totalTasks || 0;
     byId('kpiDone').textContent = a.completedTasks || 0;
     byId('kpiOpen').textContent = a.openTasks || 0;
+    if (byId('kpiHolds')) byId('kpiHolds').textContent = a.pendingHolds || 0;
     byId('kpiMock').textContent = a.mockLocationFlags || 0;
+
+    var holds = a.holdReasons || {};
+    var holdHtml = Object.keys(holds).map(function (key) {
+      return '<li><strong>' + Safe.esc(key) + ':</strong> ' + Safe.esc(holds[key]) + '</li>';
+    }).join('');
+    if (byId('holdReasons')) byId('holdReasons').innerHTML = holdHtml ? '<ul class="list-plain">' + holdHtml + '</ul>' : 'No pending hold reasons.';
 
     var hubs = a.hubWorkload || {};
     var hubHtml = Object.keys(hubs).map(function (key) {
@@ -1485,8 +1679,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     state.attendance = data.daily || [];
     byId('attBody').innerHTML = state.attendance.map(function (day) {
       var statusClass = day.status === 'Active' ? 'ok' : (day.status === 'LoggedOut' ? 'gray' : 'warn');
-      var proof = day.checkInPhoto
-        ? '<button class="ghost sm" data-proof="' + Safe.esc(day.checkInPhoto) + '" data-meta="' + Safe.esc(day.userId + ' - ' + day.date + ' - ' + day.hubName) + '">View</button>'
+      var proof = (day.checkInPhoto || day.checkOutPhoto)
+        ? '<button class="ghost sm" data-att-proofs="' + Safe.esc(day.userId + '|' + day.date) + '">View</button>'
         : '<span class="muted">-</span>';
       return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.userId) + '</td><td>' + Safe.esc(day.hubName) +
         '</td><td>' + Safe.esc(timeOnly(day.checkIn)) + '</td><td>' + Safe.esc(timeOnly(day.checkOut)) + '</td><td>' +
@@ -1517,11 +1711,18 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         ? '<span class="edit-badge">Edited by <strong>' + Safe.esc(lastEdit) + '</strong>' +
           (task.updatedAt ? ' &middot; ' + Safe.esc(dateTime(task.updatedAt)) : '') + '</span>'
         : '<span class="muted small">&mdash;</span>';
+      var holdBadge = '';
+      if (task.status === 'HoldRequested') holdBadge = ' <span class="badge warn">Held: ' + Safe.esc(task.holdCategory || task.holdReason || 'pending') + '</span>';
+      if (task.status === 'OnHold') holdBadge = ' <span class="badge bad">Approved: ' + Safe.esc(task.holdApprovedBy || 'supervisor') + (task.holdApprovedLevel ? ' L' + task.holdApprovedLevel : '') + '</span>';
+      var actions = '<button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button> ' +
+        '<button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button> ' +
+        '<button class="ghost sm" data-job-proofs="' + Safe.esc(task.jobId) + '">Proofs</button>';
+      if (task.status === 'InProgress' || task.status === 'Delayed') actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
       return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
         '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
-        badge + '">' + Safe.esc(task.status) + '</span>' + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
+        badge + '">' + Safe.esc(task.status) + '</span>' + holdBadge + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
         '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '-') +
-        '</td><td>' + lastEditHtml + '</td><td><button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button> <button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button></td></tr>';
+        '</td><td>' + lastEditHtml + '</td><td>' + actions + '</td></tr>';
     }).join('') || '<tr><td colspan="9" class="muted">No job cards.</td></tr>';
   }
 
@@ -1625,10 +1826,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         '</strong><div class="small muted">' + Safe.esc(user.username) + ' \u00b7 ' + Safe.esc(user.userId) + '</div></div></div></td><td>' +
         Safe.esc(user.role) + '</td><td><span class="badge ' + (user.status === 'Active' ? 'ok' : 'bad') + '">' + Safe.esc(user.status) +
         '</span></td><td>' + Safe.esc(user.assignedHub || '-') + '</td><td>' + Safe.esc(user.region || '-') + '</td><td class="small">' +
-        Safe.esc(user.reportsTo || '-') + '</td><td class="small">' + Safe.esc(user.moduleRights) + '</td><td class="small">' +
-        Safe.esc(timeOnly(user.checkInAt) || '-') + '</td><td><button class="secondary sm" data-edit-user="' + Safe.esc(user.username) + '">Edit</button></td></tr>';
-    }).join('') || '<tr><td colspan="9" class="muted">No users.</td></tr>';
+        Safe.esc(user.reportsTo || '-') + '</td><td class="small">L' + Safe.esc(user.supervisorLevel || 0) + '</td><td class="small">' + Safe.esc(user.moduleRights) + '</td><td class="small">' +
+        Safe.esc(timeOnly(user.checkInAt) || '-') + '</td><td><button class="secondary sm" data-edit-user="' + Safe.esc(user.username) + '">Edit</button> ' +
+        '<button class="' + (user.status === 'Active' ? 'danger' : '') + ' sm" data-toggle-user="' + Safe.esc(user.username + '|' + (user.status === 'Active' ? 'Suspended' : 'Active')) + '">' +
+        (user.status === 'Active' ? 'Disable' : 'Enable') + '</button></td></tr>';
+    }).join('') || '<tr><td colspan="10" class="muted">No users.</td></tr>';
     fillDatalists();
+    applyAlertSettings(data.settings || {});
+    loadHierarchy();
   }
 
   async function loadPlatform() {
@@ -1640,14 +1845,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('pcCompanyName')) byId('pcCompanyName').value = company.name || '';
     if (byId('pcCompanyCode')) byId('pcCompanyCode').value = company.code || '';
     if (byId('pcSeatLimit')) byId('pcSeatLimit').value = seats.limit || seats.max || 30;
-    if (byId('pcSeatUsage')) byId('pcSeatUsage').textContent = (seats.used || 0) + ' active of ' + (seats.limit || seats.max || 30) + ' seats · tenant ' + (data.tenantStatus || 'Active') + ' · payment ' + (data.paymentStatus || 'Paid');
+    if (byId('pcSeatUsage')) byId('pcSeatUsage').textContent = (seats.used || 0) + ' active of ' + (seats.limit || seats.max || 30) + ' seats Â· tenant ' + (data.tenantStatus || 'Active') + ' Â· payment ' + (data.paymentStatus || 'Paid');
     if (byId('pcContractRef')) byId('pcContractRef').value = contract.ref || '';
     if (byId('pcContractStart')) byId('pcContractStart').value = contract.start || '';
     if (byId('pcContractEnd')) byId('pcContractEnd').value = contract.end || '';
     if (byId('pcGraceDays')) byId('pcGraceDays').value = contract.graceDays || 7;
     if (byId('pcPaymentStatus')) byId('pcPaymentStatus').value = data.paymentStatus || 'Paid';
     if (byId('pcTenantStatus')) byId('pcTenantStatus').value = data.tenantStatus || 'Active';
-    if (byId('pcSeatMeta')) byId('pcSeatMeta').textContent = data.seatUpdatedAt ? ('Last seat change: ' + data.seatUpdatedBy + ' · ' + dateTime(data.seatUpdatedAt)) : '';
+    if (byId('pcSeatMeta')) byId('pcSeatMeta').textContent = data.seatUpdatedAt ? ('Last seat change: ' + data.seatUpdatedBy + ' Â· ' + dateTime(data.seatUpdatedAt)) : '';
     var stack = data.platform || {};
     if (byId('pcApi')) byId('pcApi').value = stack.apiEndpoint || '';
     if (byId('pcLive')) byId('pcLive').value = stack.firebaseDbUrl || '';
@@ -1713,7 +1918,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     try {
       while (offset !== null && rounds < 8) {
         rounds++;
-        demoOut('Seeding users from offset ' + offset + '…');
+        demoOut('Seeding users from offset ' + offset + 'â€¦');
         var res = ensureOk(await Cloud.post('seedDemoData', { phase: 'users', offset: offset, limit: 25 }, { queue: false }));
         total += res.created || 0;
         demoOut('Seed progress: ' + total + ' users created. ' + JSON.stringify(res));
@@ -1727,7 +1932,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   async function seedDemoActivity() {
     try {
-      demoOut('Seeding attendance, jobs, vehicles, captures and telemetry…');
+      demoOut('Seeding attendance, jobs, vehicles, captures and telemetryâ€¦');
       var res = ensureOk(await Cloud.post('seedDemoData', { phase: 'activity' }, { queue: false }));
       demoOut(res);
       await loadPlatform();
@@ -1736,7 +1941,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   async function seedDemoLive() {
     try {
-      demoOut('Seeding Firebase live points…');
+      demoOut('Seeding Firebase live pointsâ€¦');
       var res = ensureOk(await Cloud.post('seedDemoData', { phase: 'live' }, { queue: false }));
       demoOut(res);
     } catch (error) { demoOut('Seed failed: ' + error.message); }
@@ -1745,7 +1950,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function clearDemoData() {
     if (!confirm('Remove every DEMO user and DEMO row, clear live points and restore the seat limit to 30?')) return;
     try {
-      demoOut('Clearing demo data…');
+      demoOut('Clearing demo dataâ€¦');
       var res = ensureOk(await Cloud.post('clearDemoData', { restoreSeatLimit: 30 }, { queue: false }));
       demoOut(res);
       await loadPlatform();
@@ -1775,7 +1980,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         compliance: value.report ? value.report.compliance : undefined
       };
     }
-    demoOut('Running smoke test…');
+    demoOut('Running smoke testâ€¦');
     await step('platform', async function () {
       return counts(ensureOk(await Cloud.post('getPlatformSettings', {}, { queue: false })));
     });
@@ -1821,16 +2026,16 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   /* ------------------------------------------------------------------ actions */
   async function openJobAudit(jobId) {
-    byId('jobAuditTitle').textContent = 'Audit · ' + jobId;
-    byId('jobAuditList').innerHTML = '<li class="audit-item"><p>Loading audit…</p></li>';
+    byId('jobAuditTitle').textContent = 'Audit Â· ' + jobId;
+    byId('jobAuditList').innerHTML = '<li class="audit-item"><p>Loading auditâ€¦</p></li>';
     openModal('jobAuditModal');
     try {
       var data = ensureOk(await Cloud.post('getJobAudit', { jobId: jobId }));
       var rows = data.audit || [];
       byId('jobAuditList').innerHTML = rows.map(function (entry) {
-        return '<li class="audit-item"><h4>' + Safe.esc(entry.activityType) + ' · ' +
-          Safe.esc(entry.username || entry.userId || '—') + '</h4><p>' + Safe.esc(dateTime(entry.timestamp)) +
-          (entry.details ? ' · ' + Safe.esc(entry.details) : '') + '</p>' +
+        return '<li class="audit-item"><h4>' + Safe.esc(entry.activityType) + ' Â· ' +
+          Safe.esc(entry.username || entry.userId || 'â€”') + '</h4><p>' + Safe.esc(dateTime(entry.timestamp)) +
+          (entry.details ? ' Â· ' + Safe.esc(entry.details) : '') + '</p>' +
           (entry.disruption ? '<p><span class="badge bad">Flagged</span></p>' : '') + '</li>';
       }).join('') || '<li class="audit-item"><p>No audit entries yet.</p></li>';
     } catch (error) {
@@ -1860,6 +2065,11 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('jobChecklist').value = task.checklist || '';
     byId('jobParts').value = task.partsUsed || '';
     byId('jobNotes').value = task.serviceNotes || '';
+    if (byId('jobRootCause')) byId('jobRootCause').value = task.rootCause || '';
+    if (byId('jobResolution')) byId('jobResolution').value = task.resolutionNotes || '';
+    if (byId('jobHold')) byId('jobHold').classList.toggle('hidden', !(task.jobId && (task.status === 'InProgress' || task.status === 'Delayed')));
+    if (byId('jobApproveHold')) byId('jobApproveHold').classList.toggle('hidden', task.status !== 'HoldRequested');
+    if (byId('jobRejectHold')) byId('jobRejectHold').classList.toggle('hidden', task.status !== 'HoldRequested');
     setMsg('jobMsg', '');
     openModal('jobModal');
   }
@@ -1879,6 +2089,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       partsUsed: byId('jobParts').value,
       serviceNotes: byId('jobNotes').value
     };
+    if (byId('jobRootCause')) payload.rootCause = byId('jobRootCause').value.trim();
+    if (byId('jobResolution')) payload.resolutionNotes = byId('jobResolution').value.trim();
     byId('jobSave').disabled = true;
     try {
       if (jobId) {
@@ -1977,6 +2189,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('userHub').value = user.assignedHub || '';
     if (byId('userRegion')) byId('userRegion').value = user.region || '';
     if (byId('userReportsTo')) byId('userReportsTo').value = user.reportsTo || '';
+    if (byId('userLevelMode')) byId('userLevelMode').value = user.supervisorLevelMode || 'AUTO';
+    if (byId('userLevel')) byId('userLevel').value = user.supervisorLevel || '';
+    if (byId('userCanApprove')) byId('userCanApprove').checked = Boolean(user.canApproveHolds);
     byId('userRights').value = user.moduleRights || '';
     byId('userPhone').value = user.phone || '';
     byId('userPassword').value = '';
@@ -2004,6 +2219,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       };
       if (byId('userRegion')) payload.region = byId('userRegion').value.trim();
       if (byId('userReportsTo')) payload.reportsTo = byId('userReportsTo').value.trim();
+      if (byId('userLevelMode')) payload.supervisorLevelMode = byId('userLevelMode').value;
+      if (byId('userLevel') && byId('userLevel').value !== '') payload.supervisorLevel = byId('userLevel').value;
+      if (byId('userCanApprove')) payload.canApproveHolds = byId('userCanApprove').checked;
       if (byId('userAllowLogout')) payload.allowLogout = byId('userAllowLogout').checked;
       var phone = byId('userPhone').value.trim();
       if (phone) payload.phoneNumber = phone;
@@ -2236,8 +2454,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var coords = geo ? (geo.latitude.toFixed(5) + ', ' + geo.longitude.toFixed(5)) : 'GPS pending';
     var lines = [
       'Field Operations & HRMS',
-      (state.session.username || state.session.userId) + ' · ' + (state.session.role || ''),
-      'Hub: ' + (state.session.hub || '—'),
+      (state.session.username || state.session.userId) + ' Â· ' + (state.session.role || ''),
+      'Hub: ' + (state.session.hub || 'â€”'),
       'Time: ' + stamp,
       'GPS: ' + coords
     ];
@@ -2273,7 +2491,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (applyMockPolicy_()) { setMsg('attCamMsg', 'Mock GPS detected. Disable fake location to check in.', true); return; }
     var btn = byId('attCamSubmit');
     btn.disabled = true;
-    setMsg('attCamMsg', 'Uploading attendance…');
+    setMsg('attCamMsg', 'Uploading attendanceâ€¦');
     try {
       var position = await currentPosition();
       state.lastPosition = position ? { latitude: position.coords.latitude, longitude: position.coords.longitude } : null;
@@ -2496,9 +2714,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   }
 
   function openPhoto(url, meta) {
-    byId('photoImg').src = url;
-    byId('photoMeta').textContent = meta || '';
-    openModal('photoModal');
+    openProof([{ label: 'Proof', url: url }], 'Photo evidence', meta || '');
   }
 
   /* ---------------------------------------------------------------- team & masters */
@@ -2506,6 +2722,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function loadTeam() {
     var data = ensureOk(await Cloud.post('getOrgTree', {}));
     state.org = data.tree || [];
+    state.people = flattenOrg_(state.org);
+    fillPeopleDatalist();
     var container = byId('orgTree');
     if (!state.org.length) { container.innerHTML = '<p class="small muted">No people in your scope.</p>'; return; }
 
@@ -2537,12 +2755,17 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var navBtn = (hasCoords || address)
         ? '<button class="sm" type="button" data-team-nav="' + (hasCoords ? rawLat + ',' + rawLng : '') + '" data-team-address="' + Safe.esc(address) + '" data-team-label="' + Safe.esc(name) + '">Navigate</button>'
         : '';
+      var chips = [];
+      if (person.pendingHolds) chips.push('<button class="chip warn" type="button" data-team-holds="' + Safe.esc(person.userId) + '">' + person.pendingHolds + ' hold(s)</button>');
+      if (person.onHold) chips.push('<span class="chip bad">' + person.onHold + ' on hold</span>');
+      if (person.supervisorLevel) chips.push('<span class="chip">L' + Safe.esc(person.supervisorLevel) + '</span>');
       var children = (person.children || []).map(function (child) { return card(child, depth + 1); }).join('');
-      return '<div class="team-card' + (depth === 0 ? ' open' : '') + '">' +
+      return '<div class="team-card">' +
         '<div class="team-head">' +
           '<div class="team-avatar" style="' + photoStyle + '">' + Safe.esc(initials(name)) + '</div>' +
           '<div class="team-name"><strong>' + Safe.esc(name) + '</strong><span>' + Safe.esc(person.username || person.userId) +
             ' \u00b7 ' + Safe.esc(person.role) + '</span></div>' +
+          (chips.length ? '<div class="team-actions" style="margin:0">' + chips.join(' ') + '</div>' : '') +
           '<span class="team-chev">\u25b6</span>' +
         '</div>' +
         '<div class="team-body">' +
@@ -2550,13 +2773,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           '<div class="team-meta"><strong>Last seen:</strong> ' + Safe.esc(place) +
             (loc && loc.at ? ' \u00b7 ' + Safe.esc(dateTime(loc.at)) : '') +
             (loc && loc.zone ? ' \u00b7 ' + Safe.esc(loc.zone) : '') + '</div>' +
-          '<div class="team-actions">' + callBtn + navBtn + '</div>' +
+          '<div class="team-actions">' + callBtn + navBtn + '<button class="secondary sm" type="button" data-team-toggle>Expand</button></div>' +
           (children ? '<div class="team-children">' + children + '</div>' : '') +
         '</div>' +
       '</div>';
     }
 
-    container.innerHTML = state.org.map(function (person) { return card(person, 0); }).join('');
+    container.innerHTML = '<div class="toolbar" style="margin-bottom:10px"><button class="secondary sm" type="button" id="teamExpandAll">Expand all \u25be</button> <button class="secondary sm" type="button" id="teamCollapseAll">Collapse all \u25b4</button></div>' +
+      state.org.map(function (person) { return card(person, 0); }).join('');
   }
 
   function callTeamMember(phone) {
@@ -2618,8 +2842,20 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('repAttendance').innerHTML = attendance.map(function (row) {
       return '<tr><td>' + Safe.esc(row.date) + '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '') +
         '</td><td>' + Safe.esc(timeOnly(row.checkIn) || '-') + '</td><td>' + Safe.esc(timeOnly(row.checkOut) || '-') +
-        '</td><td>' + Safe.esc(minutesToText(row.minutes)) + '</td><td>' + Safe.esc(row.status || '') + '</td></tr>';
-    }).join('') || '<tr><td colspan="7" class="muted">No attendance rows.</td></tr>';
+        '</td><td>' + Safe.esc(minutesToText(row.minutes)) + '</td><td>' + Safe.esc(row.status || '') +
+        '</td><td><button class="secondary sm" data-att-proofs="' + Safe.esc(row.userId + '|' + row.date) + '">Proofs</button></td></tr>';
+    }).join('') || '<tr><td colspan="8" class="muted">No attendance rows.</td></tr>';
+
+    byId('repJobs').innerHTML = (jobs.rows || []).map(function (job) {
+      var hold = job.holdCategory || job.delayCategory || job.interruptedReason || '';
+      var approved = job.holdApprovedBy ? (job.holdApprovedBy + (job.holdApprovedLevel ? ' L' + job.holdApprovedLevel : '')) : '';
+      return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
+        Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.status) + '</td><td>' +
+        (job.startProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">Start</button>' : '-') +
+        '</td><td>' + (job.endProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">End</button>' : '-') +
+        '</td><td class="small">' + Safe.esc(hold + (job.holdReason ? ' \u00b7 ' + job.holdReason : '')) + '</td><td class="small">' +
+        Safe.esc(job.resolutionNotes || '-') + '</td><td class="small">' + Safe.esc(approved || '-') + '</td></tr>';
+    }).join('') || '<tr><td colspan="9" class="muted">No jobs in this range.</td></tr>';
 
     byId('repEngineers').innerHTML = (jobs.engineers || []).map(function (person) {
       return '<tr><td>' + Safe.esc(person.userId) + '</td><td>' + Safe.esc(person.completed) + '</td><td>' +
@@ -2655,10 +2891,39 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
     if (!state.mapInstance) {
       state.mapInstance = L.map('liveMap').setView([12.9716, 77.5946], 11);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(state.mapInstance);
+      var configured = (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.mapTiles) || '';
+      var sources = configured ? [{ url: configured, attribution: 'Map provider' }] : [
+        { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri' },
+        { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' },
+        { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OpenStreetMap contributors' }
+      ];
+      var sourceIndex = 0;
+      var errors = 0;
+      function addTiles() {
+        if (sourceIndex >= sources.length) return;
+        var source = sources[sourceIndex];
+        var layer = L.tileLayer(source.url, {
+          maxZoom: 19,
+          attribution: source.attribution,
+          subdomains: ['a', 'b', 'c', 'd']
+        });
+        layer.on('tileerror', function () {
+          errors++;
+          if (errors === 6) {
+            sourceIndex++;
+            errors = 0;
+            if (sourceIndex < sources.length) {
+              try { state.mapInstance.removeLayer(layer); } catch (e) {}
+              addTiles();
+              if (byId('mapLiveLabel')) byId('mapLiveLabel').textContent = 'Map provider fallback active';
+            } else if (byId('mapLiveLabel')) {
+              byId('mapLiveLabel').textContent = 'Map tiles blocked (403/network). Try another network.';
+            }
+          }
+        });
+        layer.addTo(state.mapInstance);
+      }
+      addTiles();
       state.mapLayer = L.layerGroup().addTo(state.mapInstance);
     }
     return state.mapInstance;
@@ -2782,26 +3047,33 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }).join('');
     var clientDraft = byId('draftClientHub');
     if (clientDraft) clientDraft.innerHTML = '<option value="">- hub -</option>' + hubOptions;
+    fillPeopleDatalist();
   }
 
   function renderMasters() {
     var editable = state.masters.canEdit;
 
+    function actions(kind, id, active) {
+      if (!editable) return '';
+      return '<button class="secondary sm" data-edit-master="' + Safe.esc(kind + '|' + id) + '">Edit</button> ' +
+        '<button class="sm" data-toggle-master="' + Safe.esc(kind + '|' + id + '|' + (active ? 'false' : 'true')) + '">' + (active ? 'Archive' : 'Enable') + '</button>';
+    }
+
     byId('regionBody').innerHTML = state.masters.regions.map(function (r) {
       return '<tr><td><strong>' + Safe.esc(r.name) + '</strong></td><td>' + Safe.esc(r.notes || '') + '</td><td>' +
-        '<span class="badge ' + (r.active ? 'ok' : 'gray') + '">' + (r.active ? 'Active' : 'Archived') + '</span></td><td></td></tr>';
+        '<span class="badge ' + (r.active ? 'ok' : 'gray') + '">' + (r.active ? 'Active' : 'Archived') + '</span></td><td>' + actions('region', r.regionId, r.active) + '</td></tr>';
     }).join('') || '<tr><td colspan="4" class="muted">No regions yet.</td></tr>';
 
     byId('hubBody').innerHTML = state.masters.hubs.map(function (h) {
       return '<tr><td><strong>' + Safe.esc(h.name) + '</strong></td><td>' + Safe.esc(h.region) + '</td><td class="mono">' +
-        Safe.esc(h.lat) + '</td><td class="mono">' + Safe.esc(h.lng) + '</td><td>' + Safe.esc(h.radiusMeters) + '</td><td></td></tr>';
+        Safe.esc(h.lat) + '</td><td class="mono">' + Safe.esc(h.lng) + '</td><td>' + Safe.esc(h.radiusMeters) + '</td><td>' + actions('hub', h.hubId, h.active) + '</td></tr>';
     }).join('') || '<tr><td colspan="6" class="muted">No hubs yet.</td></tr>';
 
     byId('clientBody').innerHTML = state.masters.clients.map(function (c) {
       var hub = state.masters.hubs.filter(function (h) { return h.hubId === c.hubId; })[0];
       return '<tr><td><strong>' + Safe.esc(c.name) + '</strong></td><td>' + Safe.esc(hub ? hub.name : c.hubId) +
         '</td><td>' + Safe.esc(c.address || '') + '</td><td class="mono">' + Safe.esc(c.lat) + '</td><td class="mono">' +
-        Safe.esc(c.lng) + '</td><td></td></tr>';
+        Safe.esc(c.lng) + '</td><td>' + actions('client', c.clientId, c.active) + '</td></tr>';
     }).join('') || '<tr><td colspan="6" class="muted">No client sites yet.</td></tr>';
 
     ['addRegion', 'addHub', 'addClient'].forEach(function (id) {
@@ -2957,6 +3229,587 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       byId('cuSave').disabled = false;
     }
   }
+  /* ---------------------------------------------------------- people / proofs / live */
+  function flattenOrg_(nodes, out) {
+    out = out || [];
+    (nodes || []).forEach(function (person) {
+      out.push(person);
+      flattenOrg_(person.children || [], out);
+    });
+    return out;
+  }
+
+  async function loadPeople() {
+    if (!state.session) return;
+    try {
+      var data = ensureOk(await Cloud.post('getOrgTree', {}));
+      state.people = flattenOrg_(data.tree || []);
+    } catch (error) {
+      state.people = (state.users || []).slice();
+    }
+    fillPeopleDatalist();
+  }
+
+  function fillPeopleDatalist() {
+    var list = byId('peopleList');
+    if (!list) return;
+    var seen = {};
+    var rows = [];
+    (state.users || []).concat(state.people || []).forEach(function (person) {
+      var id = person.userId || '';
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      rows.push('<option value="' + Safe.esc(id) + '">' + Safe.esc((person.username || person.fullName || id) + ' \u00b7 ' + (person.fullName || '') + ' (' + id + ')') + '</option>');
+    });
+    list.innerHTML = rows.join('');
+  }
+
+  function proofDisplayUrl_(item) {
+    if (!item) return '';
+    if (item.base64) return 'data:' + (item.mime || 'image/jpeg') + ';base64,' + item.base64;
+    if (item.fileId) return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(item.fileId) + '&sz=w1600';
+    return item.url || '';
+  }
+
+  function proofDataUrl_(item) {
+    if (!item) return '';
+    if (item.base64) return 'data:' + (item.mime || 'image/jpeg') + ';base64,' + item.base64;
+    return item.url || '';
+  }
+
+  function openProof(items, title, meta) {
+    state.proofItems = (items || []).filter(function (item) { return item && (item.base64 || item.url || item.fileId); });
+    byId('photoTitle').textContent = title || 'Photo evidence';
+    byId('photoMeta').textContent = meta || '';
+    var gallery = byId('proofGallery');
+    if (!state.proofItems.length) {
+      gallery.innerHTML = '<p class="small muted">No proof image is available for this row.</p>';
+    } else {
+      gallery.innerHTML = state.proofItems.map(function (item, index) {
+        var src = proofDisplayUrl_(item);
+        return '<div class="proof-card"><h4>' + Safe.esc(item.label || ('Proof ' + (index + 1))) + '</h4>' +
+          (src ? '<img src="' + Safe.esc(src) + '" alt="' + Safe.esc(item.label || 'proof') + '" data-proof-index="' + index + '">' : '<p class="small muted">File unavailable</p>') +
+          '</div>';
+      }).join('');
+    }
+    byId('proofDownload').classList.toggle('hidden', !state.proofItems.length);
+    byId('proofCollage').classList.toggle('hidden', state.proofItems.length < 2);
+    openModal('photoModal');
+  }
+
+  function downloadDataUrl_(dataUrl, name) {
+    if (!dataUrl) return;
+    var link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = name || ('proof-' + Safe.today() + '.jpg');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function loadImageData_(item) {
+    return new Promise(function (resolve, reject) {
+      var image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.onload = function () { resolve(image); };
+      image.onerror = function () { reject(new Error('Image could not be loaded.')); };
+      image.src = proofDisplayUrl_(item);
+    });
+  }
+
+  async function downloadProofItem_(index) {
+    var item = state.proofItems[index || 0];
+    if (!item) return;
+    var dataUrl = proofDataUrl_(item);
+    if (dataUrl) { downloadDataUrl_(dataUrl, (item.label || 'proof') + '.jpg'); return; }
+    toast('The proof file is not available for download.');
+  }
+
+  async function downloadProofCollage_() {
+    if (!state.proofItems.length) return;
+    if (state.proofItems.length === 1) { await downloadProofItem_(0); return; }
+    try {
+      var images = [];
+      for (var i = 0; i < state.proofItems.length; i++) images.push(await loadImageData_(state.proofItems[i]));
+      var cellW = 760;
+      var pad = 24;
+      var header = 76;
+      var maxH = 0;
+      images.forEach(function (image) { maxH = Math.max(maxH, Math.round(image.height * (cellW / image.width))); });
+      var canvas = document.createElement('canvas');
+      canvas.width = pad + images.length * (cellW + pad);
+      canvas.height = header + maxH + pad;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 24px Inter, Arial, sans-serif';
+      ctx.fillText('FieldOps proof collage', pad, 34);
+      ctx.font = '16px Inter, Arial, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(Safe.today(), pad, 58);
+      images.forEach(function (image, index) {
+        var x = pad + index * (cellW + pad);
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 18px Inter, Arial, sans-serif';
+        ctx.fillText(state.proofItems[index].label || ('Proof ' + (index + 1)), x, header - 10);
+        var drawH = Math.round(image.height * (cellW / image.width));
+        ctx.drawImage(image, x, header, cellW, drawH);
+      });
+      downloadDataUrl_(canvas.toDataURL('image/jpeg', 0.9), 'proof-collage-' + Safe.today() + '.jpg');
+    } catch (error) {
+      toast(error.message || 'Could not build the collage.');
+    }
+  }
+
+  async function showJobProofs(jobId) {
+    try {
+      var data = ensureOk(await Cloud.post('getJobProofBundle', { jobId: jobId }));
+      openProof(data.files || [], 'Job proofs \u00b7 ' + jobId, 'Start and end proof are shown together.');
+    } catch (error) { toast(error.message); }
+  }
+
+  async function showAttendanceProofs(userId, date) {
+    try {
+      var data = ensureOk(await Cloud.post('getAttendanceProofBundle', { userId: userId, date: date }));
+      openProof(data.files || [], 'Attendance proofs \u00b7 ' + userId, date);
+    } catch (error) { toast(error.message); }
+  }
+
+  /* -------------------------------------------------------------- vehicle uptime */
+  function minutesLabel_(value) {
+    var mins = Math.max(0, Math.round(Number(value) || 0));
+    var h = Math.floor(mins / 60);
+    var m = mins % 60;
+    return h ? h + 'h ' + (m < 10 ? '0' : '') + m + 'm' : m + 'm';
+  }
+
+  async function loadUptime() {
+    var from = byId('upFrom').value || Safe.today();
+    var to = byId('upTo').value || from;
+    var data = ensureOk(await Cloud.post('getVehicleUptime', {
+      from: from,
+      to: to,
+      hub: byId('upHub').value.trim(),
+      userId: byId('upUser').value.trim(),
+      plateNo: byId('upVehicle').value.trim()
+    }));
+    var report = data.report || {};
+    var summary = report.summary || {};
+    state.uptimeReport = report;
+    byId('uptimeSummary').innerHTML =
+      '<div class="stat"><h4>Fleet uptime</h4><p class="value">' + Safe.esc(summary.uptimePct || 0) + '%</p></div>' +
+      '<div class="stat amber"><h4>Downtime</h4><p class="value">' + Safe.esc(minutesLabel_(summary.downtimeMinutes || 0)) + '</p></div>' +
+      '<div class="stat blue"><h4>Avg TAT</h4><p class="value">' + Safe.esc(minutesLabel_(summary.avgTatMinutes || 0)) + '</p></div>' +
+      '<div class="stat amber"><h4>Pending</h4><p class="value">' + Safe.esc(summary.pendingJobs || 0) + '</p></div>' +
+      '<div class="stat red"><h4>Overdue &gt; 24h</h4><p class="value">' + Safe.esc(summary.overdueJobs || 0) + '</p></div>';
+    var rows = report.vehicles || [];
+    byId('upBody').innerHTML = rows.map(function (item) {
+      var resolution = item.lastResolution ? (item.lastResolution + (item.lastResolvedByName ? ' \u00b7 ' + item.lastResolvedByName : '')) : '-';
+      return '<tr><td><strong>' + Safe.esc(item.display) + '</strong></td><td>' + Safe.esc(item.status) + '</td><td>' + Safe.esc(item.uptimePct) + '%</td><td>' +
+        Safe.esc(minutesLabel_(item.downtimeMinutes)) + '</td><td>' + Safe.esc(minutesLabel_(item.heldMinutes)) + '</td><td>' +
+        Safe.esc(item.totalJobs || 0) + ' / ' + Safe.esc(item.open || 0) + '</td><td>' + Safe.esc(minutesLabel_(item.avgTatMinutes)) + '</td><td>' +
+        Safe.esc(item.currentReason || item.lastReason || '-') + '</td><td class="small">' + Safe.esc(resolution) + '</td><td class="small">' +
+        Safe.esc(item.lastResolvedByName || '-') + (item.lastResolvedLevel ? ' (L' + item.lastResolvedLevel + ')' : '') + '</td><td>' +
+        (item.currentJobId ? '<button class="secondary sm" data-edit-job="' + Safe.esc(item.currentJobId) + '">Open</button>' : '') + '</td></tr>';
+    }).join('') || '<tr><td colspan="11" class="muted">No vehicles in this range.</td></tr>';
+    byId('upReasons').innerHTML = Object.keys(summary.reasons || {}).map(function (key) {
+      return '<div>' + Safe.esc(key) + ': <strong>' + Safe.esc(summary.reasons[key]) + '</strong></div>';
+    }).join('') || 'No downtime reasons.';
+    byId('upResolutions').innerHTML = Object.keys(summary.resolutions || {}).map(function (key) {
+      return '<div>' + Safe.esc(key) + ': <strong>' + Safe.esc(summary.resolutions[key]) + '</strong></div>';
+    }).join('') || 'No supervisor resolutions.';
+  }
+
+  function exportUptimeCsv() {
+    var report = state.uptimeReport;
+    if (!report) { toast('Run the uptime report first.'); return; }
+    var rows = [['Vehicle', 'Status', 'Uptime%', 'DowntimeMinutes', 'HeldMinutes', 'Jobs', 'Open', 'AvgTATMinutes', 'Reason', 'Resolution', 'ResolvedBy', 'ResolvedLevel']];
+    (report.vehicles || []).forEach(function (item) {
+      rows.push([item.display, item.status, item.uptimePct, item.downtimeMinutes, item.heldMinutes, item.totalJobs, item.open,
+        item.avgTatMinutes, item.currentReason || item.lastReason || '', item.lastResolution || '', item.lastResolvedByName || '', item.lastResolvedLevel || 0]);
+    });
+    var csv = rows.map(function (line) {
+      return line.map(function (cell) { return '"' + String(cell === undefined || cell === null ? '' : cell).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'vehicle-uptime-' + (report.from || Safe.today()) + '-to-' + (report.to || Safe.today()) + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  }
+
+  /* --------------------------------------------------------------- pending jobs */
+  async function loadPending() {
+    var data = ensureOk(await Cloud.post('getHoldRequests', {}));
+    state.pending = data || { pending: [], onHold: [], history: [], analytics: {} };
+    var logTab = document.querySelector('[data-pending-tab="log"]');
+    if (logTab) logTab.classList.toggle('hidden', roleRank_(state.session.role) < 2);
+    renderPending();
+    startPendingLive();
+    updatePendingSummary();
+  }
+
+  function updatePendingSummary() {
+    var a = state.pending.analytics || {};
+    byId('pendingSummary').innerHTML =
+      '<div class="stat amber"><h4>Pending approval</h4><p class="value">' + Safe.esc(a.pending || 0) + '</p></div>' +
+      '<div class="stat red"><h4>On hold</h4><p class="value">' + Safe.esc(a.onHold || 0) + '</p></div>' +
+      '<div class="stat blue"><h4>Downtime tracked</h4><p class="value">' + Safe.esc(minutesLabel_(a.totalDowntimeMinutes || 0)) + '</p></div>' +
+      '<div class="stat"><h4>Reason types</h4><p class="value">' + Safe.esc(Object.keys(a.reasons || {}).length) + '</p></div>';
+  }
+
+  function renderPending() {
+    var tab = state.pendingTab || 'pending';
+    if (tab === 'log') { renderPendingLog(); return; }
+    if (tab === 'analytics') { renderPendingAnalytics(); return; }
+    var rows = (state.pending[tab] || []);
+    if (state.pendingUserFilter) {
+      rows = rows.filter(function (job) { return job.assignedUserId === state.pendingUserFilter; });
+    }
+    var tableRows = rows.map(function (job) {
+      var resolution = job.resolutionNotes || job.holdDecisionNote || '';
+      var action = '';
+      if (tab === 'pending' && job.canApprove) {
+        action = '<button class="sm" data-hold-approve="' + Safe.esc(job.jobId) + '">Approve</button> <button class="danger sm" data-hold-reject="' + Safe.esc(job.jobId) + '">Reject</button>';
+      } else if (tab === 'onHold' && job.canApprove) {
+        action = '<button class="secondary sm" data-hold-release="' + Safe.esc(job.jobId) + '">Release</button>';
+      } else {
+        action = '<button class="secondary sm" data-edit-job="' + Safe.esc(job.jobId) + '">Open</button>';
+      }
+      return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
+        Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.holdCategory || '-') + ' \u00b7 ' + Safe.esc(job.holdReason || '') +
+        '</td><td>' + Safe.esc(minutesLabel_(job.ageMinutes || 0)) + '</td><td>' + Safe.esc(job.approverName || job.holdApprovedBy || '-') + '</td><td>L' +
+        Safe.esc(job.holdApprovedLevel || job.requiredLevel || 1) + '</td><td class="small">' + Safe.esc(resolution || '-') + '</td><td>' + action + '</td></tr>';
+    }).join('') || '<tr><td colspan="9" class="muted">No jobs in this tab.</td></tr>';
+    byId('pendingPanel').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Requester</th><th>Reason</th><th>Age</th><th>Supervisor</th><th>Level</th><th>Resolution</th><th></th></tr></thead><tbody>' + tableRows + '</tbody></table></div>';
+  }
+
+  function renderPendingAnalytics() {
+    var a = state.pending.analytics || {};
+    var reasons = Object.keys(a.reasons || {}).map(function (key) {
+      return '<tr><td>' + Safe.esc(key) + '</td><td>' + Safe.esc(a.reasons[key]) + '</td></tr>';
+    }).join('') || '<tr><td colspan="2" class="muted">No reasons.</td></tr>';
+    var approvers = Object.keys(a.approvers || {}).map(function (key) {
+      return '<tr><td>' + Safe.esc(key) + '</td><td>' + Safe.esc(a.approvers[key]) + '</td></tr>';
+    }).join('') || '<tr><td colspan="2" class="muted">No approvals yet.</td></tr>';
+    byId('pendingPanel').innerHTML = '<div class="grid-2">' +
+      '<div><h3>Hold reasons</h3><div class="table-wrap"><table><thead><tr><th>Reason</th><th>Count</th></tr></thead><tbody>' + reasons + '</tbody></table></div></div>' +
+      '<div><h3>Approved by</h3><div class="table-wrap"><table><thead><tr><th>Supervisor</th><th>Count</th></tr></thead><tbody>' + approvers + '</tbody></table></div></div>' +
+      '</div>';
+  }
+
+  async function renderPendingLog() {
+    byId('pendingPanel').innerHTML = '<p class="small muted">Loading notification log...</p>';
+    try {
+      var data = ensureOk(await Cloud.post('getNotificationLog', { limit: 200 }));
+      var rows = (data.notifications || []).map(function (item) {
+        return '<tr><td>' + Safe.esc(dateTime(item.createdAt)) + '</td><td><strong>' + Safe.esc(item.title) + '</strong><div class="small muted">' +
+          Safe.esc(item.body) + '</div></td><td>' + Safe.esc(item.createdByName || item.createdBy) + ' (L' + Safe.esc(item.createdByLevel || 0) + ')</td><td>' +
+          Safe.esc(item.audience + (item.target ? ':' + item.target : '')) + '</td><td>' + Safe.esc(item.readCount || 0) + '</td><td>' + Safe.esc(item.actionCount || 0) + '</td></tr>';
+      }).join('') || '<tr><td colspan="6" class="muted">No notifications.</td></tr>';
+      byId('pendingPanel').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Time</th><th>Notification</th><th>Sender</th><th>Audience</th><th>Read</th><th>Actioned</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    } catch (error) {
+      byId('pendingPanel').innerHTML = '<p class="small muted">' + Safe.esc(error.message) + '</p>';
+    }
+  }
+
+  function startPendingLive() {
+    if (state.pendingTimer) return;
+    state.pendingTimer = setInterval(function () {
+      if (state.view !== 'pending') return;
+      loadPending().catch(function () {});
+    }, 15000);
+  }
+
+  function stopPendingLive() {
+    if (state.pendingTimer) {
+      clearInterval(state.pendingTimer);
+      state.pendingTimer = null;
+    }
+  }
+
+  async function holdAction(jobId, action) {
+    var note = prompt(action === 'approve' ? 'Approval note (optional)' : action === 'reject' ? 'Rejection reason' : 'Release note', '') || '';
+    if (action === 'reject' && !note.trim()) { toast('Enter a rejection reason.'); return; }
+    try {
+      if (action === 'release') {
+        ensureOk(await Cloud.post('jobHoldRelease', { jobId: jobId, note: note }));
+      } else {
+        ensureOk(await Cloud.post('jobHoldDecision', { jobId: jobId, decision: action, note: note }));
+      }
+      toast(action === 'approve' ? 'Hold approved' : action === 'reject' ? 'Hold rejected' : 'Hold released');
+      await loadPending();
+      await loadTeam();
+      await loadOverview();
+      await loadNotifications();
+    } catch (error) { toast(error.message); }
+  }
+
+  /* -------------------------------------------------------------- notifications */
+  function updateNotifBadge() {
+    var badge = byId('notifBadge');
+    if (!badge) return;
+    badge.textContent = String(state.notifUnread || 0);
+    badge.classList.toggle('hidden', !state.notifUnread);
+    if (byId('notifBtn')) byId('notifBtn').classList.remove('hidden');
+  }
+
+  async function loadNotifications() {
+    try {
+      var data = ensureOk(await Cloud.post('getNotifications', { unreadOnly: state.notifUnreadOnly, limit: 100 }));
+      state.notifications = data.notifications || [];
+      state.notifUnread = data.unread || 0;
+      updateNotifBadge();
+      renderNotifications();
+      startNotificationPoll();
+    } catch (error) {
+      // notifications are best effort
+    }
+  }
+
+  function renderNotifications() {
+    byId('notifList').innerHTML = (state.notifications || []).map(function (item) {
+      var actions = [];
+      if (item.actionType === 'hold_approve_reject') {
+        actions.push('<button class="sm" data-notif-action="approve" data-notif-id="' + Safe.esc(item.notificationId) + '">Approve</button>');
+        actions.push('<button class="danger sm" data-notif-action="reject" data-notif-id="' + Safe.esc(item.notificationId) + '">Reject</button>');
+      }
+      if (item.entityType === 'Job' && item.entityId) {
+        actions.push('<button class="secondary sm" data-edit-job="' + Safe.esc(item.entityId) + '">Open job</button>');
+      }
+      if (item.actionType === 'open_pending' || item.category === 'HoldDigest') {
+        actions.push('<button class="secondary sm" data-notif-action="open_pending" data-notif-id="' + Safe.esc(item.notificationId) + '">Open pending</button>');
+      }
+      if (item.actionType === 'open_uptime' || item.category === 'VehicleUptime') {
+        actions.push('<button class="secondary sm" data-notif-action="open_uptime" data-notif-id="' + Safe.esc(item.notificationId) + '">Open uptime</button>');
+      }
+      actions.push('<button class="ghost sm" data-notif-action="ack" data-notif-id="' + Safe.esc(item.notificationId) + '">Acknowledge</button>');
+      return '<article class="notif-card ' + Safe.esc(item.severity || 'Info') + '"><h4>' + (item.read ? '' : '<span class="badge bad">NEW</span> ') +
+        Safe.esc(item.title) + '</h4><p>' + Safe.esc(item.body) + '</p><p class="small muted">' + Safe.esc(dateTime(item.createdAt)) + ' \u00b7 ' +
+        Safe.esc(item.createdByName || item.createdBy || 'System') + ' (L' + Safe.esc(item.createdByLevel || 0) + ')</p><div class="actions">' + actions.join(' ') + '</div></article>';
+    }).join('') || '<p class="small muted">No notifications.</p>';
+  }
+
+  async function notifAction(notificationId, action) {
+    try {
+      if (action === 'ack' || action === 'open_pending' || action === 'open_uptime') {
+        await Cloud.post('markNotificationRead', { notificationId: notificationId }).catch(function () {});
+      } else {
+        var note = action === 'reject' ? (prompt('Rejection reason', '') || '') : (prompt('Approval note (optional)', '') || '');
+        ensureOk(await Cloud.post('notificationAction', { notificationId: notificationId, action: action, note: note }));
+      }
+      if (action === 'open_pending') await route('pending');
+      else if (action === 'open_uptime') await route('uptime');
+      else {
+        await loadNotifications();
+        await loadPending();
+        await loadOverview();
+        await loadTeam();
+      }
+    } catch (error) { toast(error.message); }
+  }
+
+  function startNotificationPoll() {
+    if (state.notifTimer) return;
+    state.notifTimer = setInterval(function () {
+      if (state.session) loadNotifications();
+    }, 60000);
+  }
+
+  function openBroadcast() {
+    byId('bcTitle').value = '';
+    byId('bcBody').value = '';
+    byId('bcTarget').value = '';
+    byId('bcAudience').value = 'ALL';
+    byId('bcSeverity').value = 'Info';
+    setMsg('bcMsg', '');
+    openModal('broadcastModal');
+  }
+
+  async function sendBroadcast() {
+    var payload = {
+      title: byId('bcTitle').value.trim(),
+      body: byId('bcBody').value.trim(),
+      audience: byId('bcAudience').value,
+      target: byId('bcTarget').value.trim(),
+      severity: byId('bcSeverity').value,
+      category: 'Broadcast',
+      actionType: 'open_notifications'
+    };
+    if (!payload.title || !payload.body) { setMsg('bcMsg', 'Title and message are required.', true); return; }
+    try {
+      ensureOk(await Cloud.post('broadcastNotification', payload));
+      closeModal('broadcastModal');
+      toast('Broadcast sent');
+      await loadNotifications();
+    } catch (error) { setMsg('bcMsg', error.message, true); }
+  }
+
+  /* --------------------------------------------------------------- hierarchy / alerts */
+  async function loadHierarchy() {
+    try {
+      var data = ensureOk(await Cloud.post('getUsers', {}));
+      state.hierarchy = data.users || [];
+      byId('hierarchyBody').innerHTML = state.hierarchy.map(function (user) {
+        return '<tr><td><strong>' + Safe.esc(user.fullName || user.username) + '</strong><div class="small muted">' + Safe.esc(user.userId) + '</div></td><td>' +
+          Safe.esc(user.role) + '</td><td class="small">' + Safe.esc(user.reportsTo || '-') + '</td><td>L' + Safe.esc(user.supervisorLevel || 0) + '</td><td>' +
+          Safe.esc(user.supervisorLevelMode || 'AUTO') + '</td><td>' + (user.canApproveHolds ? 'Yes' : 'No') + '</td><td><button class="secondary sm" data-edit-user="' +
+          Safe.esc(user.username) + '">Edit</button></td></tr>';
+      }).join('') || '<tr><td colspan="7" class="muted">No users.</td></tr>';
+    } catch (error) {
+      byId('hierarchyBody').innerHTML = '<tr><td colspan="7" class="muted">' + Safe.esc(error.message) + '</td></tr>';
+    }
+  }
+
+  function applyAlertSettings(settings) {
+    var s = settings || {};
+    if (byId('alertUptimeEnabled')) byId('alertUptimeEnabled').checked = s.uptimeAlertEnabled !== false;
+    if (byId('alertHoldEnabled')) byId('alertHoldEnabled').checked = s.holdAlertEnabled !== false;
+    if (byId('alertHoldHour')) byId('alertHoldHour').value = s.holdAlertHour || 9;
+    if (byId('alertStartHour')) byId('alertStartHour').value = s.uptimeAlertStartHour || 8;
+    if (byId('alertEndHour')) byId('alertEndHour').value = s.uptimeAlertEndHour || 20;
+    if (byId('alertInterval')) byId('alertInterval').value = s.uptimeAlertIntervalHours || 2;
+    if (byId('allowL1Broadcast')) byId('allowL1Broadcast').checked = s.allowL1BroadcastAll !== false;
+  }
+
+  async function saveAlertSettings() {
+    try {
+      ensureOk(await Cloud.post('updateAdminSettings', {
+        settings: {
+          UptimeAlertEnabled: byId('alertUptimeEnabled').checked ? 'true' : 'false',
+          HoldAlertEnabled: byId('alertHoldEnabled').checked ? 'true' : 'false',
+          HoldAlertHour: byId('alertHoldHour').value,
+          UptimeAlertStartHour: byId('alertStartHour').value,
+          UptimeAlertEndHour: byId('alertEndHour').value,
+          UptimeAlertIntervalHours: byId('alertInterval').value,
+          AllowL1BroadcastAll: byId('allowL1Broadcast').checked ? 'true' : 'false'
+        }
+      }));
+      ensureOk(await Cloud.post('installNotificationTriggers', {}));
+      setMsg('alertMsg', 'Alert settings saved and schedules installed.');
+      toast('Alert schedules installed');
+    } catch (error) { setMsg('alertMsg', error.message, true); }
+  }
+
+  /* --------------------------------------------------------------- master editor */
+  function openMasterEditor(kind, id) {
+    var list = kind === 'region' ? state.masters.regions : kind === 'hub' ? state.masters.hubs : state.masters.clients;
+    var item = list.filter(function (row) { return row.regionId === id || row.hubId === id || row.clientId === id; })[0];
+    if (!item) { toast('Master line not found.'); return; }
+    state.editingMaster = { kind: kind, id: id };
+    byId('masterModalTitle').textContent = 'Edit ' + kind;
+    var fields = [];
+    function field(key, label, value) {
+      fields.push('<div class="field"><label for="mf_' + key + '">' + Safe.esc(label) + '</label><input id="mf_' + key + '" value="' + Safe.esc(value || '') + '"></div>');
+    }
+    if (kind === 'region') {
+      field('name', 'Region', item.name);
+      field('notes', 'Notes', item.notes);
+    } else if (kind === 'hub') {
+      field('name', 'Hub', item.name);
+      field('region', 'Region', item.region);
+      field('lat', 'Latitude', item.lat);
+      field('lng', 'Longitude', item.lng);
+      field('radiusMeters', 'Radius (m)', item.radiusMeters);
+    } else {
+      field('name', 'Client', item.name);
+      field('hubId', 'Hub ID', item.hubId);
+      field('address', 'Address', item.address);
+      field('lat', 'Latitude', item.lat);
+      field('lng', 'Longitude', item.lng);
+      field('contactName', 'Contact name', item.contactName);
+      field('contactPhone', 'Contact phone', item.contactPhone);
+    }
+    fields.push('<div class="field"><label><input type="checkbox" id="mf_active" style="width:auto"' + (item.active !== false ? ' checked' : '') + '> Active</label></div>');
+    byId('masterFields').innerHTML = fields.join('');
+    setMsg('masterMsg', '');
+    openModal('masterModal');
+  }
+
+  async function saveMasterEdit() {
+    if (!state.editingMaster) return;
+    var kind = state.editingMaster.kind;
+    var id = state.editingMaster.id;
+    var fields = {
+      name: byId('mf_name').value.trim(),
+      active: byId('mf_active').checked
+    };
+    if (kind === 'region') fields.notes = byId('mf_notes').value.trim();
+    if (kind === 'hub') {
+      fields.region = byId('mf_region').value.trim();
+      fields.lat = byId('mf_lat').value;
+      fields.lng = byId('mf_lng').value;
+      fields.radiusMeters = byId('mf_radiusMeters').value;
+    }
+    if (kind === 'client') {
+      fields.hubId = byId('mf_hubId').value.trim();
+      fields.address = byId('mf_address').value.trim();
+      fields.lat = byId('mf_lat').value;
+      fields.lng = byId('mf_lng').value;
+      fields.contactName = byId('mf_contactName').value.trim();
+      fields.contactPhone = byId('mf_contactPhone').value.trim();
+    }
+    try {
+      ensureOk(await Cloud.post('masterUpdate', { kind: kind, id: id, fields: fields }));
+      closeModal('masterModal');
+      toast('Master line updated');
+      await loadMasters();
+    } catch (error) { setMsg('masterMsg', error.message, true); }
+  }
+
+  function toggleMaster(kind, id, active) {
+    Cloud.post('masterUpdate', { kind: kind, id: id, field: 'active', value: active }).then(function () {
+      toast(active ? 'Master line enabled' : 'Master line archived');
+      loadMasters();
+    }).catch(function (error) { toast(error.message); });
+  }
+
+  function openHoldModal(jobId) {
+    state.holdJobId = jobId;
+    byId('holdCategory').value = 'Spare parts unavailable';
+    byId('holdReason').value = '';
+    setMsg('holdMsg', '');
+    openModal('holdModal');
+  }
+
+  async function submitHold() {
+    if (!state.holdJobId) return;
+    try {
+      ensureOk(await Cloud.post('jobHoldRequest', {
+        jobId: state.holdJobId,
+        holdCategory: byId('holdCategory').value,
+        holdReason: byId('holdReason').value.trim()
+      }));
+      closeModal('holdModal');
+      toast('Hold requested; supervisor notified');
+      await loadJobs();
+      await loadPending();
+      await loadTeam();
+      await loadNotifications();
+    } catch (error) { setMsg('holdMsg', error.message, true); }
+  }
+
+  /* --------------------------------------------------------------- realtime stream */
+  function startRealtimeStream() {
+    var live = (window.__PORTAL_CONFIG__ && (window.__PORTAL_CONFIG__.brandLive || window.__PORTAL_CONFIG__.live)) || '';
+    if (!live || !window.EventSource || state.liveSource) return;
+    try {
+      var base = String(live).replace(/\/+$/, '');
+      state.liveSource = new EventSource(base + '/commands/ALL.json?format=event-stream');
+      state.liveSource.onmessage = function (event) {
+        if (!event.data || event.data.indexOf('{') < 0) return;
+        if (state.view === 'pending') loadPending().catch(function () {});
+        loadNotifications();
+        if (state.view === 'team') loadTeam().catch(function () {});
+      };
+    } catch (error) {}
+  }
+
   /* ------------------------------------------------------------------- wiring */
   function bind() {
     byId('loginBtn').addEventListener('click', function () { login(false); });
@@ -3008,6 +3861,46 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('capRefresh').addEventListener('click', loadCaptures);
     byId('userSave').addEventListener('click', saveUser);
     byId('saveSettings').addEventListener('click', saveSettings);
+    if (byId('saveAlertSettings')) byId('saveAlertSettings').addEventListener('click', saveAlertSettings);
+    if (byId('installTriggers')) byId('installTriggers').addEventListener('click', async function () {
+      try { ensureOk(await Cloud.post('installNotificationTriggers', {})); toast('Schedules installed'); } catch (error) { setMsg('alertMsg', error.message, true); }
+    });
+    if (byId('sendUptimeNow')) byId('sendUptimeNow').addEventListener('click', async function () {
+      try { ensureOk(await Cloud.post('sendUptimeDigest', {})); toast('Uptime digest sent'); await loadNotifications(); } catch (error) { setMsg('alertMsg', error.message, true); }
+    });
+    if (byId('sendHoldNow')) byId('sendHoldNow').addEventListener('click', async function () {
+      try { ensureOk(await Cloud.post('sendHoldDigest', {})); toast('Hold digest sent'); await loadNotifications(); } catch (error) { setMsg('alertMsg', error.message, true); }
+    });
+    if (byId('adminBroadcastBtn')) byId('adminBroadcastBtn').addEventListener('click', openBroadcast);
+    if (byId('broadcastBtn')) byId('broadcastBtn').addEventListener('click', openBroadcast);
+    if (byId('notifBroadcastBtn')) byId('notifBroadcastBtn').addEventListener('click', openBroadcast);
+    if (byId('bcSend')) byId('bcSend').addEventListener('click', sendBroadcast);
+    if (byId('notifBtn')) byId('notifBtn').addEventListener('click', function () { route('notifications'); });
+    if (byId('notifRefresh')) byId('notifRefresh').addEventListener('click', loadNotifications);
+    if (byId('notifUnreadBtn')) byId('notifUnreadBtn').addEventListener('click', function () {
+      state.notifUnreadOnly = !state.notifUnreadOnly;
+      byId('notifUnreadBtn').textContent = state.notifUnreadOnly ? 'Show all' : 'Unread only';
+      loadNotifications();
+    });
+    if (byId('pendingRefresh')) byId('pendingRefresh').addEventListener('click', loadPending);
+    if (byId('upRun')) byId('upRun').addEventListener('click', loadUptime);
+    if (byId('upCsv')) byId('upCsv').addEventListener('click', exportUptimeCsv);
+    if (byId('proofDownload')) byId('proofDownload').addEventListener('click', function () { downloadProofItem_(0); });
+    if (byId('proofCollage')) byId('proofCollage').addEventListener('click', downloadProofCollage_);
+    if (byId('masterSave')) byId('masterSave').addEventListener('click', saveMasterEdit);
+    if (byId('holdSubmit')) byId('holdSubmit').addEventListener('click', submitHold);
+    if (byId('jobHold')) byId('jobHold').addEventListener('click', function () { openHoldModal(byId('jobId').value); });
+    if (byId('jobApproveHold')) byId('jobApproveHold').addEventListener('click', function () { holdAction(byId('jobId').value, 'approve'); });
+    if (byId('jobRejectHold')) byId('jobRejectHold').addEventListener('click', function () { holdAction(byId('jobId').value, 'reject'); });
+    var pendingTabs = document.querySelectorAll('[data-pending-tab]');
+    for (var pt = 0; pt < pendingTabs.length; pt++) {
+      pendingTabs[pt].addEventListener('click', function () {
+        var tabs = document.querySelectorAll('[data-pending-tab]');
+        for (var x = 0; x < tabs.length; x++) tabs[x].classList.toggle('active', tabs[x] === this);
+        state.pendingTab = this.getAttribute('data-pending-tab');
+        renderPending();
+      });
+    }
     byId('addRegion').addEventListener('click', function () { addLine('region'); });
     byId('addHub').addEventListener('click', function () { addLine('hub'); });
     byId('addClient').addEventListener('click', function () { addLine('client'); });
@@ -3082,6 +3975,56 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var node = event.target;
       while (node && node !== document.body) {
         if (node.getAttribute) {
+          if (node.getAttribute('data-edit-master')) {
+            var masterParts = String(node.getAttribute('data-edit-master')).split('|');
+            openMasterEditor(masterParts[0], masterParts[1]);
+            return;
+          }
+          if (node.getAttribute('data-toggle-master')) {
+            var toggleParts = String(node.getAttribute('data-toggle-master')).split('|');
+            toggleMaster(toggleParts[0], toggleParts[1], toggleParts[2] === 'true');
+            return;
+          }
+          if (node.getAttribute('data-toggle-user')) {
+            var userParts = String(node.getAttribute('data-toggle-user')).split('|');
+            Cloud.post('adminUpdateUser', { targetUsername: userParts[0], status: userParts[1] }).then(function () {
+              toast('User status updated');
+              loadAdmin();
+            }).catch(function (error) { toast(error.message); });
+            return;
+          }
+          if (node.getAttribute('data-job-proofs')) { showJobProofs(node.getAttribute('data-job-proofs')); return; }
+          if (node.getAttribute('data-att-proofs')) {
+            var attParts = String(node.getAttribute('data-att-proofs')).split('|');
+            showAttendanceProofs(attParts[0], attParts[1]);
+            return;
+          }
+          if (node.getAttribute('data-hold-request')) { openHoldModal(node.getAttribute('data-hold-request')); return; }
+          if (node.getAttribute('data-hold-approve')) { holdAction(node.getAttribute('data-hold-approve'), 'approve'); return; }
+          if (node.getAttribute('data-hold-reject')) { holdAction(node.getAttribute('data-hold-reject'), 'reject'); return; }
+          if (node.getAttribute('data-hold-release')) { holdAction(node.getAttribute('data-hold-release'), 'release'); return; }
+          if (node.getAttribute('data-notif-action')) { notifAction(node.getAttribute('data-notif-id'), node.getAttribute('data-notif-action')); return; }
+          if (node.getAttribute('data-team-holds')) {
+            state.pendingUserFilter = node.getAttribute('data-team-holds');
+            route('pending');
+            return;
+          }
+          if (node.hasAttribute && node.hasAttribute('data-team-toggle')) {
+            var teamCard = node.closest ? node.closest('.team-card') : null;
+            if (teamCard) teamCard.classList.toggle('open');
+            node.textContent = teamCard && teamCard.classList.contains('open') ? 'Collapse' : 'Expand';
+            return;
+          }
+          if (node.id === 'teamExpandAll') {
+            var cards = document.querySelectorAll('#orgTree .team-card');
+            for (var tc = 0; tc < cards.length; tc++) cards[tc].classList.add('open');
+            return;
+          }
+          if (node.id === 'teamCollapseAll') {
+            var cards2 = document.querySelectorAll('#orgTree .team-card');
+            for (var tc2 = 0; tc2 < cards2.length; tc2++) cards2[tc2].classList.remove('open');
+            return;
+          }
           if (node.getAttribute('data-save-master')) { saveMasterLine(node.getAttribute('data-save-master')); return; }
           if (node.getAttribute('data-job-audit')) { openJobAudit(node.getAttribute('data-job-audit')); return; }
           if (node.getAttribute('data-edit-job')) {
@@ -3165,6 +4108,15 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     } catch (error) { setMsg('fpMsg', error.message, true); }
   }
 
+  function openNativePendingView_() {
+    try {
+      if (window.AndroidBridge && typeof window.AndroidBridge.getPendingView === 'function') {
+        var view = window.AndroidBridge.getPendingView();
+        if (view) route(view);
+      }
+    } catch (error) {}
+  }
+
   /* --------------------------------------------------------------------- boot */
   async function boot() {
     state.queue = Safe.json('offline_queue', []) || [];
@@ -3184,6 +4136,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('attDate').value = Safe.today();
     if (byId('repFrom')) byId('repFrom').value = Safe.today();
     if (byId('repTo')) byId('repTo').value = Safe.today();
+    if (byId('upFrom')) byId('upFrom').value = Safe.today();
+    if (byId('upTo')) byId('upTo').value = Safe.today();
     if (byId('mapDate')) byId('mapDate').value = Safe.today();
     renderSession();
 
@@ -3205,6 +4159,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         await refreshBootstrap();
         await route(state.session && state.session.isSuperAdmin ? 'platform' : 'overview');
         adoptNative();
+        loadNotifications();
+        loadPeople();
+        startRealtimeStream();
+        openNativePendingView_();
       } catch (error) {
         if (error.code === 'AUTH_REVOKED' || error.code === 'AUTH_EXPIRED') {
           saveSession(null);
@@ -3224,6 +4182,11 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 </script>
 </body>
 </html>
+
+
+
+
+
 
 
 
