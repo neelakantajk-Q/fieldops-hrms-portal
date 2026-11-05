@@ -251,7 +251,21 @@
   .notif-card.Critical{border-left-color:#dc2626}
   .notif-card h4{margin:0 0 4px;font-size:13px}
   .notif-card p{margin:0 0 6px;font-size:12px;color:var(--muted)}
-  .notif-card .actions{display:flex;gap:6px;flex-wrap:wrap}</style>
+  .notif-card .actions{display:flex;gap:6px;flex-wrap:wrap}  .camera-shell{padding:0;background:#000;align-items:stretch;justify-content:stretch}
+  .modal.camera{width:100vw;max-width:none;height:100vh;max-height:100vh;border:0;border-radius:0;padding:0;background:#000;display:flex;flex-direction:column;overflow:hidden}
+  .modal.camera .cam-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#020817;color:#fff;flex:0 0 auto}
+  .modal.camera .cam-top h3{margin:0;color:#fff;font-size:15px;flex:1;text-align:center}
+  .modal.camera .cam-top button{min-width:78px}
+  .modal.camera .cam-wrap{flex:1 1 auto;min-height:0;margin:0;border-radius:0;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .modal.camera .cam-video{width:100%;height:100%;min-height:0;max-height:none;object-fit:cover;background:#000}
+  .modal.camera .cam-snapshot{object-fit:contain;background:#000}
+  .modal.camera .cam-guide{width:min(78%,320px);aspect-ratio:3/4;border-radius:26px}
+  .modal.camera .cam-actions{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:58px;padding:16px 20px calc(20px + env(safe-area-inset-bottom));background:#020817}
+  .modal.camera #attCamCapture{display:block;width:82px;height:82px;min-width:82px;flex:0 0 82px}
+  .cam-shutter{width:82px;height:82px;min-width:82px;border-radius:50%;border:4px solid #fff;background:var(--primary);box-shadow:0 0 0 6px rgba(255,255,255,.18);font-size:0;padding:0}
+  .cam-round{width:82px;height:82px;min-width:82px;border-radius:50%;padding:0;font-size:12px;font-weight:700}
+  .modal.camera #attCamMsg{margin:0 14px 10px;flex:0 0 auto}
+  @media (max-width:768px){.modal.camera .cam-video{height:100%;min-height:0}}</style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -675,9 +689,13 @@
 </nav>
 
 <!-- Attendance camera (in-browser) -->
-<div class="modal-shell hidden" id="attCamModal">
-  <div class="modal">
-    <h3>Photo attendance</h3>
+<div class="modal-shell camera-shell hidden" id="attCamModal">
+  <div class="modal camera">
+    <div class="cam-top">
+      <button class="secondary" id="attCamClose" type="button">Cancel</button>
+      <h3>Photo attendance</h3>
+      <button class="secondary" id="attCamSwitch" type="button">Switch</button>
+    </div>
     <div class="cam-wrap">
       <video id="attCamVideo" class="cam-video" autoplay playsinline muted></video>
       <canvas id="attCamCanvas" class="cam-snapshot" style="display:none"></canvas>
@@ -685,11 +703,9 @@
       <div class="cam-hint" id="attCamHint">Position your face inside the frame, then tap the shutter.</div>
     </div>
     <div class="cam-actions">
-      <button class="secondary" id="attCamClose" type="button">Cancel</button>
-      <button class="secondary" id="attCamSwitch" type="button">Switch</button>
-      <button id="attCamCapture" type="button">Capture</button>
-      <button class="secondary" id="attCamRetake" type="button" style="display:none">Retake</button>
-      <button id="attCamSubmit" type="button" style="display:none">OK / Upload</button>
+      <button id="attCamCapture" class="cam-shutter" type="button" aria-label="Shutter"></button>
+      <button class="secondary cam-round" id="attCamRetake" type="button" style="display:none">Retake</button>
+      <button class="cam-round" id="attCamSubmit" type="button" style="display:none">Submit</button>
     </div>
     <div id="attCamMsg" class="msg hidden"></div>
   </div>
@@ -2491,7 +2507,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (applyMockPolicy_()) { setMsg('attCamMsg', 'Mock GPS detected. Disable fake location to check in.', true); return; }
     var btn = byId('attCamSubmit');
     btn.disabled = true;
-    setMsg('attCamMsg', 'Uploading attendanceâ€¦');
+    setMsg('attCamMsg', 'Saving attendance...');
     try {
       var position = await currentPosition();
       state.lastPosition = position ? { latitude: position.coords.latitude, longitude: position.coords.longitude } : null;
@@ -2512,12 +2528,18 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           queued = window.AndroidBridge.enqueueAttendance(JSON.stringify(payload)) === 'PENDING';
         }
       } catch (e) { queued = false; }
-      if (!queued) {
-        // Browser fallback: upload in the background; do not block the UI.
-        Cloud.post('attendanceCheckIn', payload, { queue: false }).catch(function () {});
+
+      var direct = false;
+      try {
+        var response = await Cloud.post('attendanceCheckIn', payload, { queue: false });
+        ensureOk(response);
+        direct = true;
+      } catch (directError) {
+        if (!queued) throw directError;
       }
+
       state.session.checkedIn = true;
-      state.session.attendanceSynced = !queued;
+      state.session.attendanceSynced = Boolean(direct);
       saveSession(state.session);
       adoptNative();
       try {
@@ -2526,13 +2548,42 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         }
       } catch (e) {}
       closeAttCamera();
-      toast(queued ? 'Attendance submitted. Uploading in background.' : 'Check-in recorded.');
+      if (direct) {
+        toast('Check-in recorded');
+      } else {
+        toast('Attendance saved on device. Uploading in background...');
+        pollAttendanceSync_();
+      }
       renderSession();
+      await loadAttendance().catch(function () {});
     } catch (error) {
-      setMsg('attCamMsg', error.message || 'Upload failed. Retry.', true);
-    } finally {
+      setMsg('attCamMsg', error.message || 'Upload failed. Check the connection and retry.', true);
       btn.disabled = false;
     }
+  }
+
+  function pollAttendanceSync_() {
+    var attempts = 0;
+    var timer = setInterval(function () {
+      attempts++;
+      try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.getSessionState === 'function') {
+          var raw = window.AndroidBridge.getSessionState();
+          var stateJson = raw ? JSON.parse(raw) : null;
+          if (stateJson && stateJson.attendanceSynced) {
+            state.session.attendanceSynced = true;
+            state.session.checkedIn = true;
+            saveSession(state.session);
+            renderSession();
+            clearInterval(timer);
+            toast('Attendance synced');
+            loadAttendance().catch(function () {});
+            return;
+          }
+        }
+      } catch (e) {}
+      if (attempts >= 12) clearInterval(timer);
+    }, 3000);
   }
 
   async function checkOut() {
@@ -4182,6 +4233,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 </script>
 </body>
 </html>
+
+
 
 
 
