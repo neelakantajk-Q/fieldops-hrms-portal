@@ -282,7 +282,8 @@
   .audit-node:last-child::after{bottom:calc(100% - 18px)}
   .audit-node h4{margin:0 0 3px;font-size:12.5px}
   .audit-node p{margin:0;font-size:11px;color:var(--muted)}
-  .audit-flow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}</style>
+  .audit-flow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}  #engineerProductivity, #hubWorkload{max-height:220px;overflow-y:auto;padding-right:4px}
+  @media (max-width:768px){#engineerProductivity, #hubWorkload{max-height:none;overflow:visible}}</style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -4544,6 +4545,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 </script>
 </body>
 </html>
+
 
 
 
