@@ -6,7 +6,7 @@
   queue and retries when the connection returns.
 */
 
-const VERSION = 'fieldops-shell-v23';
+const VERSION = 'fieldops-shell-v24';
 const SHELL = [
   './',
   './index.html',
@@ -92,6 +92,7 @@ async function cacheFirst(request) {
 self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
 });
+
 
 
 

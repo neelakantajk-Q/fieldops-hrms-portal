@@ -1703,6 +1703,42 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
   }
 
+  var AUDIT_FIELD_LABELS_ = {
+    UpdatedAt: 'time', UpdatedBy: 'editor', UpdatedByName: 'editor name', Version: 'version',
+    Status: 'status', EndTime: 'end time', ClientEndTime: 'client end time', TurnaroundMinutes: 'turnaround',
+    HoldSeconds: 'hold time', HoldStartedAt: 'hold start', LastClientRequestId: 'request id',
+    ServerReceivedAt: 'server time', SyncStatus: 'sync', MockFlag: 'mock GPS',
+    AssignedUserId: 'assigned user', VehicleNo: 'vehicle', ResolutionNotes: 'resolution',
+    RootCause: 'root cause', HoldCategory: 'hold reason', HoldReason: 'hold details'
+  };
+  var AUDIT_TYPE_LABELS_ = {
+    JobCreated: 'Job created', JobUpdated: 'Job updated', JobHoldRequested: 'Hold requested',
+    JobHoldApproved: 'Hold approved', JobHoldRejected: 'Hold rejected', JobHoldReleased: 'Hold released',
+    JobReassignedStarted: 'Reassigned job started', JobResumed: 'Job resumed', JobInterrupted: 'Job interrupted',
+    CheckIn: 'Photo check-in', CheckOut: 'Check-out', MasterUpdated: 'Master data updated',
+    MasterRegionAdded: 'Region added', MasterHubAdded: 'Hub added', MasterClientAdded: 'Client site added',
+    MasterArchived: 'Master data archived', UserCreated: 'User created', AdminUserUpdate: 'User updated',
+    AdminPasswordSet: 'Password reset', NotificationBroadcast: 'Broadcast sent',
+    NotificationAction: 'Notification action', SettingsUpdated: 'Settings updated'
+  };
+
+  function auditLabel_(type) { return AUDIT_TYPE_LABELS_[type] || type || 'Action'; }
+
+  function humanAuditDetails_(entry) {
+    var details = String((entry && entry.details) || '');
+    if (!details) return '';
+    var match = /^(.*?) :: (.*)$/.exec(details);
+    if (!match) return details;
+    var head = match[1];
+    var tail = match[2];
+    if (tail.indexOf('->') >= 0 || tail.indexOf('\u2192') >= 0) return details;
+    var fields = tail.split(',').map(function (item) {
+      var key = item.trim();
+      return AUDIT_FIELD_LABELS_[key] || key;
+    }).filter(Boolean);
+    if (!fields.length) return details;
+    return head + ' \u00b7 Changed: ' + fields.join(', ');
+  }
   async function loadOverview() {
     var data = ensureOk(await Cloud.post('getAnalytics', {}));
     var a = data.analytics || {};
@@ -1734,7 +1770,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var logs = ensureOk(await Cloud.post('getAuditLogs', { limit: 50 })).logs || [];
       byId('auditBody').innerHTML = logs.map(function (log) {
         return '<tr><td>' + Safe.esc(dateTime(log.timestamp)) + '</td><td>' + Safe.esc(log.userId) + '</td><td>' +
-          '<span class="badge gray">' + Safe.esc(log.activityType) + '</span></td><td>' + Safe.esc(log.details) +
+          '<span class="badge gray">' + Safe.esc(auditLabel_(log.activityType)) + '</span></td><td>' + Safe.esc(humanAuditDetails_(log)) +
           '</td><td>' + (log.disruptionFlag ? '<span class="badge bad">Yes</span>' : 'No') + '</td></tr>';
       }).join('') || '<tr><td colspan="5" class="muted">No audit entries</td></tr>';
     } else {
@@ -2099,8 +2135,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   function auditNodeHtml_(entry) {
     var actor = entry.username || entry.userId || 'System';
     var meta = [dateTime(entry.timestamp), entry.actorRole || '', entry.actorLevel ? ('Actor L' + entry.actorLevel) : '', entry.approvalLevel ? ('Approval L' + entry.approvalLevel) : ''].filter(Boolean).join(' \u00b7 ');
-    return '<div class="audit-node"><h4>' + Safe.esc(entry.activityType || 'Action') + ' \u00b7 ' + Safe.esc(actor) + '</h4><p>' + Safe.esc(meta) + '</p>' +
-      (entry.details ? '<p>' + Safe.esc(entry.details) + '</p>' : '') +
+    return '<div class="audit-node"><h4>' + Safe.esc(auditLabel_(entry.activityType || 'Action')) + ' \u00b7 ' + Safe.esc(actor) + '</h4><p>' + Safe.esc(meta) + '</p>' +
+      (entry.details ? '<p>' + Safe.esc(humanAuditDetails_(entry)) + '</p>' : '') +
       (entry.disruption || entry.disruptionFlag ? '<p><span class="badge bad">Flagged</span></p>' : '') + '</div>';
   }
 
@@ -3130,19 +3166,34 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (!state.mapInstance) {
       state.mapInstance = L.map('liveMap').setView([12.9716, 77.5946], 11);
       var configured = state.mapTiles || (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.mapTiles) || '';
-      var tileUrl = configured || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-      var attribution = state.mapAttribution || (window.__PORTAL_CONFIG__ && window.__PORTAL_CONFIG__.mapAttribution) || 'Tiles &copy; Esri';
-      var layer = L.tileLayer(tileUrl, {
-        maxZoom: 19,
-        attribution: attribution
-      });
-      layer.on('tileerror', function () {
-        state.mapTileErrors = (state.mapTileErrors || 0) + 1;
-        if (state.mapTileErrors === 6 && byId('mapLiveLabel')) {
-          byId('mapLiveLabel').textContent = 'Map tiles unavailable. Configure a licensed tile provider in the Platform Console.';
-        }
-      });
-      layer.addTo(state.mapInstance);
+      var sources = configured ? [{ url: configured, attribution: state.mapAttribution || 'Licensed provider' }] : [
+        { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri' },
+        { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attribution: '&copy; OpenStreetMap &copy; CARTO' }
+      ];
+      var sourceIndex = 0;
+      var errors = 0;
+      function addTiles() {
+        if (sourceIndex >= sources.length) return;
+        var source = sources[sourceIndex];
+        var layer = L.tileLayer(source.url, { maxZoom: 19, attribution: source.attribution, subdomains: ['a', 'b', 'c', 'd'] });
+        layer.on('tileerror', function () {
+          errors++;
+          state.mapTileErrors = (state.mapTileErrors || 0) + 1;
+          if (errors === 6) {
+            errors = 0;
+            sourceIndex++;
+            if (sourceIndex < sources.length) {
+              try { state.mapInstance.removeLayer(layer); } catch (e) {}
+              addTiles();
+              if (byId('mapLiveLabel')) byId('mapLiveLabel').textContent = 'Map provider fallback active';
+            } else if (byId('mapLiveLabel')) {
+              byId('mapLiveLabel').textContent = 'Map tiles unavailable (403/network). Configure a licensed provider in the Platform Console.';
+            }
+          }
+        });
+        layer.addTo(state.mapInstance);
+      }
+      addTiles();
       state.mapLayer = L.layerGroup().addTo(state.mapInstance);
     }
     return state.mapInstance;
@@ -3495,10 +3546,19 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     list.innerHTML = rows.join('');
   }
 
+  function driveFileIdFromUrl_(url) {
+    var text = String(url || '');
+    var match = /\/d\/([A-Za-z0-9_-]+)/.exec(text);
+    if (match) return match[1];
+    match = /[?&]id=([A-Za-z0-9_-]+)/.exec(text);
+    return match ? match[1] : '';
+  }
+
   function proofDisplayUrl_(item) {
     if (!item) return '';
     if (item.base64) return 'data:' + (item.mime || 'image/jpeg') + ';base64,' + item.base64;
-    if (item.fileId) return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(item.fileId) + '&sz=w1600';
+    var fileId = item.fileId || driveFileIdFromUrl_(item.url);
+    if (fileId) return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w1600';
     return item.url || '';
   }
 
@@ -4545,6 +4605,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 </script>
 </body>
 </html>
+
 
 
 
