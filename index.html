@@ -147,6 +147,10 @@
   .audit-item h4{margin:0 0 3px;font-size:12.5px}
   .audit-item p{margin:0;font-size:11px;color:var(--muted)}
   .toolbar .search-wide{flex:2 1 280px}
+  .search-wrap{position:relative;display:flex;align-items:center;width:100%}
+  .search-wrap input{padding-right:32px}
+  .search-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;min-width:24px;border:1px solid #cbd5e1;border-radius:50%;background:#e2e8f0;color:#334155;font-size:12px;line-height:1;padding:0;display:none;align-items:center;justify-content:center;box-shadow:none}
+  .search-clear.show{display:inline-flex}
   @media (max-width:900px){
     aside.sidebar{position:fixed;top:0;bottom:0;left:0;transform:translateX(-105%);transition:transform .2s ease;z-index:80;height:100%}
     aside.sidebar.open{transform:translateX(0)}
@@ -364,7 +368,6 @@
     <span class="chip bad hidden" id="mockChip">Mock GPS</span>
     <span class="chip" id="userChip">Signed out</span>
     <button class="secondary sm hidden" id="notifBtn" type="button">Notifications <span class="chip bad hidden" id="notifBadge">0</span></button>
-    <button class="secondary sm" id="exportBtn" type="button" title="Print this page or save as PDF">Print</button>
     <button class="secondary sm hidden" id="bubbleBtn" type="button">Hide bubble</button>
     <button class="secondary sm hidden" id="deviceSettingsBtn" type="button">Device</button>
     <button class="danger sm" id="logoutBtn" type="button">Logout</button>
@@ -568,8 +571,8 @@
           <div class="stat red"><h4>Mock / Breach</h4><p class="value" id="repCompliance">0 / 0</p></div>
         </div>
         <div class="card"><h3>Daily attendance</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Shifts</th><th>Hours</th><th>Mock</th></tr></thead><tbody id="repDaily"></tbody></table></div></div>
-        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div><div class="row-pager hidden" id="repAttPager"><button class="secondary sm" id="repAttPrev" type="button">Prev</button><span class="small muted" id="repAttLabel"></span><button class="secondary sm" id="repAttNext" type="button">Next</button></div></div>
-        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div><div class="row-pager hidden" id="repJobPager"><button class="secondary sm" id="repJobPrev" type="button">Prev</button><span class="small muted" id="repJobLabel"></span><button class="secondary sm" id="repJobNext" type="button">Next</button></div></div>
+        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
+        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
         <div class="card"><h3>Engineer productivity</h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Completed</th><th>Hours</th></tr></thead><tbody id="repEngineers"></tbody></table></div></div>
         </div>
       </section>
@@ -1222,10 +1225,8 @@
     report: null,
     reportPage: 1,
     reportChunk: null,
-    reportAttendanceRows: [],
-    reportJobRows: [],
-    reportAttPage: 1,
-    reportJobPage: 1,
+    reportPaging: null,
+    pagers: {},
     mapPoints: [],
     mapUserFilter: '',
     mapInstance: null,
@@ -1288,6 +1289,15 @@
   };
 
   function deviceId() {
+    try {
+      if (window.AndroidBridge && typeof window.AndroidBridge.getDeviceId === 'function') {
+        var nativeId = String(window.AndroidBridge.getDeviceId() || '').trim();
+        if (nativeId) {
+          if (Safe.get('device_uuid') !== nativeId) Safe.set('device_uuid', nativeId);
+          return nativeId;
+        }
+      }
+    } catch (e) {}
     var id = Safe.get('device_uuid');
     if (!id) { id = 'DEV-' + Safe.uuid().slice(0, 8).toUpperCase(); Safe.set('device_uuid', id); }
     return id;
@@ -1557,6 +1567,171 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     throw error;
   }
 
+  /* ---------------------------------------------------------- pagination */
+  var PAGE_SIZE = 30;
+
+  function pagerFor_(key) {
+    state.pagers = state.pagers || {};
+    if (!state.pagers[key]) state.pagers[key] = { page: 1, pages: 1, total: 0 };
+    return state.pagers[key];
+  }
+
+  function ensureTablePager_(tbodyId, key) {
+    var id = tbodyId + 'Pager';
+    var el = byId(id);
+    if (el) return el;
+    var body = byId(tbodyId);
+    var host = body && (body.closest('.table-wrap') || body.closest('table'));
+    if (!host || !host.parentNode) return null;
+    el = document.createElement('div');
+    el.id = id;
+    el.className = 'row-pager hidden';
+    el.innerHTML = '<button class="secondary sm" type="button" data-page-prev>Prev</button>' +
+      '<span class="small muted" data-page-label></span>' +
+      '<button class="secondary sm" type="button" data-page-next>Next</button>';
+    host.parentNode.insertBefore(el, host.nextSibling);
+    el.querySelector('[data-page-prev]').addEventListener('click', function () { changePager_(key, -1); });
+    el.querySelector('[data-page-next]').addEventListener('click', function () { changePager_(key, 1); });
+    return el;
+  }
+
+  function hideTablePager_(tbodyId) {
+    var el = byId(tbodyId + 'Pager');
+    if (el) el.classList.add('hidden');
+  }
+
+  function paginateTable_(key, tbodyId, rows, rowFn, opts) {
+    opts = opts || {};
+    var p = pagerFor_(key);
+    p.tbodyId = tbodyId;
+    p.rows = rows || [];
+    p.rowFn = rowFn;
+    p.colspan = opts.colspan || 1;
+    p.emptyText = opts.emptyText || 'No rows.';
+    p.onPage = opts.onPage || null;
+    p.meta = opts.meta || null;
+    p.server = Boolean(p.meta && p.meta.paged);
+    if (opts.reset) p.page = 1;
+    renderPager_(key);
+  }
+
+  function renderPager_(key) {
+    var p = pagerFor_(key);
+    var total = p.server ? Number(p.meta.total || 0) : p.rows.length;
+    var pages = p.server ? Math.max(1, Number(p.meta.pages || 1)) : Math.max(1, Math.ceil(total / PAGE_SIZE));
+    var size = p.server ? Number(p.meta.pageSize || PAGE_SIZE) : PAGE_SIZE;
+    if (p.server) p.page = Number(p.meta.page || 1);
+    p.total = total;
+    p.pages = pages;
+    p.page = Math.min(Math.max(1, p.page), pages);
+    var slice = p.server ? p.rows : p.rows.slice((p.page - 1) * size, p.page * size);
+    var body = byId(p.tbodyId);
+    if (!body) return;
+    body.innerHTML = slice.map(p.rowFn).join('') ||
+      '<tr><td colspan="' + p.colspan + '" class="muted">' + p.emptyText + '</td></tr>';
+    var el = ensureTablePager_(p.tbodyId, key);
+    if (!el) return;
+    el.classList.toggle('hidden', pages <= 1 || !total);
+    var start = total ? (p.page - 1) * size + 1 : 0;
+    var end = Math.min(p.page * size, total);
+    var label = el.querySelector('[data-page-label]');
+    if (label) label.textContent = 'Rows ' + start + '\u2013' + end + ' of ' + total;
+    var prev = el.querySelector('[data-page-prev]');
+    var next = el.querySelector('[data-page-next]');
+    if (prev) prev.disabled = p.page <= 1;
+    if (next) next.disabled = p.page >= pages;
+  }
+
+  function changePager_(key, delta) {
+    var p = pagerFor_(key);
+    var next = Math.min(Math.max(1, p.page + delta), p.pages);
+    if (next === p.page) return;
+    p.page = next;
+    if (typeof p.onPage === 'function') p.onPage(next);
+    else renderPager_(key);
+  }
+
+  /* --------------------------------------------------- device claim helper */
+  function isDeviceConflict_(error) {
+    if (!error) return false;
+    if (error.code === 'DEVICE_CONFLICT') return true;
+    return error.code === 'AUTH_REVOKED' &&
+      String(error.message || '').toLowerCase().indexOf('another device') >= 0;
+  }
+
+  function claimDeviceAndRetry_(error, retry) {
+    if (!isDeviceConflict_(error) || !state.session) return false;
+    confirmAction('Use this device?',
+      'This account is signed in elsewhere. Continue here and sign the other device out?',
+      function () {
+        Cloud.post('claimDevice', {
+          sessionToken: state.session.token,
+          deviceUUID: deviceId()
+        }, { queue: false }).then(function (res) {
+          ensureOk(res);
+          if (!res.reclaimed) {
+            saveSession(null);
+            renderSession();
+            setMsg('loginMsg', 'Sign in again to continue on this device.', true);
+            return;
+          }
+          state.session.token = res.sessionToken;
+          state.session.expiresAt = res.expiresAt;
+          state.session.deviceUUID = res.deviceUUID;
+          saveSession(state.session);
+          adoptNative();
+          toast('Other device signed out');
+          if (typeof retry === 'function') retry();
+        }).catch(function (claimError) {
+          toast(claimError.message || 'Could not continue on this device.');
+        });
+      });
+    return true;
+  }
+
+  function adoptNativeSession_() {
+    if (!state.session) return false;
+    var bridge = window.AndroidBridge;
+    if (!bridge || typeof bridge.getSessionState !== 'function') return false;
+    try {
+      var raw = bridge.getSessionState();
+      var native = raw ? JSON.parse(raw) : null;
+      if (native && native.sessionToken && native.sessionToken !== state.session.token) {
+        state.session.token = native.sessionToken;
+        if (native.expiresAt) state.session.expiresAt = native.expiresAt;
+        saveSession(state.session);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  /* ------------------------------------------------------- search clearing */
+  function initSearchClear_(inputId, onClear) {
+    var input = byId(inputId);
+    if (!input || input._searchClear) return;
+    input._searchClear = true;
+    var wrap = document.createElement('span');
+    wrap.className = 'search-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'search-clear';
+    btn.setAttribute('aria-label', 'Clear search');
+    btn.textContent = '\u00d7';
+    wrap.appendChild(btn);
+    var sync = function () { btn.classList.toggle('show', Boolean(String(input.value || '').trim())); };
+    input.addEventListener('input', sync);
+    btn.addEventListener('click', function () {
+      input.value = '';
+      sync();
+      if (typeof onClear === 'function') onClear();
+      input.focus();
+    });
+    sync();
+  }
+
   function renderQueue() {
     var badge = byId('queueBadge');
     if (!state.queue.length) { badge.classList.add('hidden'); return; }
@@ -1590,6 +1765,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           username: state.session.username,
           role: state.session.role,
           hub: state.session.hub,
+          deviceUUID: deviceId(),
           expiresAt: state.session.expiresAt,
           checkedIn: Boolean(state.session.checkedIn),
           attendanceSynced: Boolean(state.session.attendanceSynced),
@@ -1733,7 +1909,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('userChip').textContent = signedIn ? ((state.session.fullName || state.session.username) + ' \u00b7 ' + state.session.role) : 'Signed out';
     var canLogout = signedIn && state.session.allowLogout !== false;
     byId('logoutBtn').classList.toggle('hidden', !canLogout);
-    byId('exportBtn').classList.toggle('hidden', !signedIn);
     if (byId('notifBtn')) byId('notifBtn').classList.toggle('hidden', !signedIn);
     if (!signedIn) { state.notifUnread = 0; updateNotifBadge(); }
     if (byId('deviceSettingsBtn')) byId('deviceSettingsBtn').classList.toggle('hidden', !(signedIn && nativeBubbleAvailable()));
@@ -1834,7 +2009,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       setAuthProgress(90, 'Preparing workspace');
       await route(res.isSuperAdmin ? 'platform' : 'overview');
       loadNotifications();
-      loadPeople();
       startRealtimeStream();
       openNativePendingView_();
       setAuthProgress(100, 'Ready');
@@ -1895,7 +2069,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     showViewLoading_(false);
     byId('sidebar').classList.remove('open');
     byId('backdrop').classList.add('hidden');
-    if (['jobs', 'reports', 'uptime', 'map', 'pending', 'notifications'].indexOf(view) >= 0) {
+    if (['jobs', 'reports', 'uptime', 'map', 'pending', 'notifications', 'attendance', 'vehicles', 'admin', 'masters'].indexOf(view) >= 0) {
       if (!state.people || !state.people.length) await loadPeople();
     }
     startRealtimeStream();
@@ -1984,79 +2158,122 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('engineerProductivity').innerHTML = engHtml ? '<ul class="list-plain">' + engHtml + '</ul>' : 'No data';
 
     if (['Supervisor', 'Moderator', 'Administrator'].indexOf(state.session.role) >= 0) {
-      var logs = ensureOk(await Cloud.post('getAuditLogs', { limit: 50 })).logs || [];
-      byId('auditBody').innerHTML = logs.map(function (log) {
-        return '<tr><td>' + Safe.esc(dateTime(log.timestamp)) + '</td><td>' + Safe.esc(log.userId) + '</td><td>' +
-          '<span class="badge gray">' + Safe.esc(auditLabel_(log.activityType)) + '</span></td><td>' + Safe.esc(humanAuditDetails_(log)) +
-          '</td><td>' + (log.disruptionFlag ? '<span class="badge bad">Yes</span>' : 'No') + '</td></tr>';
-      }).join('') || '<tr><td colspan="5" class="muted">No audit entries</td></tr>';
+      await loadAuditPage_(1);
     } else {
       byId('auditBody').innerHTML = '<tr><td colspan="5" class="muted">Audit trail requires supervisor access.</td></tr>';
+      hideTablePager_('auditBody');
     }
   }
 
-  async function loadAttendance() {
+  function auditRowHtml_(log) {
+    return '<tr><td>' + Safe.esc(dateTime(log.timestamp)) + '</td><td>' + Safe.esc(log.userId) + '</td><td>' +
+      '<span class="badge gray">' + Safe.esc(auditLabel_(log.activityType)) + '</span></td><td>' + Safe.esc(humanAuditDetails_(log)) +
+      '</td><td>' + (log.disruptionFlag ? '<span class="badge bad">Yes</span>' : 'No') + '</td></tr>';
+  }
+
+  async function loadAuditPage_(page) {
+    var data = ensureOk(await Cloud.post('getAuditLogs', { page: page || 1, pageSize: PAGE_SIZE }));
+    paginateTable_('audit', 'auditBody', data.logs || [], auditRowHtml_, {
+      meta: data.paging,
+      onPage: loadAuditPage_,
+      colspan: 5,
+      emptyText: 'No audit entries'
+    });
+  }
+
+  function attendanceRowHtml_(day) {
+    var statusClass = day.status === 'Active' ? 'ok' : (day.status === 'LoggedOut' ? 'gray' : 'warn');
+    var proof = (day.checkInPhoto || day.checkOutPhoto)
+      ? '<button class="ghost sm" data-att-proofs="' + Safe.esc(day.userId + '|' + day.date) + '">View</button>'
+      : '<span class="muted">-</span>';
+    return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.userId) + '</td><td>' + Safe.esc(day.hubName) +
+      '</td><td>' + Safe.esc(timeOnly(day.checkIn)) + '</td><td>' + Safe.esc(timeOnly(day.checkOut)) + '</td><td>' +
+      Safe.esc(minutesToText(day.minutes)) + '</td><td><span class="badge ' + statusClass + '">' + Safe.esc(day.status) +
+      '</span>' + (day.mock ? ' <span class="badge bad">MOCK</span>' : '') + '</td><td>' + proof + '</td></tr>';
+  }
+
+  async function loadAttendance(page) {
     var date = byId('attDate').value || Safe.today();
     var userId = byId('attSearch').value.trim();
-    var data = ensureOk(await Cloud.post('getAttendance', { date: date, userId: userId }));
-    state.attendance = data.daily || [];
-    byId('attBody').innerHTML = state.attendance.map(function (day) {
-      var statusClass = day.status === 'Active' ? 'ok' : (day.status === 'LoggedOut' ? 'gray' : 'warn');
-      var proof = (day.checkInPhoto || day.checkOutPhoto)
-        ? '<button class="ghost sm" data-att-proofs="' + Safe.esc(day.userId + '|' + day.date) + '">View</button>'
-        : '<span class="muted">-</span>';
-      return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.userId) + '</td><td>' + Safe.esc(day.hubName) +
-        '</td><td>' + Safe.esc(timeOnly(day.checkIn)) + '</td><td>' + Safe.esc(timeOnly(day.checkOut)) + '</td><td>' +
-        Safe.esc(minutesToText(day.minutes)) + '</td><td><span class="badge ' + statusClass + '">' + Safe.esc(day.status) +
-        '</span>' + (day.mock ? ' <span class="badge bad">MOCK</span>' : '') + '</td><td>' + proof + '</td></tr>';
-    }).join('') || '<tr><td colspan="8" class="muted">No attendance for this day.</td></tr>';
+    var data = ensureOk(await Cloud.post('getAttendance', {
+      date: date,
+      userId: userId,
+      page: page || 1,
+      pageSize: PAGE_SIZE
+    }));
+    var rows = (data.daily || []).slice().sort(function (a, b) {
+      return String(b.date || '').localeCompare(String(a.date || '')) ||
+        String(b.checkIn || '').localeCompare(String(a.checkIn || '')) ||
+        String(a.userId || '').localeCompare(String(b.userId || ''));
+    });
+    state.attendance = rows;
+    paginateTable_('attendance', 'attBody', rows, attendanceRowHtml_, {
+      meta: data.paging,
+      onPage: loadAttendance,
+      colspan: 8,
+      emptyText: 'No attendance for this day.'
+    });
   }
 
-  async function loadJobs() {
+  function jobRowHtml_(task) {
+    var elapsed = task.endTime ? minutesToText(task.turnaroundMinutes) :
+      (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '-');
+    var badge = task.status === 'Completed' ? 'ok' : (task.status === 'InProgress' ? '' : 'warn');
+    var overtime = !task.endTime && task.startTime && (Date.now() - new Date(task.startTime).getTime()) > 3600000;
+    var lastEdit = task.updatedByName || task.updatedBy || '';
+    var lastEditHtml = lastEdit
+      ? '<span class="edit-badge">Edited by <strong>' + Safe.esc(lastEdit) + '</strong>' +
+        (task.updatedAt ? ' &middot; ' + Safe.esc(dateTime(task.updatedAt)) : '') + '</span>'
+      : '<span class="muted small">&mdash;</span>';
+    var holdBadge = '';
+    if (task.status === 'HoldRequested') holdBadge = ' <span class="badge warn">Held: ' + Safe.esc(task.holdCategory || task.holdReason || 'pending') + '</span>';
+    if (task.status === 'OnHold') holdBadge = ' <span class="badge bad">Approved: ' + Safe.esc(task.holdApprovedBy || 'supervisor') + (task.holdApprovedLevel ? ' L' + task.holdApprovedLevel : '') + '</span>';
+    var actions = '<button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button> ' +
+      '<button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button> ' +
+      '<button class="ghost sm" data-job-proofs="' + Safe.esc(task.jobId) + '">Proofs</button>';
+    if (state.session.checkedIn && (task.status === 'InProgress' || task.status === 'Delayed')) actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
+    return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td class="small mono">' + Safe.esc(task.complaintNo || '-') + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
+      '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
+      badge + '">' + Safe.esc(task.status) + '</span>' + holdBadge + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
+      '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '-') +
+      '</td><td>' + lastEditHtml + '</td><td>' + actions + '</td></tr>';
+  }
+
+  async function loadJobs(page) {
     var data = ensureOk(await Cloud.post('getTasks', {
       status: byId('jobStatus').value,
-      query: byId('jobSearch').value.trim()
+      query: byId('jobSearch').value.trim(),
+      page: page || 1,
+      pageSize: PAGE_SIZE
     }));
     state.tasks = data.tasks || [];
-    var rows = state.tasks;
-    byId('jobsBody').innerHTML = rows.map(function (task) {
-      var elapsed = task.endTime ? minutesToText(task.turnaroundMinutes) :
-        (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '-');
-      var badge = task.status === 'Completed' ? 'ok' : (task.status === 'InProgress' ? '' : 'warn');
-      var overtime = !task.endTime && task.startTime && (Date.now() - new Date(task.startTime).getTime()) > 3600000;
-      var lastEdit = task.updatedByName || task.updatedBy || '';
-      var lastEditHtml = lastEdit
-        ? '<span class="edit-badge">Edited by <strong>' + Safe.esc(lastEdit) + '</strong>' +
-          (task.updatedAt ? ' &middot; ' + Safe.esc(dateTime(task.updatedAt)) : '') + '</span>'
-        : '<span class="muted small">&mdash;</span>';
-      var holdBadge = '';
-      if (task.status === 'HoldRequested') holdBadge = ' <span class="badge warn">Held: ' + Safe.esc(task.holdCategory || task.holdReason || 'pending') + '</span>';
-      if (task.status === 'OnHold') holdBadge = ' <span class="badge bad">Approved: ' + Safe.esc(task.holdApprovedBy || 'supervisor') + (task.holdApprovedLevel ? ' L' + task.holdApprovedLevel : '') + '</span>';
-      var actions = '<button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button> ' +
-        '<button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button> ' +
-        '<button class="ghost sm" data-job-proofs="' + Safe.esc(task.jobId) + '">Proofs</button>';
-      if (state.session.checkedIn && (task.status === 'InProgress' || task.status === 'Delayed')) actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
-      return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td class="small mono">' + Safe.esc(task.complaintNo || '-') + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
-        '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
-        badge + '">' + Safe.esc(task.status) + '</span>' + holdBadge + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
-        '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '-') +
-        '</td><td>' + lastEditHtml + '</td><td>' + actions + '</td></tr>';
-    }).join('') || '<tr><td colspan="10" class="muted">No job cards.</td></tr>';
+    paginateTable_('jobs', 'jobsBody', state.tasks, jobRowHtml_, {
+      meta: data.paging,
+      onPage: loadJobs,
+      colspan: 10,
+      emptyText: 'No job cards.'
+    });
   }
 
-  async function loadVehicles() {
+  function vehicleRowHtml_(vehicle) {
+    var flags = (vehicle.anomalyFlags || []).map(function (flag) {
+      return '<span class="badge ' + (flag === 'UNKNOWN_VEHICLE' ? 'warn' : 'bad') + '">' + Safe.esc(flag) + '</span>';
+    }).join(' ');
+    return '<tr><td><strong>' + Safe.esc(vehicle.display) + '</strong></td><td>' + Safe.esc(vehicle.hub || '-') +
+      '</td><td><span class="badge gray">' + Safe.esc(vehicle.status) + '</span></td><td>' + (flags || '<span class="muted">-</span>') +
+      '</td><td><button class="secondary sm" data-vehicle="' + Safe.esc(vehicle.plateNo) + '">Details</button> ' +
+      '<button class="secondary sm" data-edit-vehicle="' + Safe.esc(vehicle.plateNo) + '">Edit</button></td></tr>';
+  }
+
+  async function loadVehicles(page) {
     var data = ensureOk(await Cloud.post('vehicleList', { query: byId('vehSearch').value.trim() }));
     state.vehicles = data.vehicles || [];
     if (data.plateFormat) state.plateFormat = data.plateFormat;
-    byId('vehBody').innerHTML = state.vehicles.map(function (vehicle) {
-      var flags = (vehicle.anomalyFlags || []).map(function (flag) {
-        return '<span class="badge ' + (flag === 'UNKNOWN_VEHICLE' ? 'warn' : 'bad') + '">' + Safe.esc(flag) + '</span>';
-      }).join(' ');
-      return '<tr><td><strong>' + Safe.esc(vehicle.display) + '</strong></td><td>' + Safe.esc(vehicle.hub || '-') +
-        '</td><td><span class="badge gray">' + Safe.esc(vehicle.status) + '</span></td><td>' + (flags || '<span class="muted">-</span>') +
-        '</td><td><button class="secondary sm" data-vehicle="' + Safe.esc(vehicle.plateNo) + '">Details</button> ' +
-        '<button class="secondary sm" data-edit-vehicle="' + Safe.esc(vehicle.plateNo) + '">Edit</button></td></tr>';
-    }).join('') || '<tr><td colspan="5" class="muted">Registry is empty. Captures will create vehicles automatically.</td></tr>';
+    paginateTable_('vehicles', 'vehBody', state.vehicles, vehicleRowHtml_, {
+      reset: !page,
+      colspan: 5,
+      emptyText: 'Registry is empty. Captures will create vehicles automatically.'
+    });
   }
 
   async function loadCaptures() {
@@ -2110,12 +2327,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var data = ensureOk(await Cloud.post('getAdminSettings', {}));
     applySettingsToForm(data.settings);
     state.devices = data.devices || [];
-    byId('deviceBody').innerHTML = state.devices.map(function (device) {
+    paginateTable_('devices', 'deviceBody', state.devices, function (device) {
       var cls = device.batteryPct >= 0 && device.batteryPct < 20 ? 'bad' : (device.batteryPct >= 0 ? 'ok' : 'gray');
       return '<tr><td>' + Safe.esc(device.userId) + '</td><td class="mono small">' + Safe.esc(device.deviceUUID || '-') +
         '</td><td><span class="badge ' + cls + '">' + (device.batteryPct >= 0 ? device.batteryPct + '%' : 'n/a') +
         '</span></td><td>' + Safe.esc(device.zone || '-') + '</td><td>' + Safe.esc(dateTime(device.at)) + '</td></tr>';
-    }).join('') || '<tr><td colspan="5" class="muted">No device telemetry yet.</td></tr>';
+    }, { reset: true, colspan: 5, emptyText: 'No device telemetry yet.' });
 
     var usersResponse = ensureOk(await Cloud.post('getUsers', {}));
     var users = usersResponse.users || [];
@@ -2135,7 +2352,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       byId('pfJobFolder').value = (data.settings && data.settings.jobPhotoFolderId) || '';
       byId('pfAttFolder').value = (data.settings && data.settings.attendancePhotoFolderId) || '';
     }
-    byId('userBody').innerHTML = users.map(function (user) {
+    paginateTable_('users', 'userBody', users, function (user) {
       var label = user.fullName || user.username;
       var avatar = user.profilePhotoUrl
         ? '<img src="' + Safe.esc(user.profilePhotoUrl) + '" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--line)">'
@@ -2150,7 +2367,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         '<button class="ghost sm" data-audit-entity="' + Safe.esc('User|' + user.userId + '|' + label) + '">Audit</button> ' +
         '<button class="' + (user.status === 'Active' ? 'danger' : '') + ' sm" data-toggle-user="' + Safe.esc(user.username + '|' + (user.status === 'Active' ? 'Suspended' : 'Active')) + '">' +
         (user.status === 'Active' ? 'Disable' : 'Enable') + '</button></td></tr>';
-    }).join('') || '<tr><td colspan="12" class="muted">No users.</td></tr>';
+    }, { reset: true, colspan: 12, emptyText: 'No users.' });
     fillDatalists();
     applyAlertSettings(data.settings || {});
     loadHierarchy(users);
@@ -2707,15 +2924,22 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
   }
 
-  function openRetake() {
-    var retakeable = state.tasks.filter(function (task) {
-      return task.status === 'Interrupted' || task.status === 'Delayed';
-    });
-    byId('retakeBody').innerHTML = retakeable.map(function (task) {
+  async function openRetake() {
+    var retakeable;
+    try {
+      var data = ensureOk(await Cloud.post('getTasks', { pageSize: 0 }));
+      retakeable = (data.tasks || []).filter(function (task) {
+        return task.status === 'Interrupted' || task.status === 'Delayed';
+      });
+    } catch (error) {
+      toast(error.message || 'Could not load interrupted jobs.');
+      return;
+    }
+    paginateTable_('retake', 'retakeBody', retakeable, function (task) {
       return '<tr><td>' + Safe.esc(task.jobId) + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') + '</td><td>' +
         Safe.esc(task.interruptedReason || task.delayReason || '-') + '</td><td><button class="sm" data-resume="' +
         Safe.esc(task.jobId) + '">Resume</button></td></tr>';
-    }).join('') || '<tr><td colspan="4" class="muted">No interrupted jobs.</td></tr>';
+    }, { reset: true, colspan: 4, emptyText: 'No interrupted jobs.' });
     openModal('retakeModal');
   }
 
@@ -2799,6 +3023,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       toast('Check-in recorded');
       renderSession();
     } catch (error) {
+      if (claimDeviceAndRetry_(error, function () { submitCheckIn(); })) return;
       setMsg('checkInMsg', error.message, true);
     } finally {
       byId('checkInSubmit').disabled = false;
@@ -2954,8 +3179,26 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     await startAttendanceStream(attendanceFacing);
   }
 
+  function syncNativeCheckIn_() {
+    if (!state.session) return;
+    adoptNativeSession_();
+    var bridge = window.AndroidBridge;
+    if (!bridge || typeof bridge.getCheckInState !== 'function') return;
+    try {
+      var native = JSON.parse(bridge.getCheckInState());
+      if (native && native.checkedIn && !state.session.checkedIn) {
+        state.session.checkedIn = true;
+        saveSession(state.session);
+        renderSession();
+        refreshBootstrap().catch(function () {});
+        if (state.view === 'jobs') loadJobs();
+      }
+    } catch (e) {}
+  }
+
   function refreshAfterNativeAttendance_() {
     setTimeout(function () {
+      adoptNativeSession_();
       try {
         var bridge = window.AndroidBridge;
         if (bridge && typeof bridge.getCheckInState === 'function') {
@@ -3027,7 +3270,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     setMsg('attCamMsg', '');
   }
 
-  async function submitAttCamera() {
+  async function submitAttCamera(skipEnqueue) {
     if (!pendingAttPhoto) { setMsg('attCamMsg', 'Capture a photo first.', true); return; }
     if (applyMockPolicy_()) { setMsg('attCamMsg', 'Mock GPS detected. Disable fake location to check in.', true); return; }
     var btn = byId('attCamSubmit');
@@ -3048,18 +3291,36 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         clientRequestId: Safe.uuid()
       };
       var queued = false;
-      try {
-        if (window.AndroidBridge && typeof window.AndroidBridge.enqueueAttendance === 'function') {
-          queued = window.AndroidBridge.enqueueAttendance(JSON.stringify(payload)) === 'PENDING';
-        }
-      } catch (e) { queued = false; }
+      if (!skipEnqueue) {
+        try {
+          if (window.AndroidBridge && typeof window.AndroidBridge.enqueueAttendance === 'function') {
+            queued = window.AndroidBridge.enqueueAttendance(JSON.stringify(payload)) === 'PENDING';
+          }
+        } catch (e) { queued = false; }
+      }
 
       var direct = false;
       try {
         var response = await Cloud.post('attendanceCheckIn', payload, { queue: false });
         ensureOk(response);
         direct = true;
+        try {
+          if (window.AndroidBridge && typeof window.AndroidBridge.clearPendingAttendance === 'function') {
+            window.AndroidBridge.clearPendingAttendance();
+          }
+        } catch (e) {}
       } catch (directError) {
+        if (isDeviceConflict_(directError)) {
+          try {
+            if (window.AndroidBridge && typeof window.AndroidBridge.clearPendingAttendance === 'function') {
+              window.AndroidBridge.clearPendingAttendance();
+            }
+          } catch (e) {}
+          if (claimDeviceAndRetry_(directError, function () { submitAttCamera(true); })) {
+            btn.disabled = false;
+            return;
+          }
+        }
         if (!queued) throw directError;
       }
 
@@ -3082,6 +3343,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       renderSession();
       await loadAttendance().catch(function () {});
     } catch (error) {
+      if (claimDeviceAndRetry_(error, function () { submitAttCamera(true); })) {
+        btn.disabled = false;
+        return;
+      }
       setMsg('attCamMsg', error.message || 'Upload failed. Check the connection and retry.', true);
       btn.disabled = false;
     }
@@ -3416,7 +3681,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     return { from: start, to: end, page: page, pages: pages, days: days };
   }
 
-  async function loadReports(page) {
+  async function loadReports(page, attPage, jobPage) {
     var from = byId('repFrom').value || Safe.today();
     var to = byId('repTo').value || from;
     if (from > to) { var swap = from; from = to; to = swap; }
@@ -3443,86 +3708,102 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       byId('repNext').disabled = chunk.page >= chunk.pages;
     }
     var userId = byId('repUser').value.trim();
-    var data = ensureOk(await Cloud.post('getMisReport', { from: chunk.from, to: chunk.to, userId: userId }));
+    var data = ensureOk(await Cloud.post('getMisReport', {
+      from: chunk.from,
+      to: chunk.to,
+      userId: userId,
+      attPage: attPage || 1,
+      attPageSize: PAGE_SIZE,
+      jobPage: jobPage || 1,
+      jobPageSize: PAGE_SIZE
+    }));
     var report = data.report || {};
+    var paging = data.paging || {};
     state.report = report;
+    state.reportPaging = paging;
     var attendance = report.attendance || [];
     var jobs = report.jobs || {};
     var compliance = report.compliance || {};
-    state.reportAttendanceRows = attendance;
-    state.reportJobRows = jobs.rows || [];
-    state.reportAttPage = 1;
-    state.reportJobPage = 1;
-    byId('repShifts').textContent = attendance.length;
+    var attMeta = paging.attendance || {};
+    byId('repShifts').textContent = attMeta.total !== undefined ? attMeta.total : attendance.length;
     byId('repDone').textContent = jobs.completed || 0;
     byId('repTurnaround').textContent = minutesToText(jobs.avgTurnaroundMinutes || 0);
     byId('repCompliance').textContent = (compliance.mockFlags || 0) + ' / ' + (compliance.breachEvents || 0);
 
-    byId('repDaily').innerHTML = (report.daily || []).map(function (day) {
+    paginateTable_('reportDaily', 'repDaily', report.daily || [], function (day) {
       return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.shifts) + '</td><td>' +
         Safe.esc(minutesToText(day.minutes)) + '</td><td>' + Safe.esc(day.mock) + '</td></tr>';
-    }).join('') || '<tr><td colspan="4" class="muted">No attendance in this range.</td></tr>';
+    }, { reset: true, colspan: 4, emptyText: 'No attendance in this range.' });
 
-    renderReportAttendance_();
-    renderReportJobs_();
+    renderReportAttendance_(attendance, attMeta);
+    renderReportJobs_(jobs.rows || [], paging.jobs || {});
 
-    byId('repEngineers').innerHTML = (jobs.engineers || []).map(function (person) {
+    paginateTable_('reportEngineers', 'repEngineers', jobs.engineers || [], function (person) {
       return '<tr><td>' + Safe.esc(person.userId) + '</td><td>' + Safe.esc(person.completed) + '</td><td>' +
         Safe.esc(minutesToText(person.minutes)) + '</td></tr>';
-    }).join('') || '<tr><td colspan="3" class="muted">No completed jobs in this range.</td></tr>';
+    }, { reset: true, colspan: 3, emptyText: 'No completed jobs in this range.' });
   }
 
-  function reportPageSlice_(rows, page, size) {
-    var list = rows || [];
-    var pages = Math.max(1, Math.ceil(list.length / size));
-    page = Math.min(Math.max(1, Number(page) || 1), pages);
-    return {
-      page: page,
-      pages: pages,
-      total: list.length,
-      rows: list.slice((page - 1) * size, page * size)
-    };
+  function attendanceReportRowHtml_(row) {
+    return '<tr><td>' + Safe.esc(row.date) + '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '') +
+      '</td><td>' + Safe.esc(timeOnly(row.checkIn) || '-') + '</td><td>' + Safe.esc(timeOnly(row.checkOut) || '-') +
+      '</td><td>' + Safe.esc(minutesToText(row.minutes)) + '</td><td>' + Safe.esc(row.status || '') +
+      '</td><td><button class="secondary sm" data-att-proofs="' + Safe.esc(row.userId + '|' + row.date) + '">Proofs</button></td></tr>';
   }
 
-  function renderReportAttendance_() {
-    var slice = reportPageSlice_(state.reportAttendanceRows, state.reportAttPage, 50);
-    state.reportAttPage = slice.page;
-    byId('repAttendance').innerHTML = slice.rows.map(function (row) {
-      return '<tr><td>' + Safe.esc(row.date) + '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '') +
-        '</td><td>' + Safe.esc(timeOnly(row.checkIn) || '-') + '</td><td>' + Safe.esc(timeOnly(row.checkOut) || '-') +
-        '</td><td>' + Safe.esc(minutesToText(row.minutes)) + '</td><td>' + Safe.esc(row.status || '') +
-        '</td><td><button class="secondary sm" data-att-proofs="' + Safe.esc(row.userId + '|' + row.date) + '">Proofs</button></td></tr>';
-    }).join('') || '<tr><td colspan="8" class="muted">No attendance rows.</td></tr>';
-    byId('repAttPager').classList.toggle('hidden', slice.pages <= 1);
-    byId('repAttLabel').textContent = 'Rows ' + (slice.total ? ((slice.page - 1) * 50 + 1) : 0) + '\u2013' +
-      Math.min(slice.page * 50, slice.total) + ' of ' + slice.total;
-    byId('repAttPrev').disabled = slice.page <= 1;
-    byId('repAttNext').disabled = slice.page >= slice.pages;
+  function jobReportRowHtml_(job) {
+    var hold = job.holdCategory || job.delayCategory || job.interruptedReason || '';
+    var approved = job.holdApprovedBy ? (job.holdApprovedBy + (job.holdApprovedLevel ? ' L' + job.holdApprovedLevel : '')) : '';
+    return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td class="small mono">' + Safe.esc(job.complaintNo || '-') + '</td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
+      Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.status) + '</td><td>' +
+      (job.startProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">Start</button>' : '-') +
+      '</td><td>' + (job.endProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">End</button>' : '-') +
+      '</td><td class="small">' + Safe.esc(hold + (job.holdReason ? ' \u00b7 ' + job.holdReason : '')) + '</td><td class="small">' +
+      Safe.esc(job.resolutionNotes || '-') + '</td><td class="small">' + Safe.esc(approved || '-') + '</td></tr>';
   }
 
-  function renderReportJobs_() {
-    var slice = reportPageSlice_(state.reportJobRows, state.reportJobPage, 50);
-    state.reportJobPage = slice.page;
-    byId('repJobs').innerHTML = slice.rows.map(function (job) {
-      var hold = job.holdCategory || job.delayCategory || job.interruptedReason || '';
-      var approved = job.holdApprovedBy ? (job.holdApprovedBy + (job.holdApprovedLevel ? ' L' + job.holdApprovedLevel : '')) : '';
-      return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td class="small mono">' + Safe.esc(job.complaintNo || '-') + '</td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
-        Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.status) + '</td><td>' +
-        (job.startProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">Start</button>' : '-') +
-        '</td><td>' + (job.endProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">End</button>' : '-') +
-        '</td><td class="small">' + Safe.esc(hold + (job.holdReason ? ' \u00b7 ' + job.holdReason : '')) + '</td><td class="small">' +
-        Safe.esc(job.resolutionNotes || '-') + '</td><td class="small">' + Safe.esc(approved || '-') + '</td></tr>';
-    }).join('') || '<tr><td colspan="10" class="muted">No jobs in this range.</td></tr>';
-    byId('repJobPager').classList.toggle('hidden', slice.pages <= 1);
-    byId('repJobLabel').textContent = 'Rows ' + (slice.total ? ((slice.page - 1) * 50 + 1) : 0) + '\u2013' +
-      Math.min(slice.page * 50, slice.total) + ' of ' + slice.total;
-    byId('repJobPrev').disabled = slice.page <= 1;
-    byId('repJobNext').disabled = slice.page >= slice.pages;
+  function renderReportAttendance_(rows, meta) {
+    paginateTable_('reportAttendance', 'repAttendance', rows || [], attendanceReportRowHtml_, {
+      meta: meta,
+      onPage: function (nextPage) {
+        var jobPage = state.reportPaging && state.reportPaging.jobs ? state.reportPaging.jobs.page : 1;
+        loadReports(state.reportPage, nextPage, jobPage || 1);
+      },
+      colspan: 8,
+      emptyText: 'No attendance rows.'
+    });
   }
 
-  function exportReportCsv() {
-    var report = state.report;
-    if (!report) { toast('Run a report first.'); return; }
+  function renderReportJobs_(rows, meta) {
+    paginateTable_('reportJobs', 'repJobs', rows || [], jobReportRowHtml_, {
+      meta: meta,
+      onPage: function (nextPage) {
+        var attPage = state.reportPaging && state.reportPaging.attendance ? state.reportPaging.attendance.page : 1;
+        loadReports(state.reportPage, attPage || 1, nextPage);
+      },
+      colspan: 10,
+      emptyText: 'No jobs in this range.'
+    });
+  }
+
+  async function exportReportCsv() {
+    var from = state.reportFrom || byId('repFrom').value || Safe.today();
+    var to = state.reportTo || byId('repTo').value || from;
+    var userId = byId('repUser').value.trim();
+    var data;
+    try {
+      data = ensureOk(await Cloud.post('getMisReport', {
+        from: from,
+        to: to,
+        userId: userId,
+        attPageSize: 0,
+        jobPageSize: 0
+      }));
+    } catch (error) {
+      toast(error.message || 'Could not export the report.');
+      return;
+    }
+    var report = data.report || {};
     var rows = [['Date', 'User', 'Hub', 'CheckIn', 'CheckOut', 'Minutes', 'Status', 'Mock']];
     (report.attendance || []).forEach(function (row) {
       rows.push([row.date, row.userId, row.hubName || '', row.checkIn || '', row.checkOut || '', row.minutes || 0, row.status || '', row.mock ? 'YES' : 'NO']);
@@ -3534,7 +3815,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var url = URL.createObjectURL(blob);
     var link = document.createElement('a');
     link.href = url;
-    link.download = 'mis-' + (report.from || Safe.today()) + '-to-' + (report.to || Safe.today()) + '.csv';
+    link.download = 'mis-' + (report.from || from) + '-to-' + (report.to || to) + '.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -3721,22 +4002,22 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         '<button class="sm" data-toggle-master="' + Safe.esc(kind + '|' + id + '|' + (active ? 'false' : 'true')) + '">' + (active ? 'Archive' : 'Enable') + '</button> ' + audit;
     }
 
-    byId('regionBody').innerHTML = state.masters.regions.map(function (r) {
+    paginateTable_('masters:regions', 'regionBody', state.masters.regions, function (r) {
       return '<tr><td><strong>' + Safe.esc(r.name) + '</strong></td><td>' + Safe.esc(r.notes || '') + '</td><td>' +
         '<span class="badge ' + (r.active ? 'ok' : 'gray') + '">' + (r.active ? 'Active' : 'Archived') + '</span></td><td>' + actions('region', r.regionId, r.active) + '</td></tr>';
-    }).join('') || '<tr><td colspan="4" class="muted">No regions yet.</td></tr>';
+    }, { reset: true, colspan: 4, emptyText: 'No regions yet.' });
 
-    byId('hubBody').innerHTML = state.masters.hubs.map(function (h) {
+    paginateTable_('masters:hubs', 'hubBody', state.masters.hubs, function (h) {
       return '<tr><td><strong>' + Safe.esc(h.name) + '</strong></td><td>' + Safe.esc(h.region) + '</td><td class="mono">' +
         Safe.esc(h.lat) + '</td><td class="mono">' + Safe.esc(h.lng) + '</td><td>' + Safe.esc(h.radiusMeters) + '</td><td>' + actions('hub', h.hubId, h.active) + '</td></tr>';
-    }).join('') || '<tr><td colspan="6" class="muted">No hubs yet.</td></tr>';
+    }, { reset: true, colspan: 6, emptyText: 'No hubs yet.' });
 
-    byId('clientBody').innerHTML = state.masters.clients.map(function (c) {
+    paginateTable_('masters:clients', 'clientBody', state.masters.clients, function (c) {
       var hub = state.masters.hubs.filter(function (h) { return h.hubId === c.hubId; })[0];
       return '<tr><td><strong>' + Safe.esc(c.name) + '</strong></td><td>' + Safe.esc(hub ? hub.name : c.hubId) +
         '</td><td>' + Safe.esc(c.address || '') + '</td><td class="mono">' + Safe.esc(c.lat) + '</td><td class="mono">' +
         Safe.esc(c.lng) + '</td><td>' + actions('client', c.clientId, c.active) + '</td></tr>';
-    }).join('') || '<tr><td colspan="6" class="muted">No client sites yet.</td></tr>';
+    }, { reset: true, colspan: 6, emptyText: 'No client sites yet.' });
 
     ['addRegion', 'addHub', 'addClient'].forEach(function (id) {
       var button = byId(id);
@@ -4228,7 +4509,17 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     return h ? h + 'h ' + (m < 10 ? '0' : '') + m + 'm' : m + 'm';
   }
 
-  async function loadUptime() {
+  function uptimeRowHtml_(item) {
+    var resolution = item.lastResolution ? (item.lastResolution + (item.lastResolvedByName ? ' \u00b7 ' + item.lastResolvedByName : '')) : '-';
+    return '<tr><td><strong>' + Safe.esc(item.display) + '</strong></td><td>' + Safe.esc(item.status) + '</td><td>' + Safe.esc(item.uptimePct) + '%</td><td>' +
+      Safe.esc(minutesLabel_(item.downtimeMinutes)) + '</td><td>' + Safe.esc(minutesLabel_(item.heldMinutes)) + '</td><td>' +
+      Safe.esc(item.totalJobs || 0) + ' / ' + Safe.esc(item.open || 0) + '</td><td>' + Safe.esc(minutesLabel_(item.avgTatMinutes)) + '</td><td>' +
+      Safe.esc(item.currentReason || item.lastReason || '-') + '</td><td class="small">' + Safe.esc(resolution) + '</td><td class="small">' +
+      Safe.esc(item.lastResolvedByName || '-') + (item.lastResolvedLevel ? ' (L' + item.lastResolvedLevel + ')' : '') + '</td><td>' +
+      (item.currentJobId ? '<button class="secondary sm" data-edit-job="' + Safe.esc(item.currentJobId) + '">Open</button>' : '') + '</td></tr>';
+  }
+
+  async function loadUptime(page) {
     var from = byId('upFrom').value || Safe.today();
     var to = byId('upTo').value || from;
     var data = ensureOk(await Cloud.post('getVehicleUptime', {
@@ -4236,7 +4527,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       to: to,
       hub: byId('upHub').value.trim(),
       userId: byId('upUser').value.trim(),
-      plateNo: byId('upVehicle').value.trim()
+      plateNo: byId('upVehicle').value.trim(),
+      page: page || 1,
+      pageSize: PAGE_SIZE
     }));
     var report = data.report || {};
     var summary = report.summary || {};
@@ -4254,15 +4547,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       '<div class="stat amber"><h4>Pending</h4><p class="value">' + Safe.esc(summary.pendingJobs || 0) + '</p></div>' +
       '<div class="stat red"><h4>Overdue &gt; 24h</h4><p class="value">' + Safe.esc(summary.overdueJobs || 0) + '</p></div>';
     var rows = report.vehicles || [];
-    byId('upBody').innerHTML = rows.map(function (item) {
-      var resolution = item.lastResolution ? (item.lastResolution + (item.lastResolvedByName ? ' \u00b7 ' + item.lastResolvedByName : '')) : '-';
-      return '<tr><td><strong>' + Safe.esc(item.display) + '</strong></td><td>' + Safe.esc(item.status) + '</td><td>' + Safe.esc(item.uptimePct) + '%</td><td>' +
-        Safe.esc(minutesLabel_(item.downtimeMinutes)) + '</td><td>' + Safe.esc(minutesLabel_(item.heldMinutes)) + '</td><td>' +
-        Safe.esc(item.totalJobs || 0) + ' / ' + Safe.esc(item.open || 0) + '</td><td>' + Safe.esc(minutesLabel_(item.avgTatMinutes)) + '</td><td>' +
-        Safe.esc(item.currentReason || item.lastReason || '-') + '</td><td class="small">' + Safe.esc(resolution) + '</td><td class="small">' +
-        Safe.esc(item.lastResolvedByName || '-') + (item.lastResolvedLevel ? ' (L' + item.lastResolvedLevel + ')' : '') + '</td><td>' +
-        (item.currentJobId ? '<button class="secondary sm" data-edit-job="' + Safe.esc(item.currentJobId) + '">Open</button>' : '') + '</td></tr>';
-    }).join('') || '<tr><td colspan="11" class="muted">No vehicles in this range.</td></tr>';
+    paginateTable_('uptime', 'upBody', rows, uptimeRowHtml_, {
+      meta: data.paging,
+      onPage: loadUptime,
+      colspan: 11,
+      emptyText: 'No vehicles in this range.'
+    });
     byId('upReasons').innerHTML = Object.keys(summary.reasons || {}).map(function (key) {
       return '<div>' + Safe.esc(key) + ': <strong>' + Safe.esc(summary.reasons[key]) + '</strong></div>';
     }).join('') || 'No downtime reasons.';
@@ -4271,9 +4561,24 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }).join('') || 'No supervisor resolutions.';
   }
 
-  function exportUptimeCsv() {
-    var report = state.uptimeReport;
-    if (!report) { toast('Run the uptime report first.'); return; }
+  async function exportUptimeCsv() {
+    var from = byId('upFrom').value || Safe.today();
+    var to = byId('upTo').value || from;
+    var data;
+    try {
+      data = ensureOk(await Cloud.post('getVehicleUptime', {
+        from: from,
+        to: to,
+        hub: byId('upHub').value.trim(),
+        userId: byId('upUser').value.trim(),
+        plateNo: byId('upVehicle').value.trim(),
+        pageSize: 0
+      }));
+    } catch (error) {
+      toast(error.message || 'Could not export the uptime report.');
+      return;
+    }
+    var report = data.report || {};
     var rows = [['Vehicle', 'Status', 'Uptime%', 'DowntimeMinutes', 'HeldMinutes', 'Jobs', 'Open', 'AvgTATMinutes', 'Reason', 'Resolution', 'ResolvedBy', 'ResolvedLevel']];
     (report.vehicles || []).forEach(function (item) {
       rows.push([item.display, item.status, item.uptimePct, item.downtimeMinutes, item.heldMinutes, item.totalJobs, item.open,
@@ -4313,15 +4618,46 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       '<div class="stat"><h4>Reason types</h4><p class="value">' + Safe.esc(Object.keys(a.reasons || {}).length) + '</p></div>';
   }
 
-  function renderPending() {
-    var tab = state.pendingTab || 'pending';
-    if (tab === 'log') { renderPendingLog(); return; }
-    if (tab === 'analytics') { renderPendingAnalytics(); return; }
-    var rows = (state.pending[tab] || []);
-    if (state.pendingUserFilter) {
-      rows = rows.filter(function (job) { return job.assignedUserId === state.pendingUserFilter || job.approverId === state.pendingUserFilter; });
+  function panelTableHtml_(key, headHtml, rows, rowFn, opts) {
+    opts = opts || {};
+    var p = pagerFor_(key);
+    p.rows = rows || [];
+    p.rowFn = rowFn;
+    p.server = Boolean(opts.meta && opts.meta.paged);
+    p.meta = opts.meta || null;
+    p.onPage = opts.onPage || null;
+    p.colspan = opts.colspan || 1;
+    p.emptyText = opts.emptyText || 'No rows.';
+    var total = p.server ? Number(p.meta.total || 0) : p.rows.length;
+    var pages = p.server ? Math.max(1, Number(p.meta.pages || 1)) : Math.max(1, Math.ceil(total / PAGE_SIZE));
+    var size = p.server ? Number(p.meta.pageSize || PAGE_SIZE) : PAGE_SIZE;
+    if (p.server) p.page = Number(p.meta.page || 1);
+    p.total = total;
+    p.pages = pages;
+    p.page = Math.min(Math.max(1, p.page), pages);
+    var slice = p.server ? p.rows : p.rows.slice((p.page - 1) * size, p.page * size);
+    var body = slice.map(rowFn).join('') ||
+      '<tr><td colspan="' + p.colspan + '" class="muted">' + p.emptyText + '</td></tr>';
+    var pager = '<div class="row-pager' + (pages <= 1 || !total ? ' hidden' : '') + '">' +
+      '<button class="secondary sm" type="button" data-panel-key="' + key + '" data-panel-delta="-1"' + (p.page <= 1 ? ' disabled' : '') + '>Prev</button>' +
+      '<span class="small muted">Rows ' + (total ? ((p.page - 1) * size + 1) : 0) + '\u2013' + Math.min(p.page * size, total) + ' of ' + total + '</span>' +
+      '<button class="secondary sm" type="button" data-panel-key="' + key + '" data-panel-delta="1"' + (p.page >= pages ? ' disabled' : '') + '>Next</button></div>';
+    return '<div class="table-wrap"><table><thead>' + headHtml + '</thead><tbody>' + body + '</tbody></table></div>' + pager;
+  }
+
+  function bindPanelPagers_() {
+    var btns = document.querySelectorAll('#pendingPanel [data-panel-key]');
+    for (var i = 0; i < btns.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          changePager_(btn.getAttribute('data-panel-key'), Number(btn.getAttribute('data-panel-delta')));
+        });
+      })(btns[i]);
     }
-    var tableRows = rows.map(function (job) {
+  }
+
+  function pendingRowHtml_(tab) {
+    return function (job) {
       var resolution = job.resolutionNotes || job.holdDecisionNote || '';
       var action = '';
       if (tab === 'pending' && job.canApprove) {
@@ -4337,34 +4673,67 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.holdCategory || '-') + ' \u00b7 ' + Safe.esc(job.holdReason || '') +
         '</td><td>' + Safe.esc(minutesLabel_(job.ageMinutes || 0)) + '</td><td>' + Safe.esc(job.approverName || job.holdApprovedBy || '-') + '</td><td>L' +
         Safe.esc(job.holdApprovedLevel || job.requiredLevel || 1) + '</td><td class="small">' + Safe.esc(resolution || '-') + '</td><td>' + action + '</td></tr>';
-    }).join('') || '<tr><td colspan="9" class="muted">No jobs in this tab.</td></tr>';
-    byId('pendingPanel').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Requester</th><th>Reason</th><th>Age</th><th>Supervisor</th><th>Level</th><th>Resolution</th><th></th></tr></thead><tbody>' + tableRows + '</tbody></table></div>';
+    };
+  }
+
+  function renderPending() {
+    var tab = state.pendingTab || 'pending';
+    if (state.pendingRenderedTab !== tab) {
+      pagerFor_('pending:' + tab).page = 1;
+      state.pendingRenderedTab = tab;
+    }
+    if (tab === 'log') { renderPendingLog(); return; }
+    if (tab === 'analytics') { renderPendingAnalytics(); return; }
+    var rows = (state.pending[tab] || []);
+    if (state.pendingUserFilter) {
+      rows = rows.filter(function (job) { return job.assignedUserId === state.pendingUserFilter || job.approverId === state.pendingUserFilter; });
+    }
+    var key = 'pending:' + tab;
+    var head = '<tr><th>Job</th><th>Vehicle</th><th>Requester</th><th>Reason</th><th>Age</th><th>Supervisor</th><th>Level</th><th>Resolution</th><th></th></tr>';
+    byId('pendingPanel').innerHTML = panelTableHtml_(key, head, rows, pendingRowHtml_(tab), {
+      colspan: 9,
+      emptyText: 'No jobs in this tab.',
+      onPage: renderPending
+    });
+    bindPanelPagers_();
   }
 
   function renderPendingAnalytics() {
     var a = state.pending.analytics || {};
-    var reasons = Object.keys(a.reasons || {}).map(function (key) {
-      return '<tr><td>' + Safe.esc(key) + '</td><td>' + Safe.esc(a.reasons[key]) + '</td></tr>';
-    }).join('') || '<tr><td colspan="2" class="muted">No reasons.</td></tr>';
-    var approvers = Object.keys(a.approvers || {}).map(function (key) {
-      return '<tr><td>' + Safe.esc(key) + '</td><td>' + Safe.esc(a.approvers[key]) + '</td></tr>';
-    }).join('') || '<tr><td colspan="2" class="muted">No approvals yet.</td></tr>';
+    var reasonRows = Object.keys(a.reasons || {}).map(function (key) { return { name: key, count: a.reasons[key] }; });
+    var approverRows = Object.keys(a.approvers || {}).map(function (key) { return { name: key, count: a.approvers[key] }; });
+    var pairRow = function (row) {
+      return '<tr><td>' + Safe.esc(row.name) + '</td><td>' + Safe.esc(row.count) + '</td></tr>';
+    };
+    var head = '<tr><th>Reason</th><th>Count</th></tr>';
+    var reasons = panelTableHtml_('pending:reasons', head, reasonRows, pairRow, { colspan: 2, emptyText: 'No reasons.', onPage: renderPendingAnalytics });
+    var approvers = panelTableHtml_('pending:approvers', head, approverRows, pairRow, { colspan: 2, emptyText: 'No approvals yet.', onPage: renderPendingAnalytics });
     byId('pendingPanel').innerHTML = '<div class="grid-2">' +
-      '<div><h3>Hold reasons</h3><div class="table-wrap"><table><thead><tr><th>Reason</th><th>Count</th></tr></thead><tbody>' + reasons + '</tbody></table></div></div>' +
-      '<div><h3>Approved by</h3><div class="table-wrap"><table><thead><tr><th>Supervisor</th><th>Count</th></tr></thead><tbody>' + approvers + '</tbody></table></div></div>' +
+      '<div><h3>Hold reasons</h3>' + reasons + '</div>' +
+      '<div><h3>Approved by</h3>' + approvers + '</div>' +
       '</div>';
+    bindPanelPagers_();
   }
 
-  async function renderPendingLog() {
+  async function renderPendingLog(page) {
+    var p = pagerFor_('pending:log');
+    var target = page || p.page || 1;
     byId('pendingPanel').innerHTML = '<p class="small muted">Loading notification log...</p>';
     try {
-      var data = ensureOk(await Cloud.post('getNotificationLog', { limit: 200 }));
-      var rows = (data.notifications || []).map(function (item) {
+      var data = ensureOk(await Cloud.post('getNotificationLog', { page: target, pageSize: PAGE_SIZE }));
+      var head = '<tr><th>Time</th><th>Notification</th><th>Sender</th><th>Audience</th><th>Read</th><th>Actioned</th></tr>';
+      var rowFn = function (item) {
         return '<tr><td>' + Safe.esc(dateTime(item.createdAt)) + '</td><td><strong>' + Safe.esc(item.title) + '</strong><div class="small muted">' +
           Safe.esc(item.body) + '</div></td><td>' + Safe.esc(item.createdByName || item.createdBy) + ' (L' + Safe.esc(item.createdByLevel || 0) + ')</td><td>' +
           Safe.esc(item.audience + (item.target ? ':' + item.target : '')) + '</td><td>' + Safe.esc(item.readCount || 0) + '</td><td>' + Safe.esc(item.actionCount || 0) + '</td></tr>';
-      }).join('') || '<tr><td colspan="6" class="muted">No notifications.</td></tr>';
-      byId('pendingPanel').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Time</th><th>Notification</th><th>Sender</th><th>Audience</th><th>Read</th><th>Actioned</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      };
+      byId('pendingPanel').innerHTML = panelTableHtml_('pending:log', head, data.notifications || [], rowFn, {
+        meta: data.paging,
+        onPage: renderPendingLog,
+        colspan: 6,
+        emptyText: 'No notifications.'
+      });
+      bindPanelPagers_();
     } catch (error) {
       byId('pendingPanel').innerHTML = '<p class="small muted">' + Safe.esc(error.message) + '</p>';
     }
@@ -4603,14 +4972,15 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         list = data.users || [];
       }
       state.hierarchy = list;
-      byId('hierarchyBody').innerHTML = state.hierarchy.map(function (user) {
+      paginateTable_('hierarchy', 'hierarchyBody', state.hierarchy, function (user) {
         return '<tr><td><strong>' + Safe.esc(user.fullName || user.username) + '</strong><div class="small muted">' + Safe.esc(user.userId) + '</div></td><td>' +
           Safe.esc(user.role) + '</td><td class="small">' + Safe.esc(user.reportsTo || '-') + '</td><td>L' + Safe.esc(user.supervisorLevel || 0) + '</td><td>' +
           Safe.esc(user.supervisorLevelMode || 'AUTO') + '</td><td>' + (user.canApproveHolds ? 'Yes' : 'No') + '</td><td><button class="secondary sm" data-edit-user="' +
           Safe.esc(user.username) + '">Edit</button></td></tr>';
-      }).join('') || '<tr><td colspan="7" class="muted">No users.</td></tr>';
+      }, { reset: true, colspan: 7, emptyText: 'No users.' });
     } catch (error) {
       byId('hierarchyBody').innerHTML = '<tr><td colspan="7" class="muted">' + Safe.esc(error.message) + '</td></tr>';
+      hideTablePager_('hierarchyBody');
     }
   }
 
@@ -4782,7 +5152,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('loginBtn').addEventListener('click', function () { login(false); });
     byId('password').addEventListener('keydown', function (event) { if (event.key === 'Enter') login(false); });
     byId('logoutBtn').addEventListener('click', logout);
-    byId('exportBtn').addEventListener('click', printCurrentView);
     if (byId('bubbleBtn')) byId('bubbleBtn').addEventListener('click', toggleBubble);
     if (byId('deviceSettingsBtn')) byId('deviceSettingsBtn').addEventListener('click', openDeviceSettings);
     byId('menuBtn').addEventListener('click', function () {
@@ -4812,19 +5181,20 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('attCamChoose')) byId('attCamChoose').addEventListener('click', function () { byId('attCamFile').click(); });
     if (byId('attCamFile')) byId('attCamFile').addEventListener('change', function () { applyAttendanceFile_(this.files && this.files[0]); });
     window.addEventListener('focus', applyMockPolicy_);
+    window.addEventListener('focus', syncNativeCheckIn_);
     setInterval(applyMockPolicy_, 5000);
     byId('attCheckOut').addEventListener('click', checkOut);
-    byId('attRefresh').addEventListener('click', loadAttendance);
-    byId('attDate').addEventListener('change', loadAttendance);
-    byId('jobRefresh').addEventListener('click', loadJobs);
-    byId('jobStatus').addEventListener('change', loadJobs);
-    byId('jobSearch').addEventListener('input', loadJobs);
+    byId('attRefresh').addEventListener('click', function () { loadAttendance(1); });
+    byId('attDate').addEventListener('change', function () { loadAttendance(1); });
+    byId('jobRefresh').addEventListener('click', function () { loadJobs(1); });
+    byId('jobStatus').addEventListener('change', function () { loadJobs(1); });
+    byId('jobSearch').addEventListener('input', function () { loadJobs(1); });
     byId('jobNew').addEventListener('click', function () { openJobModal(null); });
     byId('jobRetake').addEventListener('click', openRetake);
     byId('jobSave').addEventListener('click', saveJob);
     byId('vehNew').addEventListener('click', function () { openVehicleModal(null); });
-    byId('vehRefresh').addEventListener('click', loadVehicles);
-    byId('vehSearch').addEventListener('input', loadVehicles);
+    byId('vehRefresh').addEventListener('click', function () { loadVehicles(); });
+    byId('vehSearch').addEventListener('input', function () { loadVehicles(); });
     byId('vehSave').addEventListener('click', saveVehicle);
     byId('vehArchive').addEventListener('click', archiveVehicle);
     byId('capRefresh').addEventListener('click', loadCaptures);
@@ -4852,7 +5222,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       loadNotifications();
     });
     if (byId('pendingRefresh')) byId('pendingRefresh').addEventListener('click', loadPending);
-    if (byId('upRun')) byId('upRun').addEventListener('click', loadUptime);
+    if (byId('upRun')) byId('upRun').addEventListener('click', function () { loadUptime(1); });
     if (byId('upCsv')) byId('upCsv').addEventListener('click', exportUptimeCsv);
     if (byId('allotSave')) byId('allotSave').addEventListener('click', saveAllotment);
     if (byId('hdSubmit')) byId('hdSubmit').addEventListener('click', submitHoldDecision);
@@ -4933,10 +5303,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('repRun')) byId('repRun').addEventListener('click', function () { state.reportPage = 1; loadReports(1); });
     if (byId('repPrev')) byId('repPrev').addEventListener('click', function () { loadReports((state.reportPage || 1) - 1); });
     if (byId('repNext')) byId('repNext').addEventListener('click', function () { loadReports((state.reportPage || 1) + 1); });
-    if (byId('repAttPrev')) byId('repAttPrev').addEventListener('click', function () { state.reportAttPage = (state.reportAttPage || 1) - 1; renderReportAttendance_(); });
-    if (byId('repAttNext')) byId('repAttNext').addEventListener('click', function () { state.reportAttPage = (state.reportAttPage || 1) + 1; renderReportAttendance_(); });
-    if (byId('repJobPrev')) byId('repJobPrev').addEventListener('click', function () { state.reportJobPage = (state.reportJobPage || 1) - 1; renderReportJobs_(); });
-    if (byId('repJobNext')) byId('repJobNext').addEventListener('click', function () { state.reportJobPage = (state.reportJobPage || 1) + 1; renderReportJobs_(); });
     if (byId('repFrom')) byId('repFrom').addEventListener('change', function () { state.reportPage = 1; });
     if (byId('repTo')) byId('repTo').addEventListener('change', function () { state.reportPage = 1; });
     if (byId('repLargeDownload')) byId('repLargeDownload').addEventListener('click', openExportPackage);
@@ -5033,8 +5399,15 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           if (node.getAttribute('data-edit-job')) {
             var jobId = node.getAttribute('data-edit-job');
             var task = null;
-            for (var t = 0; t < state.tasks.length; t++) if (state.tasks[t].jobId === jobId) task = state.tasks[t];
-            openJobModal(task || { jobId: jobId });
+            var cached = state.tasks || [];
+            for (var t = 0; t < cached.length; t++) if (cached[t].jobId === jobId) task = cached[t];
+            if (task) { openJobModal(task); return; }
+            Cloud.post('getTasks', { query: jobId, pageSize: 0 }).then(function (res) {
+              var list = ensureOk(res).tasks || [];
+              var foundTask = null;
+              for (var j = 0; j < list.length; j++) if (list[j].jobId === jobId) foundTask = list[j];
+              openJobModal(foundTask || { jobId: jobId });
+            }).catch(function () { openJobModal({ jobId: jobId }); });
             return;
           }
           if (node.getAttribute('data-edit-vehicle')) {
@@ -5068,6 +5441,15 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         node = node.parentNode;
       }
     });
+
+    initSearchClear_('attSearch', function () { loadAttendance(1); });
+    initSearchClear_('jobSearch', function () { loadJobs(1); });
+    initSearchClear_('vehSearch', function () { loadVehicles(); });
+    initSearchClear_('repUser', function () { loadReports(1); });
+    initSearchClear_('upHub', function () { loadUptime(1); });
+    initSearchClear_('upUser', function () { loadUptime(1); });
+    initSearchClear_('upVehicle', function () { loadUptime(1); });
+    initSearchClear_('mapUser', function () { loadMap(); });
 
     window.addEventListener('online', function () { setNet(true, 'Network restored'); Cloud.flush(); });
     window.addEventListener('offline', function () { setNet(false, 'Working offline'); });
@@ -5168,11 +5550,22 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         await route(state.session && state.session.isSuperAdmin ? 'platform' : 'overview');
         adoptNative();
         loadNotifications();
-        loadPeople();
         startRealtimeStream();
         openNativePendingView_();
       } catch (error) {
-        if (error.code === 'AUTH_REVOKED' || error.code === 'AUTH_EXPIRED') {
+        if (claimDeviceAndRetry_(error, function () {
+          refreshBootstrap().then(function () {
+            return route(state.session && state.session.isSuperAdmin ? 'platform' : 'overview');
+          }).then(function () {
+            adoptNative();
+            loadNotifications();
+            startRealtimeStream();
+            openNativePendingView_();
+          }).catch(function (retryError) {
+            setMsg('loginMsg', retryError.message, true);
+          });
+        })) return;
+        if (error.code === 'AUTH_REVOKED' || error.code === 'AUTH_EXPIRED' || error.code === 'DEVICE_CONFLICT') {
           saveSession(null);
           setMsg('loginMsg', 'Your session ended. Sign in again.', true);
         } else {
