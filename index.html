@@ -4047,9 +4047,15 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var report = data.report || {};
     var summary = report.summary || {};
     state.uptimeReport = report;
+    var downtimePct = Number(summary.downtimePct);
+    if (!isFinite(downtimePct)) {
+      var perVehicleRange = Number(report.rangeMinutes) || 0;
+      var fleetRange = perVehicleRange * (Number(summary.vehicles) || 0);
+      downtimePct = fleetRange ? Math.round(((Number(summary.downtimeMinutes) || 0) / fleetRange) * 1000) / 10 : 0;
+    }
     byId('uptimeSummary').innerHTML =
       '<div class="stat"><h4>Fleet uptime</h4><p class="value">' + Safe.esc(summary.uptimePct || 0) + '%</p></div>' +
-      '<div class="stat amber"><h4>Downtime</h4><p class="value">' + Safe.esc(minutesLabel_(summary.downtimeMinutes || 0)) + '</p></div>' +
+      '<div class="stat amber"><h4>Downtime</h4><p class="value">' + Safe.esc(minutesLabel_(summary.downtimeMinutes || 0)) + '</p><p class="small muted">' + Safe.esc(downtimePct) + '% of range</p></div>' +
       '<div class="stat blue"><h4>Avg TAT</h4><p class="value">' + Safe.esc(minutesLabel_(summary.avgTatMinutes || 0)) + '</p></div>' +
       '<div class="stat amber"><h4>Pending</h4><p class="value">' + Safe.esc(summary.pendingJobs || 0) + '</p></div>' +
       '<div class="stat red"><h4>Overdue &gt; 24h</h4><p class="value">' + Safe.esc(summary.overdueJobs || 0) + '</p></div>';
