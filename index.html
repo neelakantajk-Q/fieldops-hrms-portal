@@ -283,7 +283,46 @@
   .audit-node h4{margin:0 0 3px;font-size:12.5px}
   .audit-node p{margin:0;font-size:11px;color:var(--muted)}
   .audit-flow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}  #engineerProductivity, #hubWorkload{max-height:220px;overflow-y:auto;padding-right:4px}
-  @media (max-width:768px){#engineerProductivity, #hubWorkload{max-height:none;overflow:visible}}</style>
+  @media (max-width:768px){#engineerProductivity, #hubWorkload{max-height:none;overflow:visible}}
+  .view-loading{height:3px;margin:-4px 0 12px;border-radius:999px;background:rgba(148,163,184,.25);overflow:hidden;opacity:0;transition:opacity .15s}
+  .view-loading.active{opacity:1}
+  .view-loading span{display:block;height:100%;width:34%;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#2563eb);animation:viewLoading 1.05s ease-in-out infinite}
+  @keyframes viewLoading{0%{transform:translateX(-120%)}100%{transform:translateX(330%)}}
+  .page-head.with-tabs{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .seg-tabs{display:inline-flex;background:#eef2f7;border:1px solid var(--line);border-radius:999px;padding:3px;gap:3px}
+  .seg-tab{border:0;background:transparent;color:#475569;font-size:12px;font-weight:700;padding:7px 14px;border-radius:999px;cursor:pointer}
+  .seg-tab.active{background:var(--primary);color:#102008}
+  .switch-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .switch-row strong{display:block;font-size:14px;color:var(--ink)}
+  .switch{position:relative;display:inline-block;width:50px;height:28px;flex:0 0 auto}
+  .switch input{opacity:0;width:0;height:0}
+  .switch span{position:absolute;inset:0;background:#cbd5e1;border-radius:999px;transition:.2s;cursor:pointer}
+  .switch span:before{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(15,23,42,.3)}
+  .switch input:checked + span{background:#16a34a}
+  .switch input:checked + span:before{transform:translateX(22px)}
+  .switch input:disabled + span{opacity:.6;cursor:not-allowed}
+  .tick-ok{color:#16a34a;font-weight:800;font-size:15px}
+  .tick-miss{color:#94a3b8;font-weight:700}
+  .proof-table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .proof-table th,.proof-table td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
+  .proof-table tr:last-child td{border-bottom:0}
+  .proof-table th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  .overview-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+  .overview-actions button{min-width:150px}
+  .modal.compact{max-width:560px}
+  .modal.compact.wide{max-width:820px}
+  .att-photo-img{display:block;width:100%;max-height:62vh;object-fit:contain;background:#0f172a;border-radius:10px}
+  .att-photo-meta{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;white-space:pre-wrap}
+  .collage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px}
+  .collage-grid figure{margin:0;border:1px solid var(--line);border-radius:10px;padding:6px;background:#f8fafc}
+  .collage-grid img{width:100%;display:block;border-radius:6px;background:#e2e8f0}
+  .collage-grid figcaption{font-size:11px;font-weight:700;color:#334155;margin-bottom:4px}
+  @media (max-width:768px){
+    .modal-shell.compact-shell{align-items:center;justify-content:center;padding:12px}
+    .modal.compact{width:100%;max-width:560px;height:auto;max-height:88dvh;border:3px solid var(--wa);border-radius:16px;padding:18px 16px calc(14px + env(safe-area-inset-bottom))}
+    .modal.compact.wide{max-width:820px}
+  }
+</style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -322,10 +361,10 @@
     <button class="nav-item" data-view="jobs" type="button">Job Cards</button>
     <button class="nav-item" data-view="pending" type="button">Pending Jobs</button>
     <button class="nav-item" data-view="team" type="button">Team</button>
-    <button class="nav-item" data-view="reports" type="button">Reports &amp; MIS</button>
-    <button class="nav-item" data-view="uptime" type="button">Vehicle Uptime</button>
     <button class="nav-item" data-view="notifications" type="button">Notifications</button>
-    <button class="nav-item" data-view="map" type="button">Live Map</button>
+    <div class="nav-cat" id="reportingNavCat">Reporting</div>
+    <button class="nav-item" data-view="uptime" type="button">Vehicle Uptime</button>
+    <button class="nav-item" data-view="reports" type="button">Reports &amp; MIS</button>
     <div class="nav-cat" id="fleetNavCat">Fleet</div>
     <button class="nav-item" data-view="vehicles" type="button">Vehicles &amp; OCR</button>
     <button class="nav-item" data-view="masters" type="button">Master Data</button>
@@ -364,6 +403,10 @@
 
       <section id="view-overview" class="view">
         <div class="page-head"><h2>Overview &amp; Analytics</h2><p id="overviewSub">Live metrics for your scope.</p></div>
+        <div class="overview-actions">
+          <button class="secondary" data-view="uptime" type="button">Vehicle Uptime</button>
+          <button class="secondary" data-view="reports" type="button">Reports &amp; MIS</button>
+        </div>
         <div class="grid-3" style="margin-bottom:16px">
           <div class="stat"><h4>Total Jobs</h4><p class="value" id="kpiTotal">0</p></div>
           <div class="stat blue"><h4>Completed</h4><p class="value" id="kpiDone">0</p></div>
@@ -380,7 +423,13 @@
       </section>
 
       <section id="view-attendance" class="view hidden">
-        <div class="page-head"><h2>Attendance &amp; Shifts</h2><p>Photo check-in is the shift start event.</p></div>
+        <div class="page-head with-tabs">
+          <div><h2>Attendance &amp; Shifts</h2><p>Photo check-in is the shift start event.</p></div>
+          <div class="seg-tabs" role="tablist" aria-label="Attendance and map">
+            <button class="seg-tab active" type="button" data-att-tab="attendance">Attendance</button>
+            <button class="seg-tab" type="button" data-att-tab="map">Map</button>
+          </div>
+        </div>
         <div class="toolbar">
           <div class="field"><label for="attDate">Date</label><input id="attDate" type="date"></div>
           <div class="field"><label for="attSearch">Search</label><input id="attSearch" list="peopleList" placeholder="User ID"></div>
@@ -473,6 +522,7 @@
             <div class="field"><label for="repUser">User ID</label><input id="repUser" list="peopleList" placeholder="All users"></div>
             <button id="repRun" type="button">Run report</button>
             <button class="secondary" id="repCsv" type="button">Export CSV</button>
+            <button class="secondary" id="repPackage" type="button">Export package</button>
             <button class="secondary" id="repPrint" type="button">Print / PDF</button>
           </div>
         </div>
@@ -489,8 +539,25 @@
       </section>
 
       <section id="view-map" class="view hidden">
-        <div class="page-head"><h2>Live Map</h2><p>Employee movement, geofence and real-time sync.</p></div>
+        <div class="page-head with-tabs">
+          <div><h2>Live Map</h2><p>Employee movement, geofence and real-time sync.</p></div>
+          <div class="seg-tabs" role="tablist" aria-label="Attendance and map">
+            <button class="seg-tab" type="button" data-att-tab="attendance">Attendance</button>
+            <button class="seg-tab active" type="button" data-att-tab="map">Map</button>
+          </div>
+        </div>
         <div class="card">
+          <div class="switch-row">
+            <div>
+              <strong>Real-time location</strong>
+              <p class="small muted" id="mapRealtimeHint" style="margin:4px 0 0">Turn live location on or off for all devices.</p>
+            </div>
+            <label class="switch" title="Real-time location">
+              <input type="checkbox" id="mapRealtimeToggle">
+              <span></span>
+            </label>
+          </div>
+        </div>
           <div class="toolbar">
             <div class="field"><label for="mapDate">Date</label><input id="mapDate" type="date"></div>
             <div class="field"><label for="mapUser">User ID</label><input id="mapUser" list="peopleList" placeholder="All visible users"></div>
@@ -546,7 +613,6 @@
             <div class="field"><label for="setRadius">Geofence radius (m)</label><input id="setRadius" type="number" min="0" step="10"></div>
             <div class="field"><label for="setBuffer">Outside-fence alert buffer (m)</label><input id="setBuffer" type="number" min="0" step="10"></div>
             <div class="field"><label for="setTelemetry">Telemetry push interval (minutes)</label><input id="setTelemetry" type="number" min="5" step="5"></div>
-            <div class="field"><label for="setRealtime">Real-time channel</label><select id="setRealtime"><option value="false">Disabled - 30 min batch only</option><option value="true">Enabled - live alerts to bubble</option></select></div>
           </div>
           <div class="modal-actions" style="justify-content:flex-start">
             <button id="saveSettings" type="button">Save policy</button>
@@ -586,7 +652,7 @@
           <div id="alertMsg" class="msg hidden"></div>
         </div>
 
-        <div class="card">
+        <div class="card hidden">
           <h3>Dynamic Form Builder</h3>
           <div class="grid-2">
             <div class="field"><label for="formName">Form name</label><input id="formName" value="Service Visit Form"></div>
@@ -749,6 +815,16 @@
       <div class="field"><label for="jobRootCause">Root cause</label><input id="jobRootCause"></div>
       <div class="field"><label for="jobResolution">Resolution notes</label><input id="jobResolution"></div>
     </div>
+    <div class="card hidden" id="jobProofCard" style="padding:0;margin:0 0 12px;box-shadow:none;background:#f8fafc">
+      <table class="proof-table">
+        <thead><tr><th>Start proof</th><th>End proof</th><th>View</th></tr></thead>
+        <tbody><tr>
+          <td id="jobStartProofCell"><span class="tick-miss">-</span></td>
+          <td id="jobEndProofCell"><span class="tick-miss">-</span></td>
+          <td><button class="secondary sm" id="jobProofView" type="button">View</button></td>
+        </tr></tbody>
+      </table>
+    </div>
     <div id="jobMsg" class="msg hidden"></div>
     <div class="modal-actions">
       <button class="secondary" data-close="jobModal" type="button">Cancel</button>
@@ -818,6 +894,55 @@
       <button class="secondary" id="proofDownload" type="button">Download</button>
       <button class="secondary" id="proofCollage" type="button">Download collage</button>
       <button class="secondary" data-close="photoModal" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Job proof collage -->
+<div class="modal-shell hidden compact-shell" id="jobCollageModal">
+  <div class="modal compact wide">
+    <h3 id="jobCollageTitle">Job proofs</h3>
+    <p class="small muted" id="jobCollageMeta"></p>
+    <div id="jobCollageGrid" class="collage-grid"></div>
+    <div class="modal-actions">
+      <button class="secondary" id="jobCollageStart" type="button">Download start</button>
+      <button class="secondary" id="jobCollageEnd" type="button">Download end</button>
+      <button class="secondary" id="jobCollageDownload" type="button">Download collage</button>
+      <button class="secondary" data-close="jobCollageModal" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance single photo -->
+<div class="modal-shell hidden compact-shell" id="attPhotoModal">
+  <div class="modal compact">
+    <h3 id="attPhotoTitle">Attendance photo</h3>
+    <div class="seg-tabs" id="attPhotoTabs" role="tablist" aria-label="Attendance photo">
+      <button class="seg-tab active" type="button" data-att-photo="Check-in">Check-in</button>
+      <button class="seg-tab" type="button" data-att-photo="Check-out">Check-out</button>
+    </div>
+    <img id="attPhotoImg" class="att-photo-img" alt="Attendance proof">
+    <p class="small muted hidden" id="attPhotoEmpty">No photo available.</p>
+    <div class="att-photo-meta" id="attPhotoMeta"></div>
+    <div class="modal-actions">
+      <button class="secondary" id="attPhotoDownload" type="button">Download</button>
+      <button class="secondary" data-close="attPhotoModal" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report export package -->
+<div class="modal-shell hidden compact-shell" id="exportPackageModal">
+  <div class="modal compact">
+    <h3>Export report package</h3>
+    <p class="small muted" id="exportPackageRange"></p>
+    <div class="field"><label><input type="checkbox" id="exportProofs" checked style="width:auto"> Include proof images (ZIP)</label></div>
+    <div class="field"><label><input type="checkbox" id="exportCharts" checked style="width:auto"> Include charts (Excel)</label></div>
+    <p class="small muted">When both are selected you get one bundle ZIP containing the images ZIP and the Excel workbook.</p>
+    <div id="exportPackageMsg" class="msg hidden"></div>
+    <div class="modal-actions">
+      <button class="secondary" data-close="exportPackageModal" type="button">Cancel</button>
+      <button id="exportPackageRun" type="button">Download</button>
     </div>
   </div>
 </div>
@@ -1228,15 +1353,49 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     wrap.setAttribute('aria-valuenow', '0');
   }
 
+  var viewLoadTimer = null;
+  function activeViewLoading_() {
+    var active = document.querySelector('.view:not(.hidden)');
+    return active ? active.querySelector('.view-loading') : null;
+  }
+  function showViewLoading_(on) {
+    var line = activeViewLoading_();
+    if (line) line.classList.toggle('active', Boolean(on));
+    var active = document.querySelector('.view:not(.hidden)');
+    if (active) active.setAttribute('aria-busy', on ? 'true' : 'false');
+  }
   function beginNet() {
     netBusy++;
+    if (netBusy === 1) {
+      if (viewLoadTimer) clearTimeout(viewLoadTimer);
+      viewLoadTimer = setTimeout(function () { if (netBusy > 0) showViewLoading_(true); }, 300);
+    }
   }
 
   function endNet() {
     netBusy = Math.max(0, netBusy - 1);
+    if (netBusy === 0) {
+      if (viewLoadTimer) { clearTimeout(viewLoadTimer); viewLoadTimer = null; }
+      showViewLoading_(false);
+    }
   }
 
-  function fetchOnce(body) {
+  function initViewLoaders_() {
+    var views = document.querySelectorAll('.view');
+    for (var i = 0; i < views.length; i++) {
+      if (views[i].id === 'view-login') continue;
+      var first = views[i].firstElementChild;
+      if (first && first.classList && first.classList.contains('view-loading')) continue;
+      var line = document.createElement('div');
+      line.className = 'view-loading';
+      line.setAttribute('aria-hidden', 'true');
+      line.innerHTML = '<span></span>';
+      views[i].insertBefore(line, views[i].firstChild);
+    }
+  }
+
+  function fetchOnce(body, opts) {
+    opts = opts || {};
     return new Promise(function (resolve, reject) {
       var controller = null;
       var timer = null;
@@ -1263,7 +1422,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       timer = setTimeout(function () {
         if (controller) { try { controller.abort(); } catch (e) {} }
         finish(false, new Error('Cloud request timed out. Check the connection and retry.'));
-      }, CFG.timeoutMs);
+      }, opts.timeoutMs || CFG.timeoutMs);
 
       fetch(CFG.endpoint + (CFG.endpoint.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(), options)
         .then(function (response) {
@@ -1301,7 +1460,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
       var attempt = 0;
       function run() {
-        return fetchOnce(body).catch(function (error) {
+        return fetchOnce(body, opts).catch(function (error) {
           if (attempt >= CFG.backoff.length) throw error;
           var wait = CFG.backoff[attempt++];
           return delay(wait).then(run);
@@ -1437,12 +1596,16 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       items[i].classList.toggle('hidden', !(signedIn && canView_(view)));
     }
     var workspaceVisible = signedIn && (canView_('overview') || canView_('attendance') || canView_('jobs') || canView_('team'));
+    var reportingVisible = signedIn && (canView_('reports') || canView_('uptime'));
     var fleetVisible = signedIn && (canView_('vehicles') || canView_('masters') || canView_('workflows'));
     if (byId('workspaceNavCat')) byId('workspaceNavCat').classList.toggle('hidden', !workspaceVisible);
+    if (byId('reportingNavCat')) byId('reportingNavCat').classList.toggle('hidden', !reportingVisible);
     if (byId('fleetNavCat')) byId('fleetNavCat').classList.toggle('hidden', !fleetVisible);
     if (byId('adminNavCat')) byId('adminNavCat').classList.toggle('hidden', !(signedIn && canView_('admin')));
     if (byId('adminNavBtn')) byId('adminNavBtn').classList.toggle('hidden', !(signedIn && canView_('admin')));
     if (byId('platformNavCat')) byId('platformNavCat').classList.toggle('hidden', !(signedIn && Boolean(state.session.isSuperAdmin)));
+    var mapTabs = document.querySelectorAll('[data-att-tab="map"]');
+    for (var mt = 0; mt < mapTabs.length; mt++) mapTabs[mt].classList.toggle('hidden', !(signedIn && canView_('map')));
   }
 
   function mockActive_() {
@@ -1560,6 +1723,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
     byId('overviewSub').textContent = 'Scope: ' + ((res.session && res.session.scope) || '-') + ' - Fiscal year ' + ((res.settings && res.settings.currentFy) || '-');
     applySettingsToForm();
+    if (byId('mapRealtimeToggle')) applyRealtimeToggle_();
     setNet(true, 'Session verified');
     return res;
   }
@@ -1673,9 +1837,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (target) target.classList.remove('hidden');
 
     var navs = document.querySelectorAll('.nav-item');
-    for (var n = 0; n < navs.length; n++) navs[n].classList.toggle('active', navs[n].getAttribute('data-view') === view);
+    var navView = view === 'map' ? 'attendance' : view;
+    for (var n = 0; n < navs.length; n++) navs[n].classList.toggle('active', navs[n].getAttribute('data-view') === navView);
     var mobile = document.querySelectorAll('nav.mobile button[data-view]');
-    for (var m = 0; m < mobile.length; m++) mobile[m].classList.toggle('active', mobile[m].getAttribute('data-view') === view);
+    for (var m = 0; m < mobile.length; m++) mobile[m].classList.toggle('active', mobile[m].getAttribute('data-view') === navView);
+    var attTabs = document.querySelectorAll('[data-att-tab]');
+    var attTabView = view === 'map' ? 'map' : (view === 'attendance' ? 'attendance' : '');
+    for (var at = 0; at < attTabs.length; at++) attTabs[at].classList.toggle('active', attTabs[at].getAttribute('data-att-tab') === attTabView);
+    showViewLoading_(false);
     byId('sidebar').classList.remove('open');
     byId('backdrop').classList.add('hidden');
     if (['jobs', 'reports', 'uptime', 'map', 'pending', 'notifications'].indexOf(view) >= 0) {
@@ -2118,7 +2287,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('setRadius')) byId('setRadius').value = s.geofenceRadiusMeters || 800;
     if (byId('setBuffer')) byId('setBuffer').value = s.geofenceBufferMeters || 300;
     if (byId('setTelemetry')) byId('setTelemetry').value = s.telemetryPushMinutes || 30;
-    if (byId('setRealtime')) byId('setRealtime').value = String(Boolean(s.realtimeEnabled));
     if (byId('setSplashUrl')) byId('setSplashUrl').value = s.splashUrl || '';
     if (byId('setSplashMsg')) byId('setSplashMsg').value = s.splashMessage || '';
     if (byId('setSplashAnim')) byId('setSplashAnim').value = s.splashAnimation || 'anim-breathing';
@@ -2211,6 +2379,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('jobHold')) byId('jobHold').classList.toggle('hidden', !(task.jobId && (task.status === 'InProgress' || task.status === 'Delayed')));
     if (byId('jobApproveHold')) byId('jobApproveHold').classList.toggle('hidden', task.status !== 'HoldRequested');
     if (byId('jobRejectHold')) byId('jobRejectHold').classList.toggle('hidden', task.status !== 'HoldRequested');
+    state.editingJob = task;
+    if (byId('jobProofCard')) byId('jobProofCard').classList.toggle('hidden', !task.jobId);
+    if (byId('jobStartProofCell')) byId('jobStartProofCell').innerHTML = task.startProofUrl ? '<span class="tick-ok">&#10003;</span>' : '<span class="tick-miss">-</span>';
+    if (byId('jobEndProofCell')) byId('jobEndProofCell').innerHTML = task.endProofUrl ? '<span class="tick-ok">&#10003;</span>' : '<span class="tick-miss">-</span>';
     setMsg('jobMsg', '');
     openModal('jobModal');
   }
@@ -2838,8 +3010,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           CurrentFY: byId('setFy').value.trim(),
           GeofenceRadiusMeters: byId('setRadius').value,
           GeofenceBufferMeters: byId('setBuffer').value,
-          TelemetryPushMinutes: byId('setTelemetry').value,
-          RealtimeEnabled: byId('setRealtime').value
+          TelemetryPushMinutes: byId('setTelemetry').value
         }
       }));
       setMsg('settingsMsg', 'Policy saved.');
@@ -2857,7 +3028,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     try {
       var res = ensureOk(await Cloud.post('broadcastSync', {}));
       if (!res.delivered) {
-        setMsg('settingsMsg', 'Live channel is disabled. Enable Realtime in Admin > Splash & Integrations.');
+        setMsg('settingsMsg', 'Live channel is disabled. Turn on Real-time location on the Map page.');
         toast('Live channel is disabled');
         return;
       }
@@ -2934,7 +3105,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     try {
       ensureOk(await Cloud.post('updateFirebaseSettings', {
         firebaseDbUrl: byId('setFirebase').value.trim(),
-        realtimeEnabled: byId('setRealtime').value === 'true'
+        realtimeEnabled: Boolean(state.settings && (state.settings.realtimeEnabled === true || state.settings.realtimeEnabled === 'true'))
       }));
       setMsg('integrationMsg', 'Live sync settings saved.');
     } catch (error) { setMsg('integrationMsg', error.message, true); }
@@ -3245,6 +3416,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   async function loadMap() {
     stopLiveWindow();
+    applyRealtimeToggle_();
     var date = byId('mapDate').value || Safe.today();
     var userId = byId('mapUser').value.trim();
     var data = ensureOk(await Cloud.post('getTelemetry', { date: date, userId: userId, limit: 2000 }));
@@ -3258,7 +3430,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     try {
       var res = ensureOk(await Cloud.post('broadcastSync', {}));
       if (!res.delivered) {
-        toast('Live channel is disabled. Enable Realtime in Admin.');
+        toast('Live channel is disabled. Turn on Real-time location on the Map page.');
         return;
       }
       startLiveWindow(res.liveSeconds || 180);
@@ -3665,8 +3837,172 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function showAttendanceProofs(userId, date) {
     try {
       var data = ensureOk(await Cloud.post('getAttendanceProofBundle', { userId: userId, date: date }));
-      openProof(data.files || [], 'Attendance proofs \u00b7 ' + userId, date);
+      state.attPhotoFiles = data.files || [];
+      var metaSource = (state.attendance || []).concat((state.report && state.report.attendance) || []);
+      state.attPhotoMeta = metaSource.filter(function (row) { return row.userId === userId && row.date === date; })[0] || null;
+      byId('attPhotoTitle').textContent = 'Attendance \u00b7 ' + userId;
+      var hasIn = state.attPhotoFiles.some(function (file) { return file.label === 'Check-in'; });
+      var hasOut = state.attPhotoFiles.some(function (file) { return file.label === 'Check-out'; });
+      var tabs = byId('attPhotoTabs').querySelectorAll('[data-att-photo]');
+      for (var t = 0; t < tabs.length; t++) {
+        var tabLabel = tabs[t].getAttribute('data-att-photo');
+        tabs[t].classList.toggle('hidden', tabLabel === 'Check-in' ? !hasIn : !hasOut);
+      }
+      setAttPhotoAction_(hasIn ? 'Check-in' : 'Check-out');
+      openModal('attPhotoModal');
     } catch (error) { toast(error.message); }
+  }
+
+  function setAttPhotoAction_(label) {
+    var file = (state.attPhotoFiles || []).filter(function (item) { return item.label === label; })[0];
+    var image = byId('attPhotoImg');
+    var empty = byId('attPhotoEmpty');
+    var tabs = byId('attPhotoTabs').querySelectorAll('[data-att-photo]');
+    for (var t = 0; t < tabs.length; t++) tabs[t].classList.toggle('active', tabs[t].getAttribute('data-att-photo') === label);
+    state.attPhotoAction = label;
+    if (file) {
+      image.src = proofDisplayUrl_(file);
+      image.classList.remove('hidden');
+      if (empty) empty.classList.add('hidden');
+    } else {
+      image.removeAttribute('src');
+      image.classList.add('hidden');
+      if (empty) empty.classList.remove('hidden');
+    }
+    if (byId('attPhotoDownload')) byId('attPhotoDownload').disabled = !file;
+    var meta = state.attPhotoMeta || {};
+    var when = label === 'Check-out' ? meta.checkOut : meta.checkIn;
+    var lines = [
+      (meta.userId || '') + (meta.hubName ? ' \u00b7 ' + meta.hubName : ''),
+      (meta.date || '') + (when ? ' \u00b7 ' + timeOnly(when) : ''),
+      'Status: ' + (meta.status || '-') + (meta.mock ? ' \u00b7 MOCK' : '')
+    ];
+    byId('attPhotoMeta').textContent = lines.filter(Boolean).join('\n');
+  }
+
+  function downloadAttPhoto_() {
+    var file = (state.attPhotoFiles || []).filter(function (item) { return item.label === state.attPhotoAction; })[0];
+    if (!file) return;
+    var dataUrl = proofDataUrl_(file);
+    if (dataUrl) downloadDataUrl_(dataUrl, 'attendance-' + (state.attPhotoAction || 'photo') + '.jpg');
+    else toast('The proof file is not available for download.');
+  }
+
+  async function openJobCollage() {
+    var task = state.editingJob;
+    if (!task || !task.jobId) return;
+    try {
+      var data = ensureOk(await Cloud.post('getJobProofBundle', { jobId: task.jobId }));
+      var files = data.files || [];
+      var start = files.filter(function (item) { return String(item.label || '').indexOf('Job start') === 0; })[0] || null;
+      var end = files.filter(function (item) { return String(item.label || '').indexOf('Job end') === 0; })[0] || null;
+      state.jobCollageFiles = { start: start, end: end };
+      byId('jobCollageTitle').textContent = 'Job proofs \u00b7 ' + task.jobId;
+      byId('jobCollageMeta').textContent = task.complaintNo ? ('Complaint ' + task.complaintNo) : '';
+      var items = [
+        { label: 'Start \u00b7 number plate', file: start },
+        { label: 'End \u00b7 job card', file: end }
+      ];
+      byId('jobCollageGrid').innerHTML = items.map(function (item) {
+        if (!item.file) return '<figure><figcaption>' + Safe.esc(item.label) + '</figcaption><p class="small muted">Not captured yet.</p></figure>';
+        return '<figure><figcaption>' + Safe.esc(item.label) + '</figcaption><img src="' + Safe.esc(proofDisplayUrl_(item.file)) + '" alt="' + Safe.esc(item.label) + '"></figure>';
+      }).join('');
+      byId('jobCollageStart').disabled = !start;
+      byId('jobCollageEnd').disabled = !end;
+      byId('jobCollageDownload').disabled = !(start && end);
+      openModal('jobCollageModal');
+    } catch (error) { toast(error.message); }
+  }
+
+  function downloadJobCollageFile_(which) {
+    var file = (state.jobCollageFiles || {})[which];
+    if (!file) return;
+    var dataUrl = proofDataUrl_(file);
+    if (dataUrl) downloadDataUrl_(dataUrl, 'job-' + which + '.jpg');
+    else toast('The proof file is not available for download.');
+  }
+
+  async function downloadJobCollageAll_() {
+    var files = state.jobCollageFiles || {};
+    if (!files.start || !files.end) return;
+    state.proofItems = [files.start, files.end];
+    await downloadProofCollage_();
+  }
+
+  function isAdminSession_() {
+    return Boolean(state.session && (state.session.isSuperAdmin || roleRank_(state.session.role) >= 4));
+  }
+
+  function applyRealtimeToggle_() {
+    var toggle = byId('mapRealtimeToggle');
+    if (!toggle) return;
+    var enabled = Boolean(state.settings && (state.settings.realtimeEnabled === true || state.settings.realtimeEnabled === 'true'));
+    toggle.checked = enabled;
+    toggle.disabled = !isAdminSession_();
+    var hint = byId('mapRealtimeHint');
+    if (hint) hint.textContent = isAdminSession_() ? 'Turn live location on or off for all devices. Saves immediately.' : 'Only an administrator can change this setting.';
+  }
+
+  async function toggleRealtime_() {
+    var toggle = byId('mapRealtimeToggle');
+    if (!toggle || !isAdminSession_()) { applyRealtimeToggle_(); return; }
+    var desired = toggle.checked;
+    toggle.disabled = true;
+    try {
+      ensureOk(await Cloud.post('updateAdminSettings', { settings: { RealtimeEnabled: desired ? 'true' : 'false' } }, { queue: false }));
+      await refreshBootstrap();
+      toast('Real-time location ' + (desired ? 'enabled' : 'disabled'));
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      applyRealtimeToggle_();
+    }
+  }
+
+  function openExportPackage() {
+    if (!state.report) { toast('Run a report first.'); return; }
+    var jobs = (state.report.jobs && state.report.jobs.rows) || [];
+    var attendance = state.report.attendance || [];
+    byId('exportPackageRange').textContent = jobs.length + ' job rows \u00b7 ' + attendance.length + ' attendance rows';
+    setMsg('exportPackageMsg', '');
+    openModal('exportPackageModal');
+  }
+
+  async function runExportPackage() {
+    var includeProofs = byId('exportProofs').checked;
+    var includeCharts = byId('exportCharts').checked;
+    if (!includeProofs && !includeCharts) { setMsg('exportPackageMsg', 'Choose proofs, charts, or both.', true); return; }
+    var button = byId('exportPackageRun');
+    button.disabled = true;
+    setMsg('exportPackageMsg', 'Building package...');
+    try {
+      var data = ensureOk(await Cloud.post('exportMisPackage', {
+        from: byId('repFrom').value || Safe.today(),
+        to: byId('repTo').value || byId('repFrom').value || Safe.today(),
+        userId: byId('repUser').value.trim(),
+        includeProofs: includeProofs,
+        includeCharts: includeCharts
+      }, { queue: false, timeoutMs: 180000 }));
+      setMsg('exportPackageMsg', 'Download started.');
+      triggerDownloadUrl_(data.downloadUrl);
+      byId('exportPackageMsg').innerHTML = 'Download started. If it did not open, <a href="' + Safe.esc(data.downloadUrl) + '" target="_blank" rel="noopener">open the package</a>.';
+      toast('Report package ready');
+    } catch (error) {
+      setMsg('exportPackageMsg', error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function triggerDownloadUrl_(url) {
+    if (!url) return;
+    var link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   /* -------------------------------------------------------------- vehicle uptime */
@@ -4299,6 +4635,20 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('hdSubmit')) byId('hdSubmit').addEventListener('click', submitHoldDecision);
     if (byId('proofDownload')) byId('proofDownload').addEventListener('click', function () { downloadProofItem_(0); });
     if (byId('proofCollage')) byId('proofCollage').addEventListener('click', downloadProofCollage_);
+    if (byId('jobProofView')) byId('jobProofView').addEventListener('click', openJobCollage);
+    if (byId('jobCollageStart')) byId('jobCollageStart').addEventListener('click', function () { downloadJobCollageFile_('start'); });
+    if (byId('jobCollageEnd')) byId('jobCollageEnd').addEventListener('click', function () { downloadJobCollageFile_('end'); });
+    if (byId('jobCollageDownload')) byId('jobCollageDownload').addEventListener('click', downloadJobCollageAll_);
+    if (byId('attPhotoDownload')) byId('attPhotoDownload').addEventListener('click', downloadAttPhoto_);
+    var attPhotoTabs = document.querySelectorAll('[data-att-photo]');
+    for (var ap = 0; ap < attPhotoTabs.length; ap++) {
+      attPhotoTabs[ap].addEventListener('click', function () { setAttPhotoAction_(this.getAttribute('data-att-photo')); });
+    }
+    var attTabs = document.querySelectorAll('[data-att-tab]');
+    for (var at = 0; at < attTabs.length; at++) {
+      attTabs[at].addEventListener('click', function () { route(this.getAttribute('data-att-tab')); });
+    }
+    if (byId('mapRealtimeToggle')) byId('mapRealtimeToggle').addEventListener('change', toggleRealtime_);
     if (byId('masterSave')) byId('masterSave').addEventListener('click', saveMasterEdit);
     if (byId('holdSubmit')) byId('holdSubmit').addEventListener('click', submitHold);
     if (byId('jobHold')) byId('jobHold').addEventListener('click', function () { openHoldModal(byId('jobId').value); });
@@ -4359,6 +4709,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('syncNow').addEventListener('click', syncNow);
     if (byId('repRun')) byId('repRun').addEventListener('click', loadReports);
     if (byId('repCsv')) byId('repCsv').addEventListener('click', exportReportCsv);
+    if (byId('repPackage')) byId('repPackage').addEventListener('click', openExportPackage);
+    if (byId('exportPackageRun')) byId('exportPackageRun').addEventListener('click', runExportPackage);
     if (byId('repPrint')) byId('repPrint').addEventListener('click', function () { window.print(); });
     if (byId('mapLoad')) byId('mapLoad').addEventListener('click', loadMap);
     if (byId('mapSync')) byId('mapSync').addEventListener('click', startLiveSyncFromMap);
@@ -4541,6 +4893,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     state.queue = Safe.json('offline_queue', []) || [];
     if (!Array.isArray(state.queue)) state.queue = [];
     renderQueue();
+    initViewLoaders_();
     bind();
 
     var stored = Safe.json('app_session', null);
