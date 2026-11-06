@@ -325,11 +325,13 @@
   #printHeader{display:none}
   @media print{
     @page{margin:12mm}
-    body{background:#fff}
-    #statusStrip,header.appbar,.sidebar,.sidebar-backdrop,nav.mobile,#checkInBanner,#mockBar,.toolbar,.modal-shell,.view-loading,.overview-actions,.seg-tabs,.switch-row,.msg,button,.tabbtn{display:none !important}
-    .layout{display:block}
-    .content{padding:0 !important;max-width:none !important}
-    .view.hidden{display:none !important}
+    html,body{background:#fff !important;margin:0 !important;padding:0 !important;width:100% !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #statusStrip,header.appbar,aside.sidebar,#sidebar,.sidebar,.sidebar-backdrop,#backdrop,nav.mobile,#mobileNav,#menuBtn,.nav-cat,#checkInBanner,#mockBar,.toolbar,.modal-shell,.view-loading,.overview-actions,.seg-tabs,.switch-row,.msg,button,.tabbtn{display:none !important}
+    .layout{display:block !important;width:100% !important;margin:0 !important;padding:0 !important}
+    main.content{margin:0 !important;padding:0 !important;max-width:none !important;width:100% !important}
+    #appViews{display:block !important}
+    #appViews > .view{display:none !important}
+    #appViews > .view:not(.hidden){display:block !important}
     .card{box-shadow:none !important;border:1px solid #d7dee8;break-inside:avoid}
     #engineerProductivity,#hubWorkload{max-height:none !important;overflow:visible !important}
     #printHeader{display:block !important;margin:0 0 14px}
