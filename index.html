@@ -815,6 +815,11 @@
       <button class="cam-round" id="attCamSubmit" type="button" style="display:none">Submit</button>
     </div>
     <div id="attCamMsg" class="msg hidden"></div>
+    <div id="attCamFallback" class="hidden" style="padding:0 16px 18px;color:#e2e8f0">
+      <p class="small" id="attCamFallbackText" style="margin:0 0 10px;color:#cbd5e1">Camera did not open. Choose a photo instead.</p>
+      <button class="secondary" id="attCamChoose" type="button">Choose photo</button>
+      <input id="attCamFile" type="file" accept="image/*" capture="user" class="hidden">
+    </div>
   </div>
 </div>
 
@@ -2030,7 +2035,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var actions = '<button class="secondary sm" data-edit-job="' + Safe.esc(task.jobId) + '">Edit</button> ' +
         '<button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button> ' +
         '<button class="ghost sm" data-job-proofs="' + Safe.esc(task.jobId) + '">Proofs</button>';
-      if (task.status === 'InProgress' || task.status === 'Delayed') actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
+      if (state.session.checkedIn && (task.status === 'InProgress' || task.status === 'Delayed')) actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
       return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td class="small mono">' + Safe.esc(task.complaintNo || '-') + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
         '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
         badge + '">' + Safe.esc(task.status) + '</span>' + holdBadge + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
@@ -2406,6 +2411,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('jobId').value = task.jobId || '';
     if (byId('jobComplaint')) byId('jobComplaint').value = task.complaintNo || '';
     state.editingJobVersion = task.version || 1;
+    state.editingJobStatus = task.status || '';
     byId('jobClient').value = task.client || '';
     if (byId('jobClientSel')) byId('jobClientSel').value = task.clientId || '';
     byId('jobHub').value = task.hub || (state.session ? state.session.hub : '');
@@ -2419,7 +2425,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('jobNotes').value = task.serviceNotes || '';
     if (byId('jobRootCause')) byId('jobRootCause').value = task.rootCause || '';
     if (byId('jobResolution')) byId('jobResolution').value = task.resolutionNotes || '';
-    if (byId('jobHold')) byId('jobHold').classList.toggle('hidden', !(task.jobId && (task.status === 'InProgress' || task.status === 'Delayed')));
+    if (byId('jobHold')) byId('jobHold').classList.toggle('hidden', !(task.jobId && state.session.checkedIn && (task.status === 'InProgress' || task.status === 'Delayed')));
     if (byId('jobApproveHold')) byId('jobApproveHold').classList.toggle('hidden', task.status !== 'HoldRequested');
     if (byId('jobRejectHold')) byId('jobRejectHold').classList.toggle('hidden', task.status !== 'HoldRequested');
     state.editingJob = task;
@@ -2432,6 +2438,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   async function saveJob() {
     var jobId = byId('jobId').value;
+    var targetStatus = byId('jobStatusInput').value;
+    if (!state.session.checkedIn && targetStatus === 'InProgress' && (!jobId || state.editingJobStatus !== 'InProgress')) {
+      toast('Complete photo check-in first');
+      openAttCamera();
+      return;
+    }
     var payload = {
       clientId: byId('jobClientSel') ? byId('jobClientSel').value : '',
       client: byId('jobClient').value.trim(),
@@ -2816,6 +2828,21 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('attCamSubmit').style.display = 'none';
     byId('attCamSubmit').disabled = false;
     byId('attCamCapture').disabled = true;
+    if (byId('attCamFallback')) byId('attCamFallback').classList.add('hidden');
+  }
+
+  function showAttCameraFallback_(message) {
+    var box = byId('attCamFallback');
+    if (!box) return;
+    byId('attCamFallbackText').textContent = message || 'Camera did not open. Choose a photo instead.';
+    box.classList.remove('hidden');
+    byId('attCamVideo').style.display = 'none';
+    byId('attCamGuide').style.display = 'none';
+    byId('attCamCanvas').style.display = 'none';
+    byId('attCamCapture').style.display = 'none';
+    byId('attCamRetake').style.display = 'none';
+    byId('attCamSubmit').style.display = 'none';
+    setMsg('attCamMsg', '');
   }
 
   function closeAttCamera() {
@@ -2848,7 +2875,38 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       byId('attCamCapture').disabled = false;
       byId('attCamHint').textContent = 'Position your face inside the frame, then tap the shutter.';
     } catch (error) {
-      setMsg('attCamMsg', 'Camera permission was denied or no camera is available. Enable camera access and try again.', true);
+      showAttCameraFallback_('Camera permission was denied or no camera is available. Choose a photo instead.');
+    }
+  }
+
+  async function applyAttendanceFile_(file) {
+    if (!file) return;
+    try {
+      var photo = await readFile(file);
+      pendingAttPhoto = photo.full;
+      pendingAttThumb = photo.thumb;
+      var image = new Image();
+      image.onload = function () {
+        var canvas = byId('attCamCanvas');
+        var maxW = 1024;
+        var scale = Math.min(1, maxW / image.width);
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        byId('attCamVideo').style.display = 'none';
+        byId('attCamGuide').style.display = 'none';
+        byId('attCamFallback').classList.add('hidden');
+        canvas.style.display = 'block';
+        byId('attCamCapture').style.display = 'none';
+        byId('attCamRetake').style.display = '';
+        byId('attCamSubmit').style.display = '';
+        byId('attCamHint').textContent = 'Photo selected. Submit to complete check-in.';
+        setMsg('attCamMsg', '');
+      };
+      image.onerror = function () { setMsg('attCamMsg', 'Could not read that photo.', true); };
+      image.src = 'data:image/jpeg;base64,' + photo.full;
+    } catch (error) {
+      setMsg('attCamMsg', error.message || 'Could not read that photo.', true);
     }
   }
 
@@ -2874,8 +2932,17 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       toast('Mock GPS detected. Disable fake location to check in.');
       return;
     }
+    var nativeBridge = window.AndroidBridge;
+    if (nativeBridge && typeof nativeBridge.requestAttendanceCamera === 'function') {
+      try {
+        nativeBridge.requestAttendanceCamera();
+        window.addEventListener('focus', refreshAfterNativeAttendance_, { once: true });
+        return;
+      } catch (e) {}
+    }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setMsg('attCamMsg', 'Camera is not available in this browser.', true);
+      showAttCameraFallback_('Camera is not available in this browser. Choose a photo instead.');
       openModal('attCamModal');
       return;
     }
@@ -2885,6 +2952,25 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     setMsg('attCamMsg', '');
     openModal('attCamModal');
     await startAttendanceStream(attendanceFacing);
+  }
+
+  function refreshAfterNativeAttendance_() {
+    setTimeout(function () {
+      try {
+        var bridge = window.AndroidBridge;
+        if (bridge && typeof bridge.getCheckInState === 'function') {
+          var native = JSON.parse(bridge.getCheckInState());
+          if (native && native.checkedIn && state.session) {
+            state.session.checkedIn = true;
+            saveSession(state.session);
+            renderSession();
+            if (state.view === 'jobs') loadJobs();
+            if (state.view === 'attendance') loadAttendance();
+          }
+        }
+      } catch (e) {}
+      if (state.session) refreshBootstrap().catch(function () {});
+    }, 700);
   }
 
   function captureAttFrame() {
@@ -4723,6 +4809,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('attCamSwitch').addEventListener('click', switchAttCamera);
     byId('attCamSubmit').addEventListener('click', submitAttCamera);
     byId('attCamClose').addEventListener('click', closeAttCamera);
+    if (byId('attCamChoose')) byId('attCamChoose').addEventListener('click', function () { byId('attCamFile').click(); });
+    if (byId('attCamFile')) byId('attCamFile').addEventListener('change', function () { applyAttendanceFile_(this.files && this.files[0]); });
     window.addEventListener('focus', applyMockPolicy_);
     setInterval(applyMockPolicy_, 5000);
     byId('attCheckOut').addEventListener('click', checkOut);
