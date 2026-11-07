@@ -570,10 +570,10 @@
           <div class="stat amber"><h4>Avg Turnaround</h4><p class="value" id="repTurnaround">0m</p></div>
           <div class="stat red"><h4>Mock / Breach</h4><p class="value" id="repCompliance">0 / 0</p></div>
         </div>
-        <div class="card"><h3>Daily attendance</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Shifts</th><th>Hours</th><th>Mock</th></tr></thead><tbody id="repDaily"></tbody></table></div></div>
-        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
-        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
-        <div class="card"><h3>Engineer productivity</h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Completed</th><th>Hours</th></tr></thead><tbody id="repEngineers"></tbody></table></div></div>
+        <div class="card"><h3>Daily attendance</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Report Time</th><th>Shifts</th><th>Hours</th><th>Mock</th></tr></thead><tbody id="repDaily"></tbody></table></div></div>
+        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Check-in Date</th><th>Check-in Time</th><th>Check-out Date</th><th>Check-out Time</th><th>User</th><th>Hub</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
+        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start Date</th><th>Start Time</th><th>End Date</th><th>End Time</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
+        <div class="card"><h3>Engineer productivity</h3><div class="table-wrap"><table><thead><tr><th>Report Date</th><th>Report Time</th><th>User</th><th>Completed</th><th>Hours</th></tr></thead><tbody id="repEngineers"></tbody></table></div></div>
         </div>
       </section>
 
@@ -1280,7 +1280,17 @@
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
       });
     },
-    today: function () { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); },
+    today: function () {
+      var d = new Date();
+      var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+      var day = '', month = '', year = '';
+      parts.forEach(function(p) {
+        if (p.type === 'day') day = p.value;
+        if (p.type === 'month') month = p.value;
+        if (p.type === 'year') year = p.value;
+      });
+      return year + '-' + month + '-' + day;
+    },
     parseInputDate: function (value) {
       if (!value) return null;
       var text = String(value);
@@ -1361,18 +1371,36 @@
     return h ? h + 'h ' + pad(m) + 'm' : m + 'm';
   }
 
+  const APP_TZ = 'Asia/Kolkata';
+  function istFormatter(options) {
+    return new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: APP_TZ, hour12: false }, options));
+  }
+  function formatDateIST(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso).slice(0, 10);
+    var parts = istFormatter({ year: 'numeric', month: 'short', day: '2-digit' }).formatToParts(d);
+    var day = '', month = '', year = '';
+    parts.forEach(function(p) {
+      if (p.type === 'day') day = p.value;
+      if (p.type === 'month') month = p.value;
+      if (p.type === 'year') year = p.value;
+    });
+    return day + '-' + month + '-' + year;
+  }
+
   function timeOnly(iso) {
     if (!iso) return '';
     var d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    return istFormatter({ hour: '2-digit', minute: '2-digit' }).format(d);
   }
 
   function dateTime(iso) {
     if (!iso) return '';
     var d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    return formatDateIST(iso) + ' ' + istFormatter({ hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(d);
   }
 
   /* ---------------------------------------------------------------- transport */
@@ -2026,6 +2054,18 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (state.session && state.session.allowLogout === false) {
       toast('Logout is disabled for this account. Contact an administrator.');
       return;
+    }
+    if (state.session && state.session.checkedIn) {
+      try {
+        var position = await currentPosition();
+        await Cloud.post('attendanceCheckOut', {
+          lat: position ? position.coords.latitude : 0,
+          lng: position ? position.coords.longitude : 0,
+          accuracy: position ? position.coords.accuracy : 0,
+          mock: mockActive_(),
+          clientRequestId: Safe.uuid()
+        }, { queue: false });
+      } catch (e) {}
     }
     try { await Cloud.post('logout', {}, { queue: false, bridge: false }); } catch (e) {}
     stopLiveWindow();
@@ -3730,23 +3770,26 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('repTurnaround').textContent = minutesToText(jobs.avgTurnaroundMinutes || 0);
     byId('repCompliance').textContent = (compliance.mockFlags || 0) + ' / ' + (compliance.breachEvents || 0);
 
+    var reportDate = formatDateIST(new Date());
+    var reportTime = timeOnly(new Date());
     paginateTable_('reportDaily', 'repDaily', report.daily || [], function (day) {
-      return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.shifts) + '</td><td>' +
+      return '<tr><td>' + Safe.esc(formatDateIST(day.date)) + '</td><td>' + Safe.esc(reportTime) + '</td><td>' + Safe.esc(day.shifts) + '</td><td>' +
         Safe.esc(minutesToText(day.minutes)) + '</td><td>' + Safe.esc(day.mock) + '</td></tr>';
-    }, { reset: true, colspan: 4, emptyText: 'No attendance in this range.' });
+    }, { reset: true, colspan: 5, emptyText: 'No attendance in this range.' });
 
     renderReportAttendance_(attendance, attMeta);
     renderReportJobs_(jobs.rows || [], paging.jobs || {});
 
     paginateTable_('reportEngineers', 'repEngineers', jobs.engineers || [], function (person) {
-      return '<tr><td>' + Safe.esc(person.userId) + '</td><td>' + Safe.esc(person.completed) + '</td><td>' +
+      return '<tr><td>' + Safe.esc(reportDate) + '</td><td>' + Safe.esc(reportTime) + '</td><td>' + Safe.esc(person.userId) + '</td><td>' + Safe.esc(person.completed) + '</td><td>' +
         Safe.esc(minutesToText(person.minutes)) + '</td></tr>';
-    }, { reset: true, colspan: 3, emptyText: 'No completed jobs in this range.' });
+    }, { reset: true, colspan: 5, emptyText: 'No completed jobs in this range.' });
   }
 
   function attendanceReportRowHtml_(row) {
-    return '<tr><td>' + Safe.esc(row.date) + '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '') +
-      '</td><td>' + Safe.esc(timeOnly(row.checkIn) || '-') + '</td><td>' + Safe.esc(timeOnly(row.checkOut) || '-') +
+    return '<tr><td>' + Safe.esc(formatDateIST(row.checkIn || row.date)) + '</td><td>' + Safe.esc(timeOnly(row.checkIn) || '-') +
+      '</td><td>' + Safe.esc(row.checkOut ? formatDateIST(row.checkOut) : '-') + '</td><td>' + Safe.esc(row.checkOut ? timeOnly(row.checkOut) : '-') +
+      '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '') +
       '</td><td>' + Safe.esc(minutesToText(row.minutes)) + '</td><td>' + Safe.esc(row.status || '') +
       '</td><td><button class="secondary sm" data-att-proofs="' + Safe.esc(row.userId + '|' + row.date) + '">Proofs</button></td></tr>';
   }
@@ -3756,6 +3799,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var approved = job.holdApprovedBy ? (job.holdApprovedBy + (job.holdApprovedLevel ? ' L' + job.holdApprovedLevel : '')) : '';
     return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td class="small mono">' + Safe.esc(job.complaintNo || '-') + '</td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
       Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.status) + '</td><td>' +
+      Safe.esc(job.startTime ? formatDateIST(job.startTime) : '-') + '</td><td>' + Safe.esc(job.startTime ? timeOnly(job.startTime) : '-') +
+      '</td><td>' + Safe.esc(job.endTime ? formatDateIST(job.endTime) : '-') + '</td><td>' + Safe.esc(job.endTime ? timeOnly(job.endTime) : '-') +
+      '</td><td>' +
       (job.startProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">Start</button>' : '-') +
       '</td><td>' + (job.endProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">End</button>' : '-') +
       '</td><td class="small">' + Safe.esc(hold + (job.holdReason ? ' \u00b7 ' + job.holdReason : '')) + '</td><td class="small">' +
@@ -3769,7 +3815,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         var jobPage = state.reportPaging && state.reportPaging.jobs ? state.reportPaging.jobs.page : 1;
         loadReports(state.reportPage, nextPage, jobPage || 1);
       },
-      colspan: 8,
+      colspan: 9,
       emptyText: 'No attendance rows.'
     });
   }
@@ -3781,7 +3827,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         var attPage = state.reportPaging && state.reportPaging.attendance ? state.reportPaging.attendance.page : 1;
         loadReports(state.reportPage, attPage || 1, nextPage);
       },
-      colspan: 10,
+      colspan: 14,
       emptyText: 'No jobs in this range.'
     });
   }
@@ -3804,9 +3850,19 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       return;
     }
     var report = data.report || {};
-    var rows = [['Date', 'User', 'Hub', 'CheckIn', 'CheckOut', 'Minutes', 'Status', 'Mock']];
+    var rows = [['CheckIn Date', 'CheckIn Time', 'CheckOut Date', 'CheckOut Time', 'User', 'Hub', 'Minutes', 'Status', 'Mock']];
     (report.attendance || []).forEach(function (row) {
-      rows.push([row.date, row.userId, row.hubName || '', row.checkIn || '', row.checkOut || '', row.minutes || 0, row.status || '', row.mock ? 'YES' : 'NO']);
+      rows.push([
+        formatDateIST(row.checkIn || row.date),
+        timeOnly(row.checkIn),
+        row.checkOut ? formatDateIST(row.checkOut) : '-',
+        row.checkOut ? timeOnly(row.checkOut) : '-',
+        row.userId,
+        row.hubName || '',
+        row.minutes || 0,
+        row.status || '',
+        row.mock ? 'YES' : 'NO'
+      ]);
     });
     var csv = rows.map(function (line) {
       return line.map(function (cell) { return '"' + String(cell === undefined || cell === null ? '' : cell).replace(/"/g, '""') + '"'; }).join(',');
