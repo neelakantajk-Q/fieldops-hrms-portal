@@ -107,6 +107,14 @@
   .hourly-slot .badge{font-size:10px;margin-top:4px;display:inline-block}
   .hourly-slot a{color:#1d4ed8;text-decoration:underline;font-size:11px}
   .hrms-card-toggle{font-size:11px;color:#1d4ed8;margin-top:8px;text-align:right;font-weight:700}
+  .att-card-toggle{font-size:11px;color:#1d4ed8;margin-top:8px;text-align:right;font-weight:700}
+  .att-detail{border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:10px;background:#fff}
+  .att-detail-section{margin-bottom:14px}
+  .att-detail-section h4{margin:0 0 8px;font-size:14px;color:var(--ink)}
+  .att-detail table{font-size:12px;width:100%;border-collapse:collapse;margin-top:6px}
+  .att-detail th{background:#f7f9fc;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#64748b;font-weight:700;white-space:nowrap;padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
+  .att-detail td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .att-detail tr:last-child td{border-bottom:none}
   /* Checkpoint timeline */
   .checkpoint-container{display:flex;flex-direction:column;gap:12px}
   .checkpoint-card{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--card)}
@@ -424,10 +432,8 @@
     <div class="brand"><img class="mark" src="assets/quantum-logo.png" alt="Quantum EV"><div><strong>Quantum</strong><span>Field Operations</span></div></div>
     <div class="nav-cat" id="workspaceNavCat">Workspace</div>
     <button class="nav-item active" data-view="overview" type="button">Overview</button>
-    <button class="nav-item" data-view="attendance" type="button">Attendance</button>
-    <button class="nav-item" data-view="hrms" type="button">HRMS Logs</button>
-    <button class="nav-item" data-view="checkpoint" type="button">30-Min Timeline</button>
-    <button class="nav-item" data-view="jobs" type="button">Job Cards</button>
+<button class="nav-item" data-view="attendance" type="button">Attendance</button>
+<button class="nav-item" data-view="jobs" type="button">Job Cards</button>
     <button class="nav-item" data-view="pending" type="button">Pending Jobs</button>
     <button class="nav-item" data-view="team" type="button">Team</button>
     <button class="nav-item" data-view="notifications" type="button">Notifications</button>
@@ -495,10 +501,10 @@
 
       <section id="view-attendance" class="view hidden">
         <div class="page-head with-tabs">
-          <div><h2>Attendance &amp; Shifts</h2><p>Photo check-in is the shift start event.</p></div>
+          <div><h2>Attendance &amp; Timeline</h2><p>Shift cards with expandable 30-minute timeline and job grid.</p></div>
           <div class="seg-tabs" role="tablist" aria-label="Attendance views">
-            <button class="seg-tab" type="button" data-att-tab="attendance">Attendance</button>
             <button class="seg-tab active" type="button" data-att-tab="cards">Cards</button>
+            <button class="seg-tab" type="button" data-att-tab="attendance">Table</button>
             <button class="seg-tab" type="button" data-att-tab="map">Map</button>
           </div>
         </div>
@@ -510,8 +516,8 @@
           <button class="secondary" id="attCheckOut" type="button">Check out</button>
         </div>
         <!-- Attendance Table View -->
-        <div id="attTableContainer" class="card"><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proof</th></tr></thead><tbody id="attBody"></tbody></table></div></div>
-        <!-- HRMS Cards View -->
+        <div id="attTableContainer" class="card hidden"><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proof</th></tr></thead><tbody id="attBody"></tbody></table></div></div>
+        <!-- Shift Cards View (default) -->
         <div id="hrmsCardsContainer" class="hidden"></div>
         <!-- Summary Card (shown when range=30d) -->
         <div id="hrmsSummaryCard" class="card hidden" style="margin-bottom:16px">
@@ -523,39 +529,32 @@
             <div class="stat red"><h4>Last Location</h4><p class="value" id="hrmsLastLocation">-</p></div>
           </div>
         </div>
-      </section>
-
-      <section id="view-hrms" class="view hidden">
-        <div class="page-head with-tabs">
-          <div><h2>HRMS Logs</h2><p>Per-user daily attendance with hourly job timeline.</p></div>
-          <div class="seg-tabs" role="tablist" aria-label="HRMS views">
-            <button class="seg-tab active" type="button" data-hrms-tab="cards">Cards</button>
-            <button class="seg-tab" type="button" data-hrms-tab="timeline">Timeline</button>
+        <!-- Map pane inside Attendance & Timeline -->
+        <div id="attMapPane" class="card hidden" style="position:relative">
+          <div class="toolbar">
+            <div class="field"><label for="mapDate">Date</label><input id="mapDate" type="date"></div>
+            <div class="field"><label for="mapUser">User ID</label><input id="mapUser" list="peopleList" placeholder="User"></div>
+            <button id="mapLoad" type="button">Load trail</button>
+            <button class="secondary" id="mapSync" type="button">Sync now (3 min live)</button>
+            <button class="secondary" id="mapHistoryToggle" type="button" onclick="toggleMapHistoryMode()">History Mode</button>
+            <span id="mapLiveLabel" class="small muted"></span>
+          </div>
+          <div class="card" style="padding:10px"><div id="liveMap"></div></div>
+          <div id="mapHistoryPanel" class="hidden" style="position:absolute;right:10px;top:10px;width:340px;max-height:90vh;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 8px 32px rgba(2,8,23,.25);z-index:100">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <h4 style="margin:0;font-size:16px">Location History</h4>
+              <button class="secondary sm" id="mapHistoryClose" type="button">Close</button>
+            </div>
+            <div class="field" style="margin-bottom:12px"><label>User</label><select id="mapHistoryUser"></select></div>
+            <div class="field" style="margin-bottom:12px"><label>Time Slot</label><select id="mapHistoryTime"></select></div>
+            <div id="mapHistoryPoints" class="small muted">Select a user and time slot</div>
           </div>
         </div>
-        <div class="toolbar">
-          <div class="field"><label for="hrmsDate">Date</label><input id="hrmsDate" type="date"></div>
-          <div class="field"><label for="hrmsUser">User ID</label><input id="hrmsUser" list="peopleList" placeholder="All users"></div>
-          <button class="secondary" id="hrmsRefresh" type="button">Refresh</button>
-        </div>
-        <div id="hrmsLogsContainer"></div>
       </section>
 
-      <section id="view-checkpoint" class="view hidden">
-        <div class="page-head with-tabs">
-          <div><h2>30-Min Checkpoint Timeline</h2><p>GPS checkpoints and triggers per user.</p></div>
-          <div class="seg-tabs" role="tablist" aria-label="Checkpoint views">
-            <button class="seg-tab active" type="button" data-cp-tab="timeline">Timeline</button>
-            <button class="seg-tab" type="button" data-cp-tab="map">Map Trail</button>
-          </div>
-        </div>
-        <div class="toolbar">
-          <div class="field"><label for="cpDate">Date</label><input id="cpDate" type="date"></div>
-          <div class="field"><label for="cpUser">User ID</label><input id="cpUser" list="peopleList" placeholder="All users"></div>
-          <button class="secondary" id="cpRefresh" type="button">Refresh</button>
-        </div>
-        <div id="checkpointContainer"></div>
-      </section>
+
+
+
 
       <section id="view-jobs" class="view hidden">
         <div class="page-head"><h2>Job Cards</h2><p>Vehicle number is the foreign key to the fleet registry.</p></div>
@@ -611,6 +610,11 @@
           <button class="secondary" id="notifUnreadBtn" type="button">Unread only</button>
           <button class="secondary" id="notifBroadcastBtn" type="button">Broadcast</button>
           <span id="notifLiveLabel" class="small muted"></span>
+        </div>
+        <div class="card hidden" id="transitQueueCard">
+          <h3>Pending transit approvals <span class="chip warn" id="transitQueueCount">0</span></h3>
+          <p class="small muted">A transit request stays pending until an authorized supervisor or administrator decides it.</p>
+          <div id="transitQueue" class="feed"><p class="small muted">No pending transit requests.</p></div>
         </div>
         <div class="card"><div id="notifList" class="feed"><p class="small muted">No notifications.</p></div></div>
       </section>
@@ -669,49 +673,7 @@
         </div>
       </section>
 
-      <section id="view-map" class="view hidden">
-        <div class="page-head with-tabs">
-          <div><h2>Live Map</h2><p>Employee movement, geofence and real-time sync.</p></div>
-          <div class="seg-tabs" role="tablist" aria-label="Attendance and map">
-            <button class="seg-tab" type="button" data-att-tab="attendance">Attendance</button>
-            <button class="seg-tab active" type="button" data-att-tab="map">Map</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="switch-row">
-            <div>
-              <strong>Real-time location</strong>
-              <p class="small muted" id="mapRealtimeHint" style="margin:4px 0 0">Turn live location on or off for all devices.</p>
-            </div>
-            <label class="switch" title="Real-time location">
-              <input type="checkbox" id="mapRealtimeToggle">
-              <span></span>
-            </label>
-          </div>
-        </div>
-        <div class="card">
-          <div class="toolbar">
-            <div class="field"><label for="mapDate">Date</label><input id="mapDate" type="date"></div>
-            <div class="field"><label for="mapUser">User ID</label><input id="mapUser" list="peopleList" placeholder="All visible users"></div>
-            <button id="mapLoad" type="button">Load trail</button>
-            <button class="secondary" id="mapSync" type="button">Sync now (3 min live)</button>
-            <button class="secondary" id="mapTrial" type="button">History</button>
-            <button class="secondary" id="mapHistoryToggle" type="button" onclick="toggleMapHistoryMode()">History Mode</button>
-            <span id="mapLiveLabel" class="small muted"></span>
-          </div>
-        </div>
-        <div class="card" style="padding:10px"><div id="liveMap"></div></div>
-        <!-- Right-side history panel (pops out to cover 8/10 screen) -->
-        <div id="mapHistoryPanel" class="hidden" style="position:absolute;right:10px;top:10px;width:340px;max-height:90vh;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 8px 32px rgba(2,8,23,.25);z-index:100">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-            <h4 style="margin:0;font-size:16px">Location History</h4>
-            <button class="secondary sm" id="mapHistoryClose" type="button">Close</button>
-          </div>
-          <div class="field" style="margin-bottom:12px"><label>User</label><select id="mapHistoryUser"></select></div>
-          <div class="field" style="margin-bottom:12px"><label>Time Slot</label><select id="mapHistoryTime"></select></div>
-          <div id="mapHistoryPoints" class="small muted">Select a user and time slot</div>
-        </div>
-      </section>
+
 
       <section id="view-masters" class="view hidden">
         <div class="page-head"><h2>Master Data</h2><p>Regions, hubs with map coordinates, and client sites used when allotting technicians.</p></div>
@@ -896,10 +858,8 @@
 
 <nav class="mobile hidden" id="mobileNav">
   <button data-view="overview" class="active" type="button">Home</button>
-  <button data-view="attendance" type="button">Attendance</button>
-  <button data-view="hrms" type="button">HRMS Logs</button>
-  <button data-view="checkpoint" type="button">30-Min Timeline</button>
-  <button data-view="jobs" type="button">Jobs</button>
+<button data-view="attendance" type="button">Attendance</button>
+<button data-view="jobs" type="button">Jobs</button>
   <button data-view="vehicles" type="button">Fleet</button>
   <button id="mobileMore" type="button">More</button>
 </nav>
@@ -1442,14 +1402,17 @@
     notifUnread: 0,
     notifUnreadOnly: false,
     notifTimer: null,
+    transitRequests: [],
+    transitLoaded: false,
     proofItems: [],
     editingMaster: null,
     liveSource: null,
     hierarchy: [],
     hrmsLogs: [],
-    hrmsView: 'cards',
+    attTab: 'cards',
+    attExpanded: {},
+    attTelemetryCache: {},
     checkpointLogs: [],
-    hrmsExpanded: {},
     mapHistoryMode: false,
     mapHistoryTrails: [],
     lastSyncedAt: 0,
@@ -2050,7 +2013,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (view === 'team') return true;
     if (view === 'pending' || view === 'notifications') return true;
     if (view === 'reports' || view === 'map' || view === 'uptime') return rank >= 2;
-    if (view === 'hrms' || view === 'checkpoint') return rank >= 2;
     if (view === 'vehicles') return rank >= 2 || rights.indexOf('VEHICLES') >= 0;
     if (view === 'masters') return rank >= 3;
     if (view === 'workflows') return rank >= 2;
@@ -2180,6 +2142,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       }
     }
 
+    if (byId('transitQueueCard')) renderTransitQueue();
     applyMockPolicy_();
   }
 
@@ -2228,9 +2191,11 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           if (idx >= 0) state.attendance[idx] = a; else state.attendance.push(a);
         });
         cacheSave('attendance', userId, state.attendance);
-        if (state.view === 'attendance') loadAttendance();
-        if (state.view === 'hrms') renderHRMS();
-        if (state.view === 'checkpoint') renderCheckpoint();
+        if (state.view === 'attendance') {
+          if (state.attTab === 'cards') loadHRMSAttendance();
+          else if (state.attTab === 'map') loadMap();
+          else loadAttendance(1);
+        }
       }
       // Merge job changes
       if (res.tasks && res.tasks.length) {
@@ -2240,7 +2205,11 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         });
         cacheSave('jobs', userId, state.tasks);
         if (state.view === 'jobs') loadJobs();
-        if (state.view === 'hrms') renderHRMS();
+        if (state.view === 'attendance') {
+          if (state.attTab === 'cards') loadHRMSAttendance();
+          else if (state.attTab === 'map') loadMap();
+          else loadAttendance(1);
+        }
       }
       // Merge notification changes
       if (res.notifications && res.notifications.length) {
@@ -2386,6 +2355,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   /* -------------------------------------------------------------------- views */
   async function route(view) {
     if (!state.session) { renderSession(); return; }
+    if (view === 'map') { if (!canView_('map')) view = 'overview'; else { state.attTab = 'map'; view = 'attendance'; } }
+    else if (view === 'hrms' || view === 'checkpoint') { view = 'attendance'; state.attTab = 'cards'; }
     if (!canView_(view)) view = state.session.isSuperAdmin ? 'platform' : 'overview';
     var previousView = state.view;
     if (previousView === 'pending' && view !== 'pending') stopPendingLive();
@@ -2414,7 +2385,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     try {
       if (view === 'overview') await loadOverview();
       if (view === 'attendance') {
-        if (state.hrmsView === 'cards') await loadHRMSAttendance();
+        if (state.attTab === 'cards') await loadHRMSAttendance();
+        else if (state.attTab === 'map') await loadMap();
         else await loadAttendance();
       }
       if (view === 'jobs') await loadJobs();
@@ -2423,9 +2395,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       if (view === 'reports') await loadReports();
       if (view === 'uptime') await loadUptime();
       if (view === 'notifications') await loadNotifications();
-      if (view === 'map') await loadMap();
-      if (view === 'hrms') await loadHRMS();
-      if (view === 'checkpoint') await loadCheckpoint();
       if (view === 'masters') await loadMasters();
       if (view === 'vehicles') { await loadVehicles(); await loadCaptures(); }
       if (view === 'workflows') await loadWorkflows();
@@ -2637,72 +2606,158 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     container.innerHTML = html;
   }
 
-  function renderHourlySlots(row) {
-    // Build mock hourly slots based on check-in/check-out and nearby jobs
-    var slots = [];
-    var start = row.checkIn ? new Date(row.checkIn) : new Date();
-    var end = row.checkOut ? new Date(row.checkOut) : new Date(start.getTime() + 9 * 60 * 60000);
-    // Round start down to hour
-    var slotStart = new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), 0, 0);
-    var slotEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), end.getHours(), 0, 0);
-    var jobs = (state.tasks || []).filter(function (t) {
-      return t.assignedUserId === row.userId && t.startTime &&
-        new Date(t.startTime).toISOString().slice(0, 10) === row.date;
+  function tasksForDateUser_(date, userId) {
+    return (state.tasks || []).filter(function (t) {
+      return t.assignedUserId === userId && t.startTime && new Date(t.startTime).toISOString().slice(0, 10) === date;
     }).sort(function (a, b) { return new Date(a.startTime).getTime() - new Date(b.startTime).getTime(); });
-    var jobIdx = 0;
-    var d = new Date(slotStart);
-    while (d <= slotEnd) {
-      var slotLabel = pad(d.getHours()) + ':00 - ' + pad((d.getHours() + 1) % 24) + ':00';
-      var slotContent = '';
-      var badge = '';
-      var completed = false;
-      // Check if any job falls in this slot
-      while (jobIdx < jobs.length && new Date(jobs[jobIdx].startTime).getTime() < d.getTime() + 3600000) {
-        var job = jobs[jobIdx];
-        slotContent = '<b>' + Safe.esc(job.jobId) + ' Closed</b>';
-        badge = '<span class="badge success">Job</span>';
-        completed = true;
-        jobIdx++;
-        break;
-      }
-      if (!slotContent) {
-        var h = d.getHours();
-        if (h >= 9 && h < 18) {
-          slotContent = 'Active Field';
-        } else if (h >= 12 && h < 13) {
-          slotContent = 'Lunch';
-          badge = '<span class="badge warn">Break</span>';
-        } else if (h === 17 || h === 18) {
-          slotContent = 'Logout Alert';
-          badge = '<span class="badge bad">Alert</span>';
-        } else if (h >= 8 && h < 9) {
-          slotContent = 'Arrival';
-          badge = '<span class="badge success">Arrival</span>';
-          completed = true;
-        } else {
-          slotContent = 'Off shift';
-          badge = '<span class="badge gray">Off</span>';
-        }
-      }
-      slots.push('<div class="hourly-slot' + (completed ? ' completed' : '') + '">' +
-        Safe.esc(slotLabel) + '<br>' + Safe.esc(slotContent) + (badge ? '<br>' + badge : '') + '</div>');
-      d.setHours(d.getHours() + 1);
-    }
-    return slots.join('');
   }
 
-  function toggleHourlyGrid(gridId) {
+  async function ensureTasksLoaded_() {
+    if (state.tasks && state.tasks.length) return;
+    try {
+      var data = ensureOk(await Cloud.post('getTasks', { page: 1, pageSize: 500 }));
+      state.tasks = data.tasks || [];
+      cacheSave('jobs', 'all', state.tasks);
+    } catch (error) { state.tasks = []; }
+  }
+
+  function jobOverlapsBucket_(job, bucketStart, bucketEnd) {
+    if (!job.startTime) return false;
+    var js = new Date(job.startTime).getTime();
+    var je = job.endTime ? new Date(job.endTime).getTime() : Math.max(js, Date.now()) + 9 * 60 * 60000;
+    return je >= bucketStart.getTime() && js <= bucketEnd.getTime();
+  }
+
+  function distanceMeters_(lat1, lng1, lat2, lng2) {
+    var dLat = (lat2 - lat1) * 111320;
+    var dLng = (lng2 - lng1) * 111320 * Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  }
+
+  function dedupeAnomalyPoints_(points) {
+    var kept = [], last = null, lastWasAnomaly = false;
+    (points || []).forEach(function (p) {
+      var zone = String(p.zone || '').toUpperCase();
+      var anomaly = zone === 'OUTSIDE' || p.mock === true;
+      if (anomaly) {
+        if (!last || !lastWasAnomaly || distanceMeters_(last.lat, last.lng, p.lat, p.lng) >= 100) {
+          kept.push({ p: p, reason: lastWasAnomaly ? 'continued' : 'started' });
+          last = p;
+        }
+      } else {
+        if (lastWasAnomaly) { kept.push({ p: p, reason: 'returned inside' }); last = null; }
+      }
+      lastWasAnomaly = anomaly;
+    });
+    return kept;
+  }
+
+  async function loadTelemetryForUserDate_(userId, date) {
+    var key = userId + '|' + date;
+    if (state.attTelemetryCache[key]) return state.attTelemetryCache[key];
+    try {
+      var data = ensureOk(await Cloud.post('getTelemetry', { date: date, userId: userId, limit: 2000 }));
+      var points = (data.points || []).slice().sort(function (a, b) {
+        return String(a.at).localeCompare(String(b.at));
+      });
+      state.attTelemetryCache[key] = points;
+      return points;
+    } catch (error) { state.attTelemetryCache[key] = []; return []; }
+  }
+
+  function renderTimeline30Table_(points, row, jobs) {
+    var shiftStart = row.checkIn ? new Date(row.checkIn) : new Date(row.date + 'T09:00:00');
+    var shiftEnd = row.checkOut ? new Date(row.checkOut) : new Date(shiftStart.getTime() + 9 * 60 * 60000);
+    var buckets = [];
+    for (var d = new Date(shiftStart); d <= shiftEnd; d.setMinutes(d.getMinutes() + 30)) buckets.push(new Date(d));
+    if (!buckets.length) return '<p class="small muted">No timeline window.</p>';
+    var html = '<table><thead><tr><th>30 min</th><th>Status</th><th>3-min summary</th><th>Location / zone</th><th>Breach / mock</th><th>Jobs</th></tr></thead><tbody>';
+    buckets.forEach(function (bucketStart) {
+      var bucketEnd = new Date(bucketStart.getTime() + 30 * 60000);
+      var ptsIn = (points || []).filter(function (p) { var at = new Date(p.at); return at >= bucketStart && at < bucketEnd; });
+      var jobsIn = jobs.filter(function (j) { return jobOverlapsBucket_(j, bucketStart, bucketEnd); });
+      var status = 'Idle', statusClass = 'gray';
+      var anomaly = ptsIn.find(function (p) { var z = String(p.zone || '').toUpperCase(); return z === 'OUTSIDE' || p.mock === true; });
+      if (anomaly) { status = anomaly.mock === true ? 'Mock' : 'Breach'; statusClass = anomaly.mock === true ? 'bad' : 'warn'; }
+      else if (jobsIn.length) { status = 'Job'; statusClass = 'success'; }
+      else if (ptsIn.length) { status = 'Inside'; statusClass = 'ok'; }
+      var first = ptsIn[0], last = ptsIn[ptsIn.length - 1];
+      var summary = ptsIn.length ? (ptsIn.length + ' 3-min samples · ' + (first ? timeOnly(first.at) : '-') + '–' + (last ? timeOnly(last.at) : '-')) : 'No samples';
+      var loc = last ? (Safe.esc(Number(last.lat).toFixed(5)) + ', ' + Safe.esc(Number(last.lng).toFixed(5)) + ' · ' + Safe.esc(String(last.zone || 'INSIDE')) + (last.address ? ' · ' + Safe.esc(last.address) : '')) : '-';
+      var breach = '-';
+      if (anomaly) {
+        var z = String(anomaly.zone || '').toUpperCase();
+        breach = (z === 'OUTSIDE' ? 'Breach' : 'Mock') + ' at ' + timeOnly(anomaly.at) + ' ' + Safe.esc(Number(anomaly.lat).toFixed(5)) + ',' + Safe.esc(Number(anomaly.lng).toFixed(5));
+        if (anomaly.address) breach += ' · ' + Safe.esc(anomaly.address);
+      }
+      var jobList = jobsIn.map(function (j) { return Safe.esc(j.jobId); }).join(', ');
+      html += '<tr><td>' + timeOnly(bucketStart) + '–' + timeOnly(bucketEnd) + '</td><td><span class="badge ' + statusClass + '">' + Safe.esc(status) + '</span></td><td class="small muted">' + Safe.esc(summary) + '</td><td class="small muted">' + Safe.esc(loc) + '</td><td class="small muted">' + Safe.esc(breach) + '</td><td class="small muted">' + Safe.esc(jobList) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function renderBreachTable_(points) {
+    var kept = dedupeAnomalyPoints_(points);
+    if (!kept.length) return '<p class="small muted">No breach/outside locations.</p>';
+    var html = '<table><thead><tr><th>Time</th><th>Lat, Lng</th><th>Zone</th><th>Address</th><th>Reason</th></tr></thead><tbody>';
+    kept.forEach(function (k) {
+      html += '<tr><td>' + Safe.esc(timeOnly(k.p.at)) + '</td><td class="small mono">' + Safe.esc(Number(k.p.lat).toFixed(5)) + ', ' + Safe.esc(Number(k.p.lng).toFixed(5)) + '</td><td>' + Safe.esc(k.p.zone || 'INSIDE') + '</td><td>' + Safe.esc(k.p.address || '-') + '</td><td>' + Safe.esc(k.reason) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function renderAttendanceDetail_(key, row, jobs, points) {
+    var html = '<div class="att-detail">';
+    html += '<div class="att-detail-section"><h4>Job cards · ' + Safe.esc(row.date) + '</h4>';
+    if (jobs.length) {
+      html += '<table><thead><tr><th>Job</th><th>Complaint</th><th>Vehicle</th><th>Client</th><th>Hub</th><th>Assigned</th><th>Status</th><th>Start</th><th>End</th><th>TAT</th><th>Last edit</th><th></th></tr></thead><tbody>';
+      jobs.forEach(function (j) {
+        var tat = j.endTime ? j.turnaroundMinutes : (j.startTime ? Math.round((Date.now() - new Date(j.startTime).getTime()) / 60000) : 0);
+        html += '<tr><td><strong>' + Safe.esc(j.jobId) + '</strong></td><td class="small mono">' + Safe.esc(j.complaintNo || '-') + '</td><td>' + Safe.esc(plate(j.vehicleNo) || '-') + '</td><td>' + Safe.esc(j.client || '-') + '</td><td>' + Safe.esc(j.hub || '-') + '</td><td>' + Safe.esc(j.assignedUserId) + '</td><td><span class="badge ' + (j.status === 'Completed' ? 'ok' : 'warn') + '">' + Safe.esc(j.status) + '</span></td><td>' + Safe.esc(timeOnly(j.startTime)) + '</td><td>' + Safe.esc(timeOnly(j.endTime)) + '</td><td>' + Safe.esc(minutesToText(tat)) + '</td><td>' + Safe.esc(j.updatedByName || j.updatedBy || '-') + '</td><td><button class="ghost sm" data-job-proofs="' + Safe.esc(j.jobId) + '">Proofs</button></td></tr>';
+      });
+      html += '</tbody></table>';
+    } else { html += '<p class="small muted">No job card linked to this shift.</p>'; }
+    html += '</div>';
+    html += '<div class="att-detail-section"><h4>30-minute timeline</h4>' + renderTimeline30Table_(points, row, jobs) + '</div>';
+    html += '<div class="att-detail-section"><h4>Location / breach details</h4>' + renderBreachTable_(points) + '</div>';
+    html += '</div>';
+    return html;
+  }
+
+  async function toggleAttendanceDetail(gridId) {
     var el = byId(gridId);
     if (!el) return;
     var isHidden = el.style.display === 'none' || el.style.display === '';
-    el.style.display = isHidden ? 'grid' : 'none';
-    // Update toggle text on card
+    el.style.display = isHidden ? 'block' : 'none';
     var card = el.closest ? el.closest('.hrms-card') : null;
     if (card) {
-      var toggle = card.querySelector('.hrms-card-toggle');
-      if (toggle) toggle.textContent = isHidden ? 'Hide timeline' : 'Show timeline';
+      var toggle = card.querySelector('.att-card-toggle');
+      if (toggle) toggle.textContent = isHidden ? 'Hide details' : 'Show details';
     }
-    state.hrmsExpanded[gridId] = isHidden;
+    state.attExpanded[gridId] = isHidden;
+    if (isHidden && !el.innerHTML) {
+      el.innerHTML = '<p class="small muted">Loading details...</p>';
+      try {
+        var key = decodeURIComponent(gridId.slice(5));
+        var parts = key.split('|');
+        var userId = parts[0], date = parts[1];
+        var row = state.hrmsLogs.find(function (r) { return r.userId === userId && r.date === date; });
+        if (!row) { el.innerHTML = '<p class="small muted">Shift record not found.</p>'; return; }
+        await ensureTasksLoaded_();
+        var jobs = tasksForDateUser_(date, userId);
+        var points = await loadTelemetryForUserDate_(userId, date);
+        el.innerHTML = renderAttendanceDetail_(key, row, jobs, points);
+        var node = el;
+        node.querySelectorAll('[data-job-proofs]').forEach(function (btn) {
+          btn.addEventListener('click', function (event) {
+            event.preventDefault(); event.stopPropagation();
+            showJobProofs(btn.getAttribute('data-job-proofs'));
+          });
+        });
+      } catch (error) { el.innerHTML = '<p class="small muted">Could not load details: ' + Safe.esc(error.message) + '</p>'; }
+    }
   }
 
   function renderHRMSTimeline() {
@@ -2749,6 +2804,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       });
       state.hrmsLogs = rows;
       cacheSave('attendance', userId || 'all', state.hrmsLogs);
+      await ensureTasksLoaded_();
       renderAttendanceCards(range);
     } catch (error) {
       byId('hrmsCardsContainer').innerHTML = '<p class="small muted">Could not load HRMS cards.</p>';
@@ -2840,12 +2896,17 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         : (row.checkIn ? minutesToText(Math.round((Date.now() - new Date(row.checkIn).getTime()) / 60000)) : '-');
       var shiftLabel = '09:00 AM - 06:00 PM \u00b7 (General Shift)';
       var dayName = new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
-      var gridId = 'grid-' + key.replace(/\|/g, '-');
+      var gridId = 'grid-' + encodeURIComponent(key);
+      var jobs = tasksForDateUser_(row.date, row.userId);
+      var jobTat = 0;
+      jobs.forEach(function (j) { jobTat += j.endTime ? j.turnaroundMinutes : (j.startTime ? Math.round((Date.now() - new Date(j.startTime).getTime()) / 60000) : 0); });
+      var jobSummary = jobs.length ? (jobs.length > 1 ? jobs.length + ' jobs · ' + minutesToText(jobTat) : jobs[0].jobId + ' · ' + Safe.esc(jobs[0].status) + ' · TAT ' + minutesToText(jobTat)) : 'No job';
       var proofBtn = (row.checkInPhoto || row.checkOutPhoto)
-        ? '<a href="#" onclick="event.preventDefault(); showAttendanceProofs(\'' + Safe.esc(row.userId) + '\',\'' + Safe.esc(row.date) + '\'); return false;" class="ghost sm">View Proof</a>'
+        ? '<a href="#" onclick="event.preventDefault(); event.stopPropagation(); showAttendanceProofs(\'' + Safe.esc(row.userId) + '\',\'' + Safe.esc(row.date) + '\'); return false;" class="ghost sm">View Proof</a>'
         : '<span class="muted sm">-</span>';
       var isMock = row.mock ? ' <span class="badge bad">MOCK</span>' : '';
-      html += '<div class="hrms-card" onclick="toggleHourlyGrid(\'' + Safe.esc(gridId) + '\')">' +
+      var isExpanded = state.attExpanded[gridId];
+      html += '<div class="hrms-card" onclick="toggleAttendanceDetail(\'' + Safe.esc(gridId) + '\')">' +
         '<div class="hrms-card-header">' +
         '<div><h4>' + Safe.esc(dayName) + ' <span class="badge ' + (row.status === 'Active' ? 'success' : 'warn') + '" style="margin-left:8px;">' + Safe.esc(row.status) + '</span></h4>' +
         '<div class="hrms-shift" style="margin-top:2px;font-size:12px;">' + Safe.esc(shiftLabel) + '</div></div>' +
@@ -2857,11 +2918,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         '<div>Check-Out: <b>' + Safe.esc(checkOutTime) + '</b></div>' +
         '<div>Effective: <b>' + Safe.esc(effective) + '</b></div>' +
         '</div>' +
+        '<div style="font-size:12px;margin:6px 0;"><span class="badge info">Jobs: ' + jobSummary + '</span>' + isMock + '</div>' +
         '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">' +
         '<div>' + proofBtn + '</div>' +
-        '<div class="hrms-card-toggle">Show timeline</div>' +
+        '<div class="att-card-toggle">' + (isExpanded ? 'Hide details' : 'Show details') + '</div>' +
         '</div>' +
-        '<div id="' + Safe.esc(gridId) + '" class="hourly-grid" style="display:none;margin-top:10px">' + renderHourlySlots(row) + '</div>' +
+        '<div id="' + Safe.esc(gridId) + '" class="att-detail" style="display:none;margin-top:10px"></div>' +
         '</div>' +
         '</div>';
     });
@@ -3870,6 +3932,11 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       state.session.attendanceSynced = true;
       saveSession(state.session);
       adoptNative();
+      try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.startFloatingBubble === 'function') {
+          window.AndroidBridge.startFloatingBubble();
+        }
+      } catch (e) {}
       closeModal('checkInModal');
       toast('Check-in recorded');
       // Instant Firebase push for dashboard sync
@@ -4047,23 +4114,39 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     await startAttendanceStream(attendanceFacing);
   }
 
+  function applyNativeSessionState_(native) {
+    if (!state.session || !native) return;
+    var checked = Boolean(native.checkedIn) && native.hasSession !== false;
+    if (!checked && state.session.checkedIn) {
+      state.session.checkedIn = false;
+      state.session.attendanceSynced = false;
+      saveSession(state.session);
+      renderSession();
+      if (state.view === 'jobs') loadJobs();
+      toast('Bubble attendance closed. Photo check-in is available again.');
+    } else if (checked && !state.session.checkedIn) {
+      state.session.checkedIn = true;
+      state.session.attendanceSynced = Boolean(native.attendanceSynced);
+      saveSession(state.session);
+      renderSession();
+      refreshBootstrap().catch(function () {});
+      if (state.view === 'jobs') loadJobs();
+    }
+  }
+
   function syncNativeCheckIn_() {
     if (!state.session) return;
     adoptNativeSession_();
     var bridge = window.AndroidBridge;
     if (!bridge || typeof bridge.getCheckInState !== 'function') return;
     try {
-      var native = JSON.parse(bridge.getCheckInState());
-      if (native && native.checkedIn && !state.session.checkedIn) {
-        state.session.checkedIn = true;
-        state.session.attendanceSynced = true;
-        saveSession(state.session);
-        renderSession();
-        refreshBootstrap().catch(function () {});
-        if (state.view === 'jobs') loadJobs();
-      }
+      applyNativeSessionState_(JSON.parse(bridge.getCheckInState()));
     } catch (e) {}
   }
+
+  window.onNativeSessionChanged = function (raw) {
+    try { applyNativeSessionState_(typeof raw === 'string' ? JSON.parse(raw) : raw); } catch (e) {}
+  };
 
   function refreshAfterNativeAttendance_() {
     setTimeout(function () {
@@ -5804,7 +5887,81 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('notifBtn')) byId('notifBtn').classList.remove('hidden');
   }
 
+  function canApproveTransit_() {
+    return Boolean(state.session && roleRank_(state.session.role) >= 2);
+  }
+
+  async function loadTransitRequests() {
+    if (!canApproveTransit_()) {
+      state.transitRequests = [];
+      state.transitLoaded = true;
+      renderTransitQueue();
+      return;
+    }
+    try {
+      var data = ensureOk(await Cloud.post('getTransitRequests', {}, { queue: false }));
+      state.transitRequests = data.requests || [];
+      state.transitLoaded = true;
+      renderTransitQueue();
+    } catch (error) {
+      state.transitLoaded = false;
+      renderTransitQueue();
+    }
+  }
+
+  function renderTransitQueue() {
+    var card = byId('transitQueueCard');
+    var list = byId('transitQueue');
+    var count = byId('transitQueueCount');
+    if (!card || !list) return;
+    var allowed = canApproveTransit_();
+    card.classList.toggle('hidden', !allowed);
+    if (!allowed) return;
+    var requests = state.transitRequests || [];
+    if (count) {
+      count.textContent = String(state.transitLoaded ? requests.length : 0);
+      count.classList.toggle('hidden', !state.transitLoaded || !requests.length);
+    }
+    if (!state.transitLoaded) {
+      list.innerHTML = '<p class="small muted">Could not load the transit queue. Retrying...</p>';
+      return;
+    }
+    list.innerHTML = requests.map(function (item) {
+      var who = item.fullName || item.userId || 'User';
+      var age = Number(item.ageMinutes || 0);
+      return '<article class="notif-card High"><h4>' + Safe.esc(who) + ' \u00b7 ' + Safe.esc(item.userId || '') + '</h4>' +
+        '<p><b>' + Safe.esc(item.reasonCategory || 'Transit') + '</b>: ' + Safe.esc(item.reason || 'Reason missing') + '</p>' +
+        '<p class="small muted">' + Safe.esc(item.hub || 'No hub') + ' \u00b7 ' +
+        Safe.esc(age > 0 ? minutesToText(age) + ' ago' : 'Just now') + '</p>' +
+        '<div class="actions">' +
+        '<button class="sm" data-transit-action="approve" data-transit-user="' + Safe.esc(item.userId || '') + '" data-transit-request="' + Safe.esc(item.requestId || '') + '">Approve</button>' +
+        '<button class="danger sm" data-transit-action="reject" data-transit-user="' + Safe.esc(item.userId || '') + '" data-transit-request="' + Safe.esc(item.requestId || '') + '">Reject</button>' +
+        '</div></article>';
+    }).join('') || '<p class="small muted">No pending transit requests.</p>';
+  }
+
+  async function transitAction(targetUserId, requestId, action) {
+    var note = '';
+    if (action === 'reject') {
+      note = String(prompt('Rejection reason (required)', '') || '').trim();
+      if (!note) { toast('A rejection reason is required.'); return; }
+    }
+    try {
+      ensureOk(await Cloud.post('transitDecision', {
+        targetUserId: targetUserId,
+        requestId: requestId,
+        decision: action,
+        note: note
+      }, { queue: false }));
+      toast(action === 'approve' ? 'Transit approved' : 'Transit rejected');
+      await loadNotifications();
+      await loadPending().catch(function () {});
+      if (state.view === 'attendance') await loadHRMSAttendance().catch(function () {});
+    } catch (error) { toast(error.message); }
+  }
+
   async function loadNotifications() {
+    if (canApproveTransit_()) await loadTransitRequests();
     try {
       var data = ensureOk(await Cloud.post('getNotifications', { unreadOnly: state.notifUnreadOnly, limit: 100 }));
       state.notifications = data.notifications || [];
@@ -5818,11 +5975,24 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   }
 
   function renderNotifications() {
+    var pendingTransit = {};
+    for (var tr = 0; tr < (state.transitRequests || []).length; tr++) {
+      var pending = state.transitRequests[tr];
+      if (pending && pending.requestId) pendingTransit[pending.requestId] = true;
+    }
     byId('notifList').innerHTML = (state.notifications || []).map(function (item) {
       var actions = [];
       if (item.category === 'TransitRequest' || item.actionType === 'transit_approve_reject') {
-        actions.push('<button class="sm" data-notif-action="approve" data-notif-id="' + Safe.esc(item.notificationId) + '">Approve</button>');
-        actions.push('<button class="danger sm" data-notif-action="reject" data-notif-id="' + Safe.esc(item.notificationId) + '">Reject</button>');
+        var transitPayload = {};
+        try { transitPayload = JSON.parse(String(item.actionPayload || '{}')); } catch (e) { transitPayload = {}; }
+        var transitRequestId = String(transitPayload.requestId || '');
+        var canDecide = !state.transitLoaded || !transitRequestId || Boolean(pendingTransit[transitRequestId]);
+        if (canDecide) {
+          actions.push('<button class="sm" data-notif-action="approve" data-notif-id="' + Safe.esc(item.notificationId) + '">Approve</button>');
+          actions.push('<button class="danger sm" data-notif-action="reject" data-notif-id="' + Safe.esc(item.notificationId) + '">Reject</button>');
+        } else {
+          actions.push('<span class="small muted">Decision recorded</span>');
+        }
       }
       if (item.actionType === 'hold_approve_reject') {
         actions.push('<button class="sm" data-notif-action="approve" data-notif-id="' + Safe.esc(item.notificationId) + '">Approve</button>');
@@ -5870,7 +6040,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (state.notifTimer) return;
     state.notifTimer = setInterval(function () {
       if (state.session) loadNotifications();
-    }, 60000);
+    }, 30000);
   }
 
   function openBroadcast() {
@@ -6122,6 +6292,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('attCamFile')) byId('attCamFile').addEventListener('change', function () { applyAttendanceFile_(this.files && this.files[0]); });
     window.addEventListener('focus', applyMockPolicy_);
     window.addEventListener('focus', syncNativeCheckIn_);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) syncNativeCheckIn_();
+    });
     setInterval(applyMockPolicy_, 5000);
     byId('attCheckOut').addEventListener('click', checkOut);
     byId('attRefresh').addEventListener('click', function () { loadAttendance(1); });
@@ -6179,7 +6352,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
     var attTabs = document.querySelectorAll('[data-att-tab]');
     function refreshAttView() {
-      if (state.hrmsView === 'cards') loadHRMSAttendance();
+      if (state.attTab === 'cards') loadHRMSAttendance();
+      else if (state.attTab === 'map') loadMap();
       else loadAttendance(1);
     }
     for (var at = 0; at < attTabs.length; at++) {
@@ -6187,27 +6361,38 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         var tabs = document.querySelectorAll('[data-att-tab]');
         for (var x = 0; x < tabs.length; x++) tabs[x].classList.toggle('active', tabs[x] === this);
         var tab = this.getAttribute('data-att-tab');
-        state.hrmsView = tab;
+        state.attTab = tab;
         var tableContainer = byId('attTableContainer');
         var cardsContainer = byId('hrmsCardsContainer');
+        var summaryCard = byId('hrmsSummaryCard');
+        var mapPane = byId('attMapPane');
         if (tab === 'cards') {
           if (tableContainer) tableContainer.classList.add('hidden');
+          if (mapPane) mapPane.classList.add('hidden');
+          if (summaryCard) summaryCard.classList.add('hidden');
           if (cardsContainer) cardsContainer.classList.remove('hidden');
           loadHRMSAttendance();
         } else if (tab === 'attendance') {
           if (tableContainer) tableContainer.classList.remove('hidden');
           if (cardsContainer) cardsContainer.classList.add('hidden');
+          if (mapPane) mapPane.classList.add('hidden');
+          if (summaryCard) summaryCard.classList.add('hidden');
           loadAttendance(1);
         } else if (tab === 'map') {
           if (tableContainer) tableContainer.classList.add('hidden');
           if (cardsContainer) cardsContainer.classList.add('hidden');
+          if (summaryCard) summaryCard.classList.add('hidden');
+          if (mapPane) mapPane.classList.remove('hidden');
+          if (byId('mapDate')) byId('mapDate').value = byId('attDate').value || '';
+          if (byId('mapUser')) byId('mapUser').value = byId('attSearch').value || '';
+          setTimeout(function () { if (state.mapInstance) { try { state.mapInstance.invalidateSize(); } catch (e) {} } }, 0);
           loadMap();
         }
       });
     }
     if (byId('attRefresh')) byId('attRefresh').addEventListener('click', refreshAttView);
     if (byId('attDate')) byId('attDate').addEventListener('change', refreshAttView);
-    if (byId('hrmsRange')) byId('hrmsRange').addEventListener('change', function () { if (state.hrmsView === 'cards') loadHRMSAttendance(); else loadAttendance(1); });
+    if (byId('hrmsRange')) byId('hrmsRange').addEventListener('change', function () { if (state.attTab === 'cards') loadHRMSAttendance(); else loadAttendance(1); });
     if (byId('masterSave')) byId('masterSave').addEventListener('click', saveMasterEdit);
     if (byId('holdSubmit')) byId('holdSubmit').addEventListener('click', submitHold);
     if (byId('jobHold')) byId('jobHold').addEventListener('click', function () { openHoldModal(byId('jobId').value); });
@@ -6358,6 +6543,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           if (node.getAttribute('data-hold-start')) { startReassignedJob(node.getAttribute('data-hold-start')); return; }
           if (node.getAttribute('data-hold-release')) { holdAction(node.getAttribute('data-hold-release'), 'release'); return; }
           if (node.getAttribute('data-hold-resubmit')) { resubmitHold(node.getAttribute('data-hold-resubmit')); return; }
+          if (node.getAttribute('data-transit-action')) {
+            transitAction(node.getAttribute('data-transit-user'), node.getAttribute('data-transit-request'), node.getAttribute('data-transit-action'));
+            return;
+          }
           if (node.getAttribute('data-notif-action')) { notifAction(node.getAttribute('data-notif-id'), node.getAttribute('data-notif-action')); return; }
           if (node.getAttribute('data-team-holds')) {
             state.pendingUserFilter = node.getAttribute('data-team-holds');
