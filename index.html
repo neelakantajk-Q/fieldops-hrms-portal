@@ -53,6 +53,7 @@
   .page-head{margin-bottom:14px}
   .page-head h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
   .page-head p{margin:5px 0 0;font-size:13px;color:var(--muted)}
+#view-map{position:relative;}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
   .card h3{margin:0 0 14px;font-size:15px;font-weight:700;color:var(--ink);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
   .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
@@ -694,7 +695,7 @@
             <div class="field"><label for="mapUser">User ID</label><input id="mapUser" list="peopleList" placeholder="All visible users"></div>
             <button id="mapLoad" type="button">Load trail</button>
             <button class="secondary" id="mapSync" type="button">Sync now (3 min live)</button>
-            <button class="secondary" id="mapTrial" type="button">Trial</button>
+            <button class="secondary" id="mapTrial" type="button">History</button>
             <button class="secondary" id="mapHistoryToggle" type="button" onclick="toggleMapHistoryMode()">History Mode</button>
             <span id="mapLiveLabel" class="small muted"></span>
           </div>
@@ -2049,6 +2050,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (view === 'team') return true;
     if (view === 'pending' || view === 'notifications') return true;
     if (view === 'reports' || view === 'map' || view === 'uptime') return rank >= 2;
+    if (view === 'hrms' || view === 'checkpoint') return rank >= 2;
     if (view === 'vehicles') return rank >= 2 || rights.indexOf('VEHICLES') >= 0;
     if (view === 'masters') return rank >= 3;
     if (view === 'workflows') return rank >= 2;
@@ -2724,12 +2726,18 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   /* ---------------------------------------------------------------- HRMS Attendance Cards */
   async function loadHRMSAttendance() {
-    var date = byId('attDate').value || Safe.today();
+    var anchor = byId('attDate').value || Safe.today();
     var userId = byId('attSearch').value.trim();
     var range = byId('hrmsRange').value || '1d';
+    var days = 0;
+    if (range === '7d') days = 7;
+    else if (range === '30d') days = 30;
     try {
       var data = ensureOk(await Cloud.post('getAttendance', {
-        date: date,
+        date: range === '1d' ? anchor : '',
+        fromDate: range === '1d' ? anchor : '',
+        toDate: range === '1d' ? anchor : '',
+        days: days,
         userId: userId,
         page: 1,
         pageSize: 500
@@ -5812,6 +5820,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   function renderNotifications() {
     byId('notifList').innerHTML = (state.notifications || []).map(function (item) {
       var actions = [];
+      if (item.category === 'TransitRequest' || item.actionType === 'transit_approve_reject') {
+        actions.push('<button class="sm" data-notif-action="approve" data-notif-id="' + Safe.esc(item.notificationId) + '">Approve</button>');
+        actions.push('<button class="danger sm" data-notif-action="reject" data-notif-id="' + Safe.esc(item.notificationId) + '">Reject</button>');
+      }
       if (item.actionType === 'hold_approve_reject') {
         actions.push('<button class="sm" data-notif-action="approve" data-notif-id="' + Safe.esc(item.notificationId) + '">Approve</button>');
         actions.push('<button class="danger sm" data-notif-action="reject" data-notif-id="' + Safe.esc(item.notificationId) + '">Reject</button>');
@@ -5825,7 +5837,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       if (item.actionType === 'open_uptime' || item.category === 'VehicleUptime') {
         actions.push('<button class="secondary sm" data-notif-action="open_uptime" data-notif-id="' + Safe.esc(item.notificationId) + '">Open uptime</button>');
       }
-      actions.push('<button class="ghost sm" data-notif-action="ack" data-notif-id="' + Safe.esc(item.notificationId) + '">Acknowledge</button>');
+      if (item.category !== 'TransitRequest') {
+        actions.push('<button class="ghost sm" data-notif-action="ack" data-notif-id="' + Safe.esc(item.notificationId) + '">Acknowledge</button>');
+      }
       return '<article class="notif-card ' + Safe.esc(item.severity || 'Info') + '"><h4>' + (item.read ? '' : '<span class="badge bad">NEW</span> ') +
         Safe.esc(item.title) + '</h4><p>' + Safe.esc(item.body) + '</p><p class="small muted">' + Safe.esc(dateTime(item.createdAt)) + ' \u00b7 ' +
         Safe.esc(item.createdByName || item.createdBy || 'System') + ' (L' + Safe.esc(item.createdByLevel || 0) + ')</p><div class="actions">' + actions.join(' ') + '</div></article>';
@@ -5843,10 +5857,11 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       if (action === 'open_pending') await route('pending');
       else if (action === 'open_uptime') await route('uptime');
       else {
-        await loadNotifications();
-        await loadPending();
-        await loadOverview();
-        await loadTeam();
+      await loadNotifications();
+      await loadPending();
+      await loadOverview();
+      await loadTeam();
+      if (state.view === 'attendance') await loadHRMSAttendance();
       }
     } catch (error) { toast(error.message); }
   }
@@ -6163,6 +6178,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       attPhotoTabs[ap].addEventListener('click', function () { setAttPhotoAction_(this.getAttribute('data-att-photo')); });
     }
     var attTabs = document.querySelectorAll('[data-att-tab]');
+    function refreshAttView() {
+      if (state.hrmsView === 'cards') loadHRMSAttendance();
+      else loadAttendance(1);
+    }
     for (var at = 0; at < attTabs.length; at++) {
       attTabs[at].addEventListener('click', function () {
         var tabs = document.querySelectorAll('[data-att-tab]');
@@ -6178,7 +6197,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         } else if (tab === 'attendance') {
           if (tableContainer) tableContainer.classList.remove('hidden');
           if (cardsContainer) cardsContainer.classList.add('hidden');
-          loadAttendance();
+          loadAttendance(1);
         } else if (tab === 'map') {
           if (tableContainer) tableContainer.classList.add('hidden');
           if (cardsContainer) cardsContainer.classList.add('hidden');
@@ -6186,7 +6205,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         }
       });
     }
-    if (byId('mapRealtimeToggle')) byId('mapRealtimeToggle').addEventListener('change', toggleRealtime_);
+    if (byId('attRefresh')) byId('attRefresh').addEventListener('click', refreshAttView);
+    if (byId('attDate')) byId('attDate').addEventListener('change', refreshAttView);
+    if (byId('hrmsRange')) byId('hrmsRange').addEventListener('change', function () { if (state.hrmsView === 'cards') loadHRMSAttendance(); else loadAttendance(1); });
     if (byId('masterSave')) byId('masterSave').addEventListener('click', saveMasterEdit);
     if (byId('holdSubmit')) byId('holdSubmit').addEventListener('click', submitHold);
     if (byId('jobHold')) byId('jobHold').addEventListener('click', function () { openHoldModal(byId('jobId').value); });
