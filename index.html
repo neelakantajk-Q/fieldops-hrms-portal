@@ -58,6 +58,7 @@
   .card h3{margin:0 0 14px;font-size:15px;font-weight:700;color:var(--ink);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
   .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
   .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
   .stat{background:linear-gradient(135deg,#7ab520,#a6ce39);color:#fff;border-radius:13px;padding:18px;position:relative;overflow:hidden}
   .stat h4{margin:0 0 8px;font-size:11px;letter-spacing:.8px;text-transform:uppercase;opacity:.92}
   .stat .value{margin:0;font-size:30px;font-weight:800;letter-spacing:-1px}
@@ -131,8 +132,6 @@
   .map-toggle{display:flex;align-items:center;gap:8px}
   .map-toggle label{margin:0;font-size:12px;font-weight:600;text-transform:none}
   /* Job card bottom badges */
-  .job-bottom-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-  .job-bottom-badges .badge{font-size:10px;padding:2px 7px}
   .auth{max-width:400px;margin:48px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 20px 50px rgba(16,24,40,.1);text-align:center}
   .auth h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
   .auth p{margin:0 0 16px;font-size:13px;color:var(--muted)}
@@ -220,7 +219,7 @@
       transform: translateX(-105%); transition: transform .22s ease; z-index: 80; }
     aside.sidebar.open { transform: translateX(0); }
     main.content { padding: 14px 14px calc(88px + env(safe-area-inset-bottom)); max-width: 100%; }
-    .grid-2, .grid-3 { gap: 12px; }
+    .grid-2, .grid-3, .grid-4 { gap: 12px; }
   }
 
   @media (max-width: 768px) {
@@ -235,6 +234,7 @@
     .card h3 { font-size: 14px; }
     .stat .value { font-size: 24px; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .toolbar { gap: 6px; }
     .toolbar .field { min-width: 120px; }
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -511,7 +511,7 @@
         <div class="toolbar">
           <div class="field"><label for="attDate">Date</label><input id="attDate" type="date"></div>
           <div class="field"><label for="attSearch">Search</label><input id="attSearch" list="peopleList" placeholder="User ID"></div>
-          <div class="field"><label for="hrmsRange">Range</label><select id="hrmsRange"><option value="1d">1 Day</option><option value="7d">7 Days</option><option value="30d">30 Days</option></select></div>
+          <div class="field"><label for="hrmsRange">Range</label><select id="hrmsRange"><option value="1d" selected>Today</option><option value="7d">7 Days</option><option value="30d">30 Days</option></select></div>
           <button class="secondary" id="attRefresh" type="button">Refresh</button>
           <button class="secondary" id="attCheckOut" type="button">Check out</button>
         </div>
@@ -3125,21 +3125,11 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       '<button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button> ' +
       '<button class="ghost sm" data-job-proofs="' + Safe.esc(task.jobId) + '">Proofs</button>';
     if (state.session.checkedIn && (task.status === 'InProgress' || task.status === 'Delayed')) actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
-    var turnaround = task.endTime ? minutesToText(task.turnaroundMinutes) :
-      (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '-');
-    var bottomBadges = '<div class="job-bottom-badges">' +
-      '<span class="badge info">Job: ' + Safe.esc(task.jobId) + '</span>' +
-      '<span class="badge info">Hub: ' + Safe.esc(task.hub || '-') + '</span>' +
-      '<span class="badge info">Client: ' + Safe.esc(task.client || '-') + '</span>' +
-      '<span class="badge info">Assigned: ' + Safe.esc(task.assignedUserId || '-') + '</span>' +
-      '<span class="badge ' + badge + '">' + Safe.esc(task.status) + '</span>' +
-      '<span class="badge info">TAT: ' + Safe.esc(turnaround) + '</span>' +
-      '</div>';
     return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td class="small mono">' + Safe.esc(task.complaintNo || '-') + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
       '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
       badge + '">' + Safe.esc(task.status) + '</span>' + holdBadge + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
       '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '-') +
-      '</td><td>' + lastEditHtml + '</td><td>' + actions + bottomBadges + '</td></tr>';
+      '</td><td>' + lastEditHtml + '</td><td>' + actions + '</td></tr>';
   }
 
   async function loadJobs(page) {
@@ -5630,9 +5620,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     p.onPage = opts.onPage || null;
     p.colspan = opts.colspan || 1;
     p.emptyText = opts.emptyText || 'No rows.';
+    var size = p.server ? Number(p.meta.pageSize || PAGE_SIZE) : (Number(opts.pageSize) || PAGE_SIZE);
     var total = p.server ? Number(p.meta.total || 0) : p.rows.length;
-    var pages = p.server ? Math.max(1, Number(p.meta.pages || 1)) : Math.max(1, Math.ceil(total / PAGE_SIZE));
-    var size = p.server ? Number(p.meta.pageSize || PAGE_SIZE) : PAGE_SIZE;
+    var pages = p.server ? Math.max(1, Number(p.meta.pages || 1)) : Math.max(1, Math.ceil(total / size));
     if (p.server) p.page = Number(p.meta.page || 1);
     p.total = total;
     p.pages = pages;
@@ -5697,6 +5687,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var head = '<tr><th>Job</th><th>Vehicle</th><th>Requester</th><th>Reason</th><th>Age</th><th>Supervisor</th><th>Level</th><th>Resolution</th><th></th></tr>';
     byId('pendingPanel').innerHTML = panelTableHtml_(key, head, rows, pendingRowHtml_(tab), {
       colspan: 9,
+      pageSize: 10,
       emptyText: 'No jobs in this tab.',
       onPage: renderPending
     });
@@ -6687,12 +6678,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
     var stored = Safe.json('app_session', null);
     if (stored && stored.token) {
-      if (stored.sessionDate && stored.sessionDate !== Safe.today()) {
-        Safe.del('app_session');
-        stored = null;
-      } else {
-        state.session = stored;
-      }
+      state.session = stored;
     }
     byId('attDate').value = Safe.today();
     if (byId('repFrom')) byId('repFrom').value = Safe.today();
