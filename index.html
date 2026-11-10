@@ -85,6 +85,45 @@
   .badge.warn{background:#fef3c7;color:#92400e}
   .badge.bad{background:#fee2e2;color:#991b1b}
   .badge.gray{background:#e2e8f0;color:#334155}
+  .badge.info{background:#dbeafe;color:#1e40af}
+  .badge.success{background:#dcfce7;color:#166534}
+  .badge.warning{background:#fef3c7;color:#92400e}
+  /* HRMS logs card view */
+  .hrms-card{border:1px solid var(--line);border-radius:14px;padding:0;margin-bottom:14px;background:var(--card);cursor:pointer;transition:box-shadow .15s,border-color .15s}
+  .hrms-card:hover{border-color:#a6ce39;box-shadow:0 4px 12px rgba(166,206,57,.12)}
+  .hrms-card-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+  .hrms-card-header h4{margin:0;font-size:16px;font-weight:800;color:var(--ink)}
+  .hrms-card-header .date-badge{font-size:12px;padding:3px 8px;border-radius:8px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-weight:700}
+  .hrms-card-body{padding:12px 16px}
+  .hrms-shift{font-size:13px;color:#64748b;margin-bottom:10px}
+  .hrms-times{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#334155;margin-bottom:12px}
+  .hrms-times div{font-weight:700}
+  .hrms-effective{font-size:12px;color:#16a34a;font-weight:700;margin-top:6px}
+  .hourly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+  .hourly-slot{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:11.5px;background:#fff;text-align:center;position:relative}
+  .hourly-slot.completed{border-color:#22c55e;background:#f0fdf4;color:#166534}
+  .hourly-slot.completed b{display:block;font-size:12px;margin-top:2px}
+  .hourly-slot .badge{font-size:10px;margin-top:4px;display:inline-block}
+  .hourly-slot a{color:#1d4ed8;text-decoration:underline;font-size:11px}
+  .hrms-card-toggle{font-size:11px;color:#1d4ed8;margin-top:8px;text-align:right;font-weight:700}
+  /* Checkpoint timeline */
+  .checkpoint-container{display:flex;flex-direction:column;gap:12px}
+  .checkpoint-card{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--card)}
+  .checkpoint-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .checkpoint-card-header h4{margin:0;font-size:16px;font-weight:800;color:var(--ink)}
+  .checkpoint-card-header .user-id{font-size:11px;color:#64748b;margin-left:8px}
+  .checkpoint-table{width:100%;border-collapse:collapse;font-size:13px}
+  .checkpoint-table th{background:#f7f9fc;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#64748b;font-weight:700;white-space:nowrap;padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}
+  .checkpoint-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .checkpoint-table tr:last-child td{border-bottom:none}
+  .gps-mono{font-family:ui-monospace,monospace;font-size:11px}
+  /* Map live/history toggle */
+  .map-toggle-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+  .map-toggle{display:flex;align-items:center;gap:8px}
+  .map-toggle label{margin:0;font-size:12px;font-weight:600;text-transform:none}
+  /* Job card bottom badges */
+  .job-bottom-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .job-bottom-badges .badge{font-size:10px;padding:2px 7px}
   .auth{max-width:400px;margin:48px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 20px 50px rgba(16,24,40,.1);text-align:center}
   .auth h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
   .auth p{margin:0 0 16px;font-size:13px;color:var(--muted)}
@@ -96,6 +135,7 @@
   .msg.bad{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
   .msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
   .modal-shell{position:fixed;top:0;right:0;bottom:0;left:0;z-index:900;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(6,12,24,.6)}
+  .modal-float-close{position:absolute;top:8px;right:10px;z-index:1;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .modal{position:relative;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;background:#fff;border:3px solid var(--wa);border-radius:16px;padding:20px;box-shadow:0 30px 70px rgba(2,8,23,.4);display:flex;flex-direction:column}
   .modal.wide{max-width:820px}
   .modal h3{margin:0 0 14px;color:var(--ink);font-size:17px}
@@ -384,6 +424,8 @@
     <div class="nav-cat" id="workspaceNavCat">Workspace</div>
     <button class="nav-item active" data-view="overview" type="button">Overview</button>
     <button class="nav-item" data-view="attendance" type="button">Attendance</button>
+    <button class="nav-item" data-view="hrms" type="button">HRMS Logs</button>
+    <button class="nav-item" data-view="checkpoint" type="button">30-Min Timeline</button>
     <button class="nav-item" data-view="jobs" type="button">Job Cards</button>
     <button class="nav-item" data-view="pending" type="button">Pending Jobs</button>
     <button class="nav-item" data-view="team" type="button">Team</button>
@@ -422,6 +464,7 @@
         <strong>Photo check-in required.</strong>
         <span>Complete the check-in to unlock job cards and the floating bubble.</span>
         <button class="sm" id="checkInBtn" type="button">Check in now</button>
+        <span id="checkInQueueBadge" class="chip warn hidden" style="margin-left:8px">0 pending</span>
       </div>
       <div id="mockBar" class="mockbar hidden">
         <strong>Mock GPS detected.</strong>
@@ -452,18 +495,65 @@
       <section id="view-attendance" class="view hidden">
         <div class="page-head with-tabs">
           <div><h2>Attendance &amp; Shifts</h2><p>Photo check-in is the shift start event.</p></div>
-          <div class="seg-tabs" role="tablist" aria-label="Attendance and map">
-            <button class="seg-tab active" type="button" data-att-tab="attendance">Attendance</button>
+          <div class="seg-tabs" role="tablist" aria-label="Attendance views">
+            <button class="seg-tab" type="button" data-att-tab="attendance">Attendance</button>
+            <button class="seg-tab active" type="button" data-att-tab="cards">Cards</button>
             <button class="seg-tab" type="button" data-att-tab="map">Map</button>
           </div>
         </div>
         <div class="toolbar">
           <div class="field"><label for="attDate">Date</label><input id="attDate" type="date"></div>
           <div class="field"><label for="attSearch">Search</label><input id="attSearch" list="peopleList" placeholder="User ID"></div>
+          <div class="field"><label for="hrmsRange">Range</label><select id="hrmsRange"><option value="1d">1 Day</option><option value="7d">7 Days</option><option value="30d">30 Days</option></select></div>
           <button class="secondary" id="attRefresh" type="button">Refresh</button>
           <button class="secondary" id="attCheckOut" type="button">Check out</button>
         </div>
-        <div class="card"><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proof</th></tr></thead><tbody id="attBody"></tbody></table></div></div>
+        <!-- Attendance Table View -->
+        <div id="attTableContainer" class="card"><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proof</th></tr></thead><tbody id="attBody"></tbody></table></div></div>
+        <!-- HRMS Cards View -->
+        <div id="hrmsCardsContainer" class="hidden"></div>
+        <!-- Summary Card (shown when range=30d) -->
+        <div id="hrmsSummaryCard" class="card hidden" style="margin-bottom:16px">
+          <h3>Monthly Summary</h3>
+          <div class="grid-4">
+            <div class="stat"><h4>Total Check-ins</h4><p class="value" id="hrmsTotalCheckins">0</p></div>
+            <div class="stat blue"><h4>Total Hours</h4><p class="value" id="hrmsTotalHours">0h 0m</p></div>
+            <div class="stat amber"><h4>Avg Hours/Day</h4><p class="value" id="hrmsAvgHours">0h</p></div>
+            <div class="stat red"><h4>Last Location</h4><p class="value" id="hrmsLastLocation">-</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-hrms" class="view hidden">
+        <div class="page-head with-tabs">
+          <div><h2>HRMS Logs</h2><p>Per-user daily attendance with hourly job timeline.</p></div>
+          <div class="seg-tabs" role="tablist" aria-label="HRMS views">
+            <button class="seg-tab active" type="button" data-hrms-tab="cards">Cards</button>
+            <button class="seg-tab" type="button" data-hrms-tab="timeline">Timeline</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="field"><label for="hrmsDate">Date</label><input id="hrmsDate" type="date"></div>
+          <div class="field"><label for="hrmsUser">User ID</label><input id="hrmsUser" list="peopleList" placeholder="All users"></div>
+          <button class="secondary" id="hrmsRefresh" type="button">Refresh</button>
+        </div>
+        <div id="hrmsLogsContainer"></div>
+      </section>
+
+      <section id="view-checkpoint" class="view hidden">
+        <div class="page-head with-tabs">
+          <div><h2>30-Min Checkpoint Timeline</h2><p>GPS checkpoints and triggers per user.</p></div>
+          <div class="seg-tabs" role="tablist" aria-label="Checkpoint views">
+            <button class="seg-tab active" type="button" data-cp-tab="timeline">Timeline</button>
+            <button class="seg-tab" type="button" data-cp-tab="map">Map Trail</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="field"><label for="cpDate">Date</label><input id="cpDate" type="date"></div>
+          <div class="field"><label for="cpUser">User ID</label><input id="cpUser" list="peopleList" placeholder="All users"></div>
+          <button class="secondary" id="cpRefresh" type="button">Refresh</button>
+        </div>
+        <div id="checkpointContainer"></div>
       </section>
 
       <section id="view-jobs" class="view hidden">
@@ -483,13 +573,14 @@
         <div class="toolbar">
           <button class="tabbtn active" data-pending-tab="pending" type="button">Pending approval</button>
           <button class="tabbtn" data-pending-tab="onHold" type="button">On hold</button>
+          <button class="tabbtn" data-pending-tab="unapproved" type="button">Unapproved</button>
           <button class="tabbtn" data-pending-tab="history" type="button">History</button>
           <button class="tabbtn" data-pending-tab="analytics" type="button">Analytics</button>
           <button class="tabbtn" data-pending-tab="log" type="button">Notification log</button>
           <button class="secondary" id="pendingRefresh" type="button">Refresh</button>
           <button class="secondary" id="broadcastBtn" type="button">Broadcast</button>
         </div>
-        <div id="pendingSummary" class="grid-3" style="margin-bottom:16px"></div>
+        <div id="pendingSummary" class="grid-4" style="margin-bottom:16px"></div>
         <div id="pendingPanel" class="card"><div class="table-wrap"><table><thead><tr><th>Job</th><th>Vehicle</th><th>Requester</th><th>Reason</th><th>Age</th><th>Supervisor</th><th>Level</th><th>Resolution</th><th></th></tr></thead><tbody id="pendingBody"></tbody></table></div></div>
       </section>
 
@@ -570,10 +661,10 @@
           <div class="stat amber"><h4>Avg Turnaround</h4><p class="value" id="repTurnaround">0m</p></div>
           <div class="stat red"><h4>Mock / Breach</h4><p class="value" id="repCompliance">0 / 0</p></div>
         </div>
-        <div class="card"><h3>Daily attendance</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Report Time</th><th>Shifts</th><th>Hours</th><th>Mock</th></tr></thead><tbody id="repDaily"></tbody></table></div></div>
-        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Check-in Date</th><th>Check-in Time</th><th>Check-out Date</th><th>Check-out Time</th><th>User</th><th>Hub</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
-        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start Date</th><th>Start Time</th><th>End Date</th><th>End Time</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
-        <div class="card"><h3>Engineer productivity</h3><div class="table-wrap"><table><thead><tr><th>Report Date</th><th>Report Time</th><th>User</th><th>Completed</th><th>Hours</th></tr></thead><tbody id="repEngineers"></tbody></table></div></div>
+        <div class="card"><h3>Daily attendance</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Shifts</th><th>Hours</th><th>Mock</th></tr></thead><tbody id="repDaily"></tbody></table></div></div>
+        <div class="card"><h3>Attendance detail</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proofs</th></tr></thead><tbody id="repAttendance"></tbody></table></div></div>
+        <div class="card"><h3>Jobs &amp; proofs</h3><div class="table-wrap"><table><thead><tr><th>Job</th><th>Complaint no</th><th>Vehicle</th><th>User</th><th>Status</th><th>Start proof</th><th>End proof</th><th>Hold / reason</th><th>Resolution</th><th>Approved by</th></tr></thead><tbody id="repJobs"></tbody></table></div></div>
+        <div class="card"><h3>Engineer productivity</h3><div class="table-wrap"><table><thead><tr><th>User</th><th>Completed</th><th>Hours</th></tr></thead><tbody id="repEngineers"></tbody></table></div></div>
         </div>
       </section>
 
@@ -603,10 +694,22 @@
             <div class="field"><label for="mapUser">User ID</label><input id="mapUser" list="peopleList" placeholder="All visible users"></div>
             <button id="mapLoad" type="button">Load trail</button>
             <button class="secondary" id="mapSync" type="button">Sync now (3 min live)</button>
+            <button class="secondary" id="mapTrial" type="button">Trial</button>
+            <button class="secondary" id="mapHistoryToggle" type="button" onclick="toggleMapHistoryMode()">History Mode</button>
             <span id="mapLiveLabel" class="small muted"></span>
           </div>
         </div>
         <div class="card" style="padding:10px"><div id="liveMap"></div></div>
+        <!-- Right-side history panel (pops out to cover 8/10 screen) -->
+        <div id="mapHistoryPanel" class="hidden" style="position:absolute;right:10px;top:10px;width:340px;max-height:90vh;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 8px 32px rgba(2,8,23,.25);z-index:100">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <h4 style="margin:0;font-size:16px">Location History</h4>
+            <button class="secondary sm" id="mapHistoryClose" type="button">Close</button>
+          </div>
+          <div class="field" style="margin-bottom:12px"><label>User</label><select id="mapHistoryUser"></select></div>
+          <div class="field" style="margin-bottom:12px"><label>Time Slot</label><select id="mapHistoryTime"></select></div>
+          <div id="mapHistoryPoints" class="small muted">Select a user and time slot</div>
+        </div>
       </section>
 
       <section id="view-masters" class="view hidden">
@@ -790,9 +893,11 @@
   </main>
 </div>
 
-<nav class="mobile" id="mobileNav">
+<nav class="mobile hidden" id="mobileNav">
   <button data-view="overview" class="active" type="button">Home</button>
   <button data-view="attendance" type="button">Attendance</button>
+  <button data-view="hrms" type="button">HRMS Logs</button>
+  <button data-view="checkpoint" type="button">30-Min Timeline</button>
   <button data-view="jobs" type="button">Jobs</button>
   <button data-view="vehicles" type="button">Fleet</button>
   <button id="mobileMore" type="button">More</button>
@@ -959,8 +1064,8 @@
 </div>
 
 <!-- Attendance single photo -->
-<div class="modal-shell hidden compact-shell" id="attPhotoModal">
-  <div class="modal compact">
+<div class="modal-shell hidden" id="attPhotoModal">
+  <div class="modal wide">
     <h3 id="attPhotoTitle">Attendance photo</h3>
     <div class="seg-tabs" id="attPhotoTabs" role="tablist" aria-label="Attendance photo">
       <button class="seg-tab active" type="button" data-att-photo="Check-in">Check-in</button>
@@ -1182,6 +1287,99 @@
     }
   } catch (error) {}
 
+  /* ------------------------------------------------------------------ local cache + firebase instant cache */
+  function cacheKeyFor(view, userId) {
+    return 'shiftguard_cache_' + view + '_' + (userId || 'all');
+  }
+  function cacheSave(view, userId, data) {
+    try {
+      var entry = { data: data, at: Date.now() };
+      localStorage.setItem(cacheKeyFor(view, userId), JSON.stringify(entry));
+    } catch (e) {}
+  }
+  function cacheLoad(view, userId, maxAgeMs) {
+    try {
+      var raw = localStorage.getItem(cacheKeyFor(view, userId));
+      if (!raw) return null;
+      var entry = JSON.parse(raw);
+      if (maxAgeMs && Date.now() - entry.at > maxAgeMs) return null;
+      return entry.data;
+    } catch (e) { return null; }
+  }
+  function cacheClear(view, userId) {
+    try { localStorage.removeItem(cacheKeyFor(view, userId)); } catch (e) {}
+  }
+
+  // Firebase RTDB instant write helper (write-through cache for dashboard)
+  function firebaseBaseUrl_() {
+    if (state.firebaseDbUrl) return state.firebaseDbUrl.replace(/\/+$/, '');
+    if (state.settings && state.settings.firebaseDbUrl) return String(state.settings.firebaseDbUrl).replace(/\/+$/, '');
+    return '';
+  }
+  function firebasePush_(path, value) {
+    if (!state.realtimeEnabled) return false;
+    var base = firebaseBaseUrl_();
+    if (!base) return false;
+    try {
+      var token = null;
+      try { token = localStorage.getItem('sg_firebase_token'); } catch (e) {}
+      if (!token) return false;
+      fetch(base + path + '.json?access_token=' + encodeURIComponent(token), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(value)
+      }).catch(function () {});
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // Instant Firebase writes for dashboard sync
+  function firebasePushCheckin(userId, payload) {
+    return firebasePush_('/checkin/' + encodeURIComponent(userId), {
+      userId: userId,
+      action: 'CheckIn',
+      at: payload.at || new Date().toISOString(),
+      lat: payload.lat,
+      lng: payload.lng,
+      hub: payload.hub,
+      photoProofUrl: payload.photoProofUrl || '',
+      photoFileId: payload.photoFileId || '',
+      source: 'checkin'
+    });
+  }
+  function firebasePushCheckout(userId, payload) {
+    return firebasePush_('/checkout/' + encodeURIComponent(userId), {
+      userId: userId,
+      action: 'CheckOut',
+      at: payload.at || new Date().toISOString(),
+      lat: payload.lat,
+      lng: payload.lng,
+      photoProofUrl: payload.photoProofUrl || '',
+      photoFileId: payload.photoFileId || '',
+      source: 'checkout'
+    });
+  }
+  function firebasePushJob(jobId, payload) {
+    return firebasePush_('/jobs/' + encodeURIComponent(jobId), {
+      jobId: jobId,
+      status: payload.status || 'InProgress',
+      assignedUserId: payload.assignedUserId || '',
+      client: payload.client || '',
+      hub: payload.hub || '',
+      startTime: payload.startTime || new Date().toISOString(),
+      vehicleNo: payload.vehicleNo || '',
+      source: 'job'
+    });
+  }
+  function firebasePushLogout(userId, payload) {
+    return firebasePush_('/logout/' + encodeURIComponent(userId), {
+      userId: userId,
+      action: 'CheckOut',
+      at: payload.at || new Date().toISOString(),
+      source: 'logout'
+    });
+  }
+
   /* ------------------------------------------------------------------ config */
   // Encoded fallback used only when brandApi is empty. The raw Google URL is
   // not printed in the page source. For real endpoint hiding, set brandApi to
@@ -1235,7 +1433,7 @@
     mapAttribution: 'Tiles &copy; Esri',
     mapTileErrors: 0,
     people: [],
-    pending: { pending: [], onHold: [], history: [], analytics: {} },
+    pending: { pending: [], onHold: [], history: [], analytics: {}, unapproved: [] },
     pendingTab: 'pending',
     pendingUserFilter: '',
     pendingTimer: null,
@@ -1246,7 +1444,17 @@
     proofItems: [],
     editingMaster: null,
     liveSource: null,
-    hierarchy: []
+    hierarchy: [],
+    hrmsLogs: [],
+    hrmsView: 'cards',
+    checkpointLogs: [],
+    hrmsExpanded: {},
+    mapHistoryMode: false,
+    mapHistoryTrails: [],
+    lastSyncedAt: 0,
+    localCache: { attendance: [], jobs: [], notifications: [], checks: {} },
+    firebaseDbUrl: '',
+    realtimeEnabled: false
   };
 
   /* -------------------------------------------------------------- utilities */
@@ -1280,17 +1488,7 @@
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
       });
     },
-    today: function () {
-      var d = new Date();
-      var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
-      var day = '', month = '', year = '';
-      parts.forEach(function(p) {
-        if (p.type === 'day') day = p.value;
-        if (p.type === 'month') month = p.value;
-        if (p.type === 'year') year = p.value;
-      });
-      return year + '-' + month + '-' + day;
-    },
+    today: istToday,
     parseInputDate: function (value) {
       if (!value) return null;
       var text = String(value);
@@ -1338,6 +1536,15 @@
   function openModal(id) {
     var n = byId(id);
     if (!n) return;
+    if (!n.querySelector('.modal-float-close')) {
+        var closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'modal-float-close';
+        closeBtn.setAttribute('aria-label', 'Close');
+        closeBtn.textContent = '×';
+        closeBtn.onclick = function () { closeModal(id); };
+        n.insertBefore(closeBtn, n.firstChild);
+    }
     n.classList.remove('hidden');
     document.body.classList.add('modal-open');
   }
@@ -1371,36 +1578,34 @@
     return h ? h + 'h ' + pad(m) + 'm' : m + 'm';
   }
 
-  const APP_TZ = 'Asia/Kolkata';
-  function istFormatter(options) {
-    return new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: APP_TZ, hour12: false }, options));
+  function istParts(d) {
+    var ms = (d instanceof Date ? d.getTime() : new Date(d).getTime()) + 19800000;
+    var dd = new Date(ms);
+    return {
+        y: dd.getUTCFullYear(),
+        mo: pad(dd.getUTCMonth() + 1),
+        dom: pad(dd.getUTCDate()),
+        hh: pad(dd.getUTCHours()),
+        mm: pad(dd.getUTCMinutes()),
+        ss: pad(dd.getUTCSeconds())
+    };
   }
-  function formatDateIST(iso) {
-    if (!iso) return '';
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return String(iso).slice(0, 10);
-    var parts = istFormatter({ year: 'numeric', month: 'short', day: '2-digit' }).formatToParts(d);
-    var day = '', month = '', year = '';
-    parts.forEach(function(p) {
-      if (p.type === 'day') day = p.value;
-      if (p.type === 'month') month = p.value;
-      if (p.type === 'year') year = p.value;
-    });
-    return day + '-' + month + '-' + year;
-  }
+  function istToday() { var p = istParts(); return p.y + '-' + p.mo + '-' + p.dom; }
 
   function timeOnly(iso) {
     if (!iso) return '';
     var d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    return istFormatter({ hour: '2-digit', minute: '2-digit' }).format(d);
+    var p = istParts(d);
+    return p.hh + ':' + p.mm;
   }
 
   function dateTime(iso) {
     if (!iso) return '';
     var d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    return formatDateIST(iso) + ' ' + istFormatter({ hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(d);
+    var p = istParts(d);
+    return p.y + '-' + p.mo + '-' + p.dom + ' ' + p.hh + ':' + p.mm;
   }
 
   /* ---------------------------------------------------------------- transport */
@@ -1777,8 +1982,19 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   /* ----------------------------------------------------------------- session */
   function saveSession(session) {
     state.session = session;
-    if (session) Safe.set('app_session', JSON.stringify(session));
-    else Safe.del('app_session');
+    if (session) {
+      Safe.set('app_session', JSON.stringify(session));
+      // Cache Firebase settings for instant writes
+      if (session.settings) {
+        state.firebaseDbUrl = session.settings.firebaseDbUrl || '';
+        state.realtimeEnabled = Boolean(session.settings.realtimeEnabled === true || session.settings.realtimeEnabled === 'true');
+      } else if (state.settings) {
+        state.firebaseDbUrl = state.settings.firebaseDbUrl || '';
+        state.realtimeEnabled = Boolean(state.settings.realtimeEnabled === true || state.settings.realtimeEnabled === 'true');
+      }
+    } else {
+      Safe.del('app_session');
+    }
     renderSession();
   }
 
@@ -1928,7 +2144,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('view-login').classList.toggle('hidden', signedIn);
     byId('appViews').classList.toggle('hidden', !signedIn);
     byId('sidebar').classList.toggle('hidden', !signedIn);
-    if (byId('mobileNav')) byId('mobileNav').classList.toggle('hidden', !signedIn || Boolean(state.session.isSuperAdmin));
+    if (byId('mobileNav')) byId('mobileNav').classList.toggle('hidden', !signedIn);
     byId('menuBtn').classList.toggle('hidden', !signedIn);
     if (!signedIn) {
       byId('sidebar').classList.remove('open');
@@ -1950,6 +2166,18 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var canAttend = signedIn && (state.session.role === 'Administrator' || rights.indexOf('ALL') >= 0 || rights.indexOf('ATTENDANCE') >= 0);
     var needsCheckIn = canAttend && roleRank_(state.session.role) < 2 && !state.session.checkedIn;
     byId('checkInBanner').classList.toggle('hidden', !needsCheckIn);
+
+    // Check-in queue badge: show pending attendance count without checking last request
+    var queueBadge = byId('checkInQueueBadge');
+    if (queueBadge) {
+      if (signedIn && state.session.checkedIn && !state.session.attendanceSynced) {
+        queueBadge.classList.remove('hidden');
+        queueBadge.textContent = '1 pending';
+      } else {
+        queueBadge.classList.add('hidden');
+      }
+    }
+
     applyMockPolicy_();
   }
 
@@ -1959,6 +2187,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     state.plateFormat = (res.settings && res.settings.plateFormat) || res.plateFormat || 'compact';
     if (res.session) {
       state.session.checkedIn = res.session.checkedIn;
+      state.session.attendanceSynced = Boolean(res.session.attendanceSynced);
       state.session.fullName = res.session.fullName || state.session.fullName || '';
       state.session.businessCategory = res.session.businessCategory || state.session.businessCategory || '';
       state.session.hub = res.session.hub;
@@ -1977,6 +2206,51 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('mapRealtimeToggle')) applyRealtimeToggle_();
     setNet(true, 'Session verified');
     return res;
+  }
+
+  async function loadDelta() {
+    if (!state.session) return;
+    var since = state.lastSyncedAt || 0;
+    var userId = state.session.userId;
+    try {
+      var res = await Cloud.post('getDelta', {
+        since: since,
+        userId: userId,
+        pageSize: 200
+      }, { queue: false });
+      if (!res) return;
+      // Merge attendance changes
+      if (res.attendance && res.attendance.length) {
+        res.attendance.forEach(function (a) {
+          var idx = state.attendance.findIndex(function (x) { return x.date === a.date && x.userId === a.userId; });
+          if (idx >= 0) state.attendance[idx] = a; else state.attendance.push(a);
+        });
+        cacheSave('attendance', userId, state.attendance);
+        if (state.view === 'attendance') loadAttendance();
+        if (state.view === 'hrms') renderHRMS();
+        if (state.view === 'checkpoint') renderCheckpoint();
+      }
+      // Merge job changes
+      if (res.tasks && res.tasks.length) {
+        res.tasks.forEach(function (t) {
+          var idx = state.tasks.findIndex(function (x) { return x.jobId === t.jobId; });
+          if (idx >= 0) state.tasks[idx] = t; else state.tasks.push(t);
+        });
+        cacheSave('jobs', userId, state.tasks);
+        if (state.view === 'jobs') loadJobs();
+        if (state.view === 'hrms') renderHRMS();
+      }
+      // Merge notification changes
+      if (res.notifications && res.notifications.length) {
+        res.notifications.forEach(function (n) {
+          var idx = state.notifications.findIndex(function (x) { return x.notificationId === n.notificationId; });
+          if (idx >= 0) state.notifications[idx] = n; else state.notifications.push(n);
+        });
+        cacheSave('notifications', userId, state.notifications);
+        if (state.view === 'notifications') loadNotifications();
+      }
+      state.lastSyncedAt = Date.now();
+    } catch (e) {}
   }
 
   async function login(force) {
@@ -2031,11 +2305,21 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           window.AndroidBridge.startFloatingBubble();
         }
       } catch (e) {}
-      setAuthProgress(70, 'Loading workspace');
-      byId('password').value = '';
+      setAuthProgress(55, 'Loading cached data');
+      // Show cached data instantly (no backend wait)
+      var cachedJobs = cacheLoad('jobs', state.session.userId, 24 * 60 * 60 * 1000);
+      if (cachedJobs) { state.tasks = cachedJobs; }
+      var cachedAtt = cacheLoad('attendance', state.session.userId, 24 * 60 * 60 * 1000);
+      if (cachedAtt) { state.attendance = cachedAtt; renderHRMS(); renderCheckpoint(); }
+      var cachedNotif = cacheLoad('notifications', state.session.userId, 60 * 60 * 1000);
+      if (cachedNotif) { state.notifications = cachedNotif; renderNotifications(); }
+      state.lastSyncedAt = Date.now();
+      setAuthProgress(70, 'Syncing changes from server');
       await refreshBootstrap();
+      // Delta sync in background
+      try { await loadDelta(); } catch (e) {}
       setAuthProgress(90, 'Preparing workspace');
-      await route(res.isSuperAdmin ? 'platform' : 'overview');
+      await route(res.isSuperAdmin ? 'platform' : 'jobs');
       loadNotifications();
       startRealtimeStream();
       openNativePendingView_();
@@ -2055,17 +2339,28 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       toast('Logout is disabled for this account. Contact an administrator.');
       return;
     }
-    if (state.session && state.session.checkedIn) {
+    // Default action on logout is Hold: pause any active job so the clock stops
+    // and the supervisor is notified, matching the Android bridge behaviour.
+    var activeJobId = '';
+    for (var ti = 0; ti < (state.tasks || []).length; ti++) {
+      var t = state.tasks[ti];
+      if (t.assignedUserId === state.session.userId && (t.status === 'InProgress' || t.status === 'Delayed')) {
+        activeJobId = t.jobId;
+        break;
+      }
+    }
+    if (activeJobId) {
       try {
-        var position = await currentPosition();
-        await Cloud.post('attendanceCheckOut', {
-          lat: position ? position.coords.latitude : 0,
-          lng: position ? position.coords.longitude : 0,
-          accuracy: position ? position.coords.accuracy : 0,
-          mock: mockActive_(),
-          clientRequestId: Safe.uuid()
-        }, { queue: false });
-      } catch (e) {}
+        await Cloud.post('jobHoldRequest', {
+          jobId: activeJobId,
+          holdCategory: 'Auto-hold on logout',
+          holdReason: 'Job left running; auto-held on logout.',
+          holdSource: 'AutoLogout',
+          clientRequestId: 'auto-logout-' + Date.now(),
+          mock: false
+        });
+        toast('Active job auto-held before logout.');
+      } catch (e) { /* proceed to logout even if the hold request fails */ }
     }
     try { await Cloud.post('logout', {}, { queue: false, bridge: false }); } catch (e) {}
     stopLiveWindow();
@@ -2109,14 +2404,17 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     showViewLoading_(false);
     byId('sidebar').classList.remove('open');
     byId('backdrop').classList.add('hidden');
-    if (['jobs', 'reports', 'uptime', 'map', 'pending', 'notifications', 'attendance', 'vehicles', 'admin', 'masters'].indexOf(view) >= 0) {
+    if (['jobs', 'reports', 'uptime', 'map', 'pending', 'notifications', 'attendance', 'vehicles', 'admin', 'masters', 'hrms', 'checkpoint'].indexOf(view) >= 0) {
       if (!state.people || !state.people.length) await loadPeople();
     }
     startRealtimeStream();
 
     try {
       if (view === 'overview') await loadOverview();
-      if (view === 'attendance') await loadAttendance();
+      if (view === 'attendance') {
+        if (state.hrmsView === 'cards') await loadHRMSAttendance();
+        else await loadAttendance();
+      }
       if (view === 'jobs') await loadJobs();
       if (view === 'pending') await loadPending();
       if (view === 'team') await loadTeam();
@@ -2124,6 +2422,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       if (view === 'uptime') await loadUptime();
       if (view === 'notifications') await loadNotifications();
       if (view === 'map') await loadMap();
+      if (view === 'hrms') await loadHRMS();
+      if (view === 'checkpoint') await loadCheckpoint();
       if (view === 'masters') await loadMasters();
       if (view === 'vehicles') { await loadVehicles(); await loadCaptures(); }
       if (view === 'workflows') await loadWorkflows();
@@ -2255,6 +2555,489 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     });
   }
 
+  /* ---------------------------------------------------------------- HRMS Logs */
+  async function loadHRMS() {
+    var date = byId('hrmsDate').value || Safe.today();
+    var userId = byId('hrmsUser').value.trim();
+    try {
+      var data = ensureOk(await Cloud.post('getAttendance', {
+        date: date,
+        userId: userId,
+        page: 1,
+        pageSize: 500
+      }));
+      var rows = (data.daily || []).slice().sort(function (a, b) {
+        return String(b.date || '').localeCompare(String(a.date || '')) ||
+          String(b.checkIn || '').localeCompare(String(a.checkIn || '')) ||
+          String(a.userId || '').localeCompare(String(b.userId || ''));
+      });
+      state.hrmsLogs = rows;
+      renderHRMS();
+    } catch (error) {
+      byId('hrmsLogsContainer').innerHTML = '<p class="small muted">Could not load HRMS logs.</p>';
+    }
+  }
+
+  function renderHRMS() {
+    var container = byId('hrmsLogsContainer');
+    var tab = document.querySelector('[data-hrms-tab].active')?.getAttribute('data-hrms-tab') || 'cards';
+    if (tab === 'timeline') {
+      container.innerHTML = renderHRMSTimeline();
+      return;
+    }
+    if (!state.hrmsLogs || !state.hrmsLogs.length) {
+      container.innerHTML = '<p class="small muted">No attendance records found.</p>';
+      return;
+    }
+    // Group by user + date
+    var byUserDate = {};
+    state.hrmsLogs.forEach(function (row) {
+      var key = row.userId + '|' + row.date;
+      if (!byUserDate[key]) byUserDate[key] = row;
+    });
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">';
+    Object.keys(byUserDate).forEach(function (key) {
+      var row = byUserDate[key];
+      var isExpanded = state.hrmsExpanded[key];
+      var checkInTime = row.checkIn ? timeOnly(row.checkIn) : '-';
+      var checkOutTime = row.checkOut ? timeOnly(row.checkOut) : '-';
+      var statusBadge = row.status === 'Active' ? 'ok' : (row.status === 'LoggedOut' ? 'gray' : 'warn');
+      var effective = row.checkIn && row.checkOut
+        ? minutesToText(Math.round((new Date(row.checkOut).getTime() - new Date(row.checkIn).getTime()) / 60000))
+        : (row.checkIn ? minutesToText(Math.round((Date.now() - new Date(row.checkIn).getTime()) / 60000)) : '-');
+      var shiftLabel = '09:00 AM - 06:00 PM \u00b7 (General Shift)';
+      var dayName = new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+      var gridId = 'grid-' + key.replace(/\|/g, '-');
+      var proofBtn = (row.checkInPhoto || row.checkOutPhoto)
+        ? '<a href="#" onclick="event.preventDefault(); showAttendanceProofs(\'' + Safe.esc(row.userId) + '\',\'' + Safe.esc(row.date) + '\'); return false;" class="ghost sm">View Proof</a>'
+        : '<span class="muted sm">-</span>';
+      html += '<div class="hrms-card" onclick="toggleHourlyGrid(\'' + Safe.esc(gridId) + '\')">' +
+        '<div class="hrms-card-header">' +
+        '<div><h4>' + Safe.esc(dayName) + ' <span class="badge success" style="margin-left:8px;">ON TIME</span></h4>' +
+        '<div class="hrms-shift" style="margin-top:2px;font-size:12px;">' + Safe.esc(shiftLabel) + '</div></div>' +
+        '<div style="font-size:11px;color:#64748b;">' + Safe.esc(row.userId) + ' \u00b7 ' + Safe.esc(row.hubName || '-') + '</div>' +
+        '</div>' +
+        '<div class="hrms-card-body">' +
+        '<div class="hrms-times">' +
+        '<div>Check-In: <b>' + Safe.esc(checkInTime) + '</b></div>' +
+        '<div>Check-Out: <b>' + Safe.esc(checkOutTime) + '</b></div>' +
+        '<div>Effective: <b>' + Safe.esc(effective) + '</b></div>' +
+        '</div>' +
+        '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div>' + proofBtn + '</div>' +
+        '<div class="hrms-card-toggle">' + (isExpanded ? 'Hide timeline' : 'Show timeline') + '</div>' +
+        '</div>' +
+        (isExpanded ? '<div id="' + Safe.esc(gridId) + '" class="hourly-grid">' + renderHourlySlots(row) + '</div>' : '') +
+        '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function renderHourlySlots(row) {
+    // Build mock hourly slots based on check-in/check-out and nearby jobs
+    var slots = [];
+    var start = row.checkIn ? new Date(row.checkIn) : new Date();
+    var end = row.checkOut ? new Date(row.checkOut) : new Date(start.getTime() + 9 * 60 * 60000);
+    // Round start down to hour
+    var slotStart = new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), 0, 0);
+    var slotEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), end.getHours(), 0, 0);
+    var jobs = (state.tasks || []).filter(function (t) {
+      return t.assignedUserId === row.userId && t.startTime &&
+        new Date(t.startTime).toISOString().slice(0, 10) === row.date;
+    }).sort(function (a, b) { return new Date(a.startTime).getTime() - new Date(b.startTime).getTime(); });
+    var jobIdx = 0;
+    var d = new Date(slotStart);
+    while (d <= slotEnd) {
+      var slotLabel = pad(d.getHours()) + ':00 - ' + pad((d.getHours() + 1) % 24) + ':00';
+      var slotContent = '';
+      var badge = '';
+      var completed = false;
+      // Check if any job falls in this slot
+      while (jobIdx < jobs.length && new Date(jobs[jobIdx].startTime).getTime() < d.getTime() + 3600000) {
+        var job = jobs[jobIdx];
+        slotContent = '<b>' + Safe.esc(job.jobId) + ' Closed</b>';
+        badge = '<span class="badge success">Job</span>';
+        completed = true;
+        jobIdx++;
+        break;
+      }
+      if (!slotContent) {
+        var h = d.getHours();
+        if (h >= 9 && h < 18) {
+          slotContent = 'Active Field';
+        } else if (h >= 12 && h < 13) {
+          slotContent = 'Lunch';
+          badge = '<span class="badge warn">Break</span>';
+        } else if (h === 17 || h === 18) {
+          slotContent = 'Logout Alert';
+          badge = '<span class="badge bad">Alert</span>';
+        } else if (h >= 8 && h < 9) {
+          slotContent = 'Arrival';
+          badge = '<span class="badge success">Arrival</span>';
+          completed = true;
+        } else {
+          slotContent = 'Off shift';
+          badge = '<span class="badge gray">Off</span>';
+        }
+      }
+      slots.push('<div class="hourly-slot' + (completed ? ' completed' : '') + '">' +
+        Safe.esc(slotLabel) + '<br>' + Safe.esc(slotContent) + (badge ? '<br>' + badge : '') + '</div>');
+      d.setHours(d.getHours() + 1);
+    }
+    return slots.join('');
+  }
+
+  function toggleHourlyGrid(gridId) {
+    var el = byId(gridId);
+    if (!el) return;
+    var isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display = isHidden ? 'grid' : 'none';
+    // Update toggle text on card
+    var card = el.closest ? el.closest('.hrms-card') : null;
+    if (card) {
+      var toggle = card.querySelector('.hrms-card-toggle');
+      if (toggle) toggle.textContent = isHidden ? 'Hide timeline' : 'Show timeline';
+    }
+    state.hrmsExpanded[gridId] = isHidden;
+  }
+
+  function renderHRMSTimeline() {
+    if (!state.hrmsLogs || !state.hrmsLogs.length) {
+      return '<p class="small muted">No attendance records found.</p>';
+    }
+    var html = '<table><thead><tr><th>Date</th><th>User</th><th>Hub</th><th>Check-in</th><th>Check-out</th><th>Hours</th><th>Status</th><th>Proof</th></tr></thead><tbody>';
+    state.hrmsLogs.forEach(function (row) {
+      var statusClass = row.status === 'Active' ? 'ok' : (row.status === 'LoggedOut' ? 'gray' : 'warn');
+      var proof = (row.checkInPhoto || row.checkOutPhoto)
+        ? '<a href="#" onclick="event.preventDefault(); showAttendanceProofs(\'' + Safe.esc(row.userId) + '\',\'' + Safe.esc(row.date) + '\'); return false;" class="ghost sm">View</a>'
+        : '<span class="muted">-</span>';
+      html += '<tr><td>' + Safe.esc(row.date) + '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '-') +
+        '</td><td>' + Safe.esc(timeOnly(row.checkIn)) + '</td><td>' + Safe.esc(timeOnly(row.checkOut)) + '</td><td>' +
+        Safe.esc(minutesToText(row.minutes || 0)) + '</td><td><span class="badge ' + statusClass + '">' + Safe.esc(row.status) +
+        '</span>' + (row.mock ? ' <span class="badge bad">MOCK</span>' : '') + '</td><td>' + proof + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  /* ---------------------------------------------------------------- HRMS Attendance Cards */
+  async function loadHRMSAttendance() {
+    var date = byId('attDate').value || Safe.today();
+    var userId = byId('attSearch').value.trim();
+    var range = byId('hrmsRange').value || '1d';
+    try {
+      var data = ensureOk(await Cloud.post('getAttendance', {
+        date: date,
+        userId: userId,
+        page: 1,
+        pageSize: 500
+      }));
+      var rows = (data.daily || []).slice().sort(function (a, b) {
+        return String(b.date || '').localeCompare(String(a.date || '')) ||
+          String(b.checkIn || '').localeCompare(String(a.checkIn || '')) ||
+          String(a.userId || '').localeCompare(String(b.userId || ''));
+      });
+      state.hrmsLogs = rows;
+      cacheSave('attendance', userId || 'all', state.hrmsLogs);
+      renderAttendanceCards(range);
+    } catch (error) {
+      byId('hrmsCardsContainer').innerHTML = '<p class="small muted">Could not load HRMS cards.</p>';
+    }
+  }
+
+  function computePerformanceMetrics(rows, scope) {
+    var distinctDays = {};
+    var totalHours = 0;
+    var totalCheckins = 0;
+    var lastLoc = '-';
+    var latestTime = 0;
+    rows.forEach(function (row) {
+      if (!row.checkIn) return;
+      var dayKey = row.date;
+      if (!distinctDays[dayKey]) {
+        distinctDays[dayKey] = true;
+        totalCheckins++;
+      }
+      if (row.checkIn && row.checkOut) {
+        totalHours += Math.round((new Date(row.checkOut).getTime() - new Date(row.checkIn).getTime()) / 60000);
+      } else if (row.checkIn) {
+        totalHours += Math.round((Date.now() - new Date(row.checkIn).getTime()) / 60000);
+      }
+      var t = row.checkOut ? new Date(row.checkOut).getTime() : (row.checkIn ? new Date(row.checkIn).getTime() : 0);
+      if (t > latestTime) {
+        latestTime = t;
+        lastLoc = row.hubName || '-';
+      }
+    });
+    var distinctDayCount = Object.keys(distinctDays).length;
+    var avgHours = distinctDayCount > 0 ? Math.round(totalHours / distinctDayCount) : 0;
+    return {
+      totalCheckins: totalCheckins,
+      totalHours: Math.floor(totalHours / 60) + 'h ' + (totalHours % 60) + 'm',
+      avgHours: avgHours + 'h',
+      lastLocation: lastLoc
+    };
+  }
+
+  function renderAttendanceCards(range) {
+    var container = byId('hrmsCardsContainer');
+    var summaryCard = byId('hrmsSummaryCard');
+    var tableContainer = byId('attTableContainer');
+    if (!state.hrmsLogs || !state.hrmsLogs.length) {
+      container.innerHTML = '<p class="small muted">No attendance records found.</p>';
+      if (summaryCard) summaryCard.classList.add('hidden');
+      if (tableContainer) tableContainer.classList.add('hidden');
+      return;
+    }
+    if (tableContainer) tableContainer.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    // Group by user + date
+    var byUserDate = {};
+    state.hrmsLogs.forEach(function (row) {
+      var key = row.userId + '|' + row.date;
+      if (!byUserDate[key]) byUserDate[key] = row;
+    });
+
+    // Determine scope for summary card
+    var scope = 'user';
+    if (state.session) {
+      var rr = roleRank_(state.session.role);
+      if (rr >= 4) scope = 'admin';
+      else if (rr >= 2) scope = 'sup';
+    }
+
+    // Compute summary metrics for 30d range
+    if (range === '30d' && summaryCard) {
+      summaryCard.classList.remove('hidden');
+      var metrics = computePerformanceMetrics(state.hrmsLogs, scope);
+      byId('hrmsTotalCheckins').textContent = metrics.totalCheckins;
+      byId('hrmsTotalHours').textContent = metrics.totalHours;
+      byId('hrmsAvgHours').textContent = metrics.avgHours;
+      byId('hrmsLastLocation').textContent = metrics.lastLocation;
+    } else if (summaryCard) {
+      summaryCard.classList.add('hidden');
+    }
+
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">';
+    Object.keys(byUserDate).sort().forEach(function (key) {
+      var row = byUserDate[key];
+      var checkInTime = row.checkIn ? timeOnly(row.checkIn) : '-';
+      var checkOutTime = row.checkOut ? timeOnly(row.checkOut) : '-';
+      var statusBadge = row.status === 'Active' ? 'ok' : (row.status === 'LoggedOut' ? 'gray' : 'warn');
+      var effective = row.checkIn && row.checkOut
+        ? minutesToText(Math.round((new Date(row.checkOut).getTime() - new Date(row.checkIn).getTime()) / 60000))
+        : (row.checkIn ? minutesToText(Math.round((Date.now() - new Date(row.checkIn).getTime()) / 60000)) : '-');
+      var shiftLabel = '09:00 AM - 06:00 PM \u00b7 (General Shift)';
+      var dayName = new Date(row.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+      var gridId = 'grid-' + key.replace(/\|/g, '-');
+      var proofBtn = (row.checkInPhoto || row.checkOutPhoto)
+        ? '<a href="#" onclick="event.preventDefault(); showAttendanceProofs(\'' + Safe.esc(row.userId) + '\',\'' + Safe.esc(row.date) + '\'); return false;" class="ghost sm">View Proof</a>'
+        : '<span class="muted sm">-</span>';
+      var isMock = row.mock ? ' <span class="badge bad">MOCK</span>' : '';
+      html += '<div class="hrms-card" onclick="toggleHourlyGrid(\'' + Safe.esc(gridId) + '\')">' +
+        '<div class="hrms-card-header">' +
+        '<div><h4>' + Safe.esc(dayName) + ' <span class="badge ' + (row.status === 'Active' ? 'success' : 'warn') + '" style="margin-left:8px;">' + Safe.esc(row.status) + '</span></h4>' +
+        '<div class="hrms-shift" style="margin-top:2px;font-size:12px;">' + Safe.esc(shiftLabel) + '</div></div>' +
+        '<div style="font-size:11px;color:#64748b;">' + Safe.esc(row.userId) + ' \u00b7 ' + Safe.esc(row.hubName || '-') + '</div>' +
+        '</div>' +
+        '<div class="hrms-card-body">' +
+        '<div class="hrms-times">' +
+        '<div>Check-In: <b>' + Safe.esc(checkInTime) + '</b></div>' +
+        '<div>Check-Out: <b>' + Safe.esc(checkOutTime) + '</b></div>' +
+        '<div>Effective: <b>' + Safe.esc(effective) + '</b></div>' +
+        '</div>' +
+        '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div>' + proofBtn + '</div>' +
+        '<div class="hrms-card-toggle">Show timeline</div>' +
+        '</div>' +
+        '<div id="' + Safe.esc(gridId) + '" class="hourly-grid" style="display:none;margin-top:10px">' + renderHourlySlots(row) + '</div>' +
+        '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  /* ---------------------------------------------------------------- Map Trial / History Panel */
+  function mapTrial() {
+    var date = byId('mapDate').value || Safe.today();
+    var userId = byId('mapUser').value.trim();
+    Cloud.post('getTelemetry', {
+      date: date,
+      userId: userId,
+      limit: 30
+    }).then(function (res) {
+      var points = (res.points || []).slice().sort(function (a, b) {
+        return String(a.at).localeCompare(String(b.at));
+      });
+      state.mapHistoryPoints = points;
+      var users = {};
+      points.forEach(function (p) { users[p.userId] = true; });
+      var userSelect = byId('mapHistoryUser');
+      userSelect.innerHTML = '<option value="">Select user</option>';
+      Object.keys(users).sort().forEach(function (uid) {
+        userSelect.innerHTML += '<option value="' + Safe.esc(uid) + '">' + Safe.esc(uid) + '</option>';
+      });
+      byId('mapHistoryPanel').classList.remove('hidden');
+      userSelect.onchange = function () {
+        var sel = userSelect.value;
+        var timeSelect = byId('mapHistoryTime');
+        timeSelect.innerHTML = '<option value="">Select time</option>';
+        if (!sel) return;
+        var times = {};
+        points.filter(function (p) { return p.userId === sel; }).forEach(function (p) {
+          times[p.at] = true;
+        });
+        Object.keys(times).sort().forEach(function (t) {
+          timeSelect.innerHTML += '<option value="' + Safe.esc(t) + '">' + Safe.esc(timeOnly(t)) + '</option>';
+        });
+        timeSelect.onchange = function () {
+          var ts = timeSelect.value;
+          if (!ts) return;
+          var pt = points.find(function (p) { return p.userId === sel && p.at === ts; });
+          if (!pt) return;
+          var lat = Number(pt.lat), lng = Number(pt.lng);
+          if (isFinite(lat) && isFinite(lng) && state.mapInstance) {
+            state.mapInstance.panTo([lat, lng]);
+            state.mapInstance.setZoom(16);
+            var marker = L.marker([lat, lng]).addTo(state.mapLayer);
+            marker.bindPopup('<strong>' + Safe.esc(pt.userId) + '</strong><br>' + Safe.esc(timeOnly(pt.at)) +
+              '<br>' + Safe.esc(Number(lat).toFixed(5)) + ', ' + Safe.esc(Number(lng).toFixed(5)) +
+              (pt.mock ? '<br>Mock GPS' : '') + '<br>' + Safe.esc(pt.zone || '')).openPopup();
+          }
+        };
+      };
+    }).catch(function (error) {
+      toast('Could not load history: ' + error.message);
+    });
+  }
+
+  function mapHistoryClose() {
+    byId('mapHistoryPanel').classList.add('hidden');
+  }
+
+  /* ---------------------------------------------------------------- 30-Min Checkpoint Timeline */
+  async function loadCheckpoint() {
+    var date = byId('cpDate').value || Safe.today();
+    var userId = byId('cpUser').value.trim();
+    try {
+      var data = ensureOk(await Cloud.post('getTelemetry', {
+        date: date,
+        userId: userId,
+        limit: 2000
+      }));
+      var points = (data.points || []).slice().sort(function (a, b) {
+        return String(a.at).localeCompare(String(b.at)) || String(a.userId).localeCompare(String(b.userId));
+      });
+      state.checkpointLogs = points;
+      renderCheckpoint();
+    } catch (error) {
+      byId('checkpointContainer').innerHTML = '<p class="small muted">Could not load checkpoint timeline.</p>';
+    }
+  }
+
+  function renderCheckpoint() {
+    var container = byId('checkpointContainer');
+    var tab = document.querySelector('[data-cp-tab].active')?.getAttribute('data-cp-tab') || 'timeline';
+    if (tab === 'map') {
+      container.innerHTML = renderCheckpointMap();
+      return;
+    }
+    if (!state.checkpointLogs || !state.checkpointLogs.length) {
+      container.innerHTML = '<p class="small muted">No checkpoint data found.</p>';
+      return;
+    }
+    // Group by user
+    var byUser = {};
+    state.checkpointLogs.forEach(function (p) {
+      if (!byUser[p.userId]) byUser[p.userId] = [];
+      byUser[p.userId].push(p);
+    });
+    var html = '<div class="checkpoint-container">';
+    Object.keys(byUser).sort().forEach(function (userId) {
+      var points = byUser[userId];
+      html += '<div class="checkpoint-card">' +
+        '<div class="checkpoint-card-header">' +
+        '<h4>' + Safe.esc(userId) + ' <span class="user-id small muted">(' + Safe.esc(points.length) + ' checkpoints)</span></h4>' +
+        '</div>' +
+        '<table class="checkpoint-table">' +
+        '<thead><tr><th>Time</th><th>GPS</th><th>Trigger</th></tr></thead>' +
+        '<tbody>';
+      points.forEach(function (p) {
+        var triggerLabel = p.mock ? 'Mock Detected' : (p.zone === 'OUTSIDE' ? 'Breach' : 'Arrival');
+        var triggerBadge = p.mock ? 'bad' : (p.zone === 'OUTSIDE' ? 'warn' : 'ok');
+        html += '<tr>' +
+          '<td>' + Safe.esc(timeOnly(p.at)) + '</td>' +
+          '<td><span class="gps-mono">' + Safe.esc(Number(p.lat).toFixed(5)) + ', ' + Safe.esc(Number(p.lng).toFixed(5)) + '</span></td>' +
+          '<td><span class="badge ' + triggerBadge + '">' + Safe.esc(triggerLabel) + '</span></td>' +
+          '</tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function renderCheckpointMap() {
+    var map = ensureMap();
+    if (!map) return '<p class="small muted">Map not available.</p>';
+    state.mapLayer.clearLayers();
+    var bounds = [];
+    (state.checkpointLogs || []).forEach(function (p) {
+      var lat = Number(p.lat), lng = Number(p.lng);
+      if (!isFinite(lat) || !isFinite(lng) || (lat === 0 && lng === 0)) return;
+      bounds.push([lat, lng]);
+      L.circleMarker([lat, lng], { radius: 5, color: '#fff', weight: 2, fillColor: '#1d4ed8', fillOpacity: 0.9 })
+        .bindPopup('<strong>' + Safe.esc(p.userId) + '</strong><br>' + Safe.esc(timeOnly(p.at)) +
+          (p.mock ? '<br>Mock GPS' : '') + '<br>' + Safe.esc(p.zone || ''))
+        .addTo(state.mapLayer);
+    });
+    if (bounds.length) {
+      try { map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 }); } catch (error) {}
+    }
+    return '';
+  }
+
+  /* ---------------------------------------------------------------- Map Live/History */
+  function toggleMapHistoryMode() {
+    state.mapHistoryMode = !state.mapHistoryMode;
+    var btn = byId('mapHistoryToggle');
+    if (btn) btn.textContent = state.mapHistoryMode ? 'Live Mode' : 'History Mode';
+    renderMap();
+  }
+
+  function renderHistoryTrails() {
+    if (!state.mapHistoryMode || !state.mapPoints || !state.mapPoints.length) return;
+    var grouped = {};
+    var seen = {};
+    state.mapPoints.forEach(function (point) {
+      var key = point.userId + '|' + point.at + '|' + point.lat + '|' + point.lng;
+      if (seen[key]) return;
+      seen[key] = true;
+      if (!grouped[point.userId]) grouped[point.userId] = [];
+      grouped[point.userId].push(point);
+    });
+    Object.keys(grouped).forEach(function (userId) {
+      var points = grouped[userId].filter(function (p) {
+        var lat = Number(p.lat), lng = Number(p.lng);
+        return isFinite(lat) && isFinite(lng) && !(lat === 0 && lng === 0);
+      }).sort(function (a, b) { return String(a.at).localeCompare(String(b.at)); });
+      if (points.length < 2) return;
+      var coords = points.map(function (p) { return [Number(p.lat), Number(p.lng)]; });
+      var bounds = [];
+      coords.forEach(function (c) { bounds.push(c); });
+      L.polyline(coords, { color: '#1d4ed8', weight: 3, opacity: 0.6, dashArray: '6, 10' })
+        .bindPopup('<strong>' + Safe.esc(userId) + '</strong><br>History trail (' + points.length + ' points)')
+        .addTo(state.mapLayer);
+      if (bounds.length) {
+        try { state.mapInstance.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 }); } catch (error) {}
+      }
+    });
+  }
+
   function jobRowHtml_(task) {
     var elapsed = task.endTime ? minutesToText(task.turnaroundMinutes) :
       (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '-');
@@ -2272,11 +3055,21 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       '<button class="ghost sm" data-job-audit="' + Safe.esc(task.jobId) + '">Audit</button> ' +
       '<button class="ghost sm" data-job-proofs="' + Safe.esc(task.jobId) + '">Proofs</button>';
     if (state.session.checkedIn && (task.status === 'InProgress' || task.status === 'Delayed')) actions += ' <button class="secondary sm" data-hold-request="' + Safe.esc(task.jobId) + '">Hold</button>';
+    var turnaround = task.endTime ? minutesToText(task.turnaroundMinutes) :
+      (task.startTime ? minutesToText(Math.round((Date.now() - new Date(task.startTime).getTime()) / 60000)) : '-');
+    var bottomBadges = '<div class="job-bottom-badges">' +
+      '<span class="badge info">Job: ' + Safe.esc(task.jobId) + '</span>' +
+      '<span class="badge info">Hub: ' + Safe.esc(task.hub || '-') + '</span>' +
+      '<span class="badge info">Client: ' + Safe.esc(task.client || '-') + '</span>' +
+      '<span class="badge info">Assigned: ' + Safe.esc(task.assignedUserId || '-') + '</span>' +
+      '<span class="badge ' + badge + '">' + Safe.esc(task.status) + '</span>' +
+      '<span class="badge info">TAT: ' + Safe.esc(turnaround) + '</span>' +
+      '</div>';
     return '<tr><td><strong>' + Safe.esc(task.jobId) + '</strong></td><td class="small mono">' + Safe.esc(task.complaintNo || '-') + '</td><td>' + Safe.esc(plate(task.vehicleNo) || '-') +
       '</td><td>' + Safe.esc(task.client || '-') + '</td><td>' + Safe.esc(task.assignedUserId) + '</td><td><span class="badge ' +
       badge + '">' + Safe.esc(task.status) + '</span>' + holdBadge + (overtime ? ' <span class="badge bad">Overtime</span>' : '') +
       '</td><td>' + Safe.esc(elapsed) + '</td><td>' + Safe.esc(task.plateSource || '-') +
-      '</td><td>' + lastEditHtml + '</td><td>' + actions + '</td></tr>';
+      '</td><td>' + lastEditHtml + '</td><td>' + actions + bottomBadges + '</td></tr>';
   }
 
   async function loadJobs(page) {
@@ -3040,8 +3833,17 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function submitCheckIn() {
     var file = byId('checkInFile').files[0];
     if (!file) { setMsg('checkInMsg', 'Select the attendance photo first.', true); return; }
+    // Check-in once: block if already checked in without logout
+    if (state.session && state.session.checkedIn) {
+      setMsg('checkInMsg', 'Already checked in. Log out before checking in again.', true);
+      return;
+    }
     byId('checkInSubmit').disabled = true;
     setMsg('checkInMsg', 'Preparing photo-');
+    var checkInBtn = byId('checkInBtn');
+    if (checkInBtn) { checkInBtn.classList.add('hidden'); checkInBtn.textContent = 'Verification under process...'; }
+    var queueBadge = byId('checkInQueueBadge');
+    if (queueBadge) queueBadge.classList.add('hidden');
     try {
       var photo = await readFile(file);
       var position = byId('checkInGeo').checked ? await currentPosition() : null;
@@ -3057,17 +3859,35 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       };
       ensureOk(await Cloud.post('attendanceCheckIn', payload, { queue: false }));
       state.session.checkedIn = true;
+      state.session.attendanceSynced = true;
       saveSession(state.session);
       adoptNative();
       closeModal('checkInModal');
       toast('Check-in recorded');
+      // Instant Firebase push for dashboard sync
+      try { firebasePushCheckin(state.session.userId, {
+        at: new Date().toISOString(),
+        lat: position ? position.coords.latitude : 0,
+        lng: position ? position.coords.longitude : 0,
+        hub: state.session ? state.session.hub : '',
+        photoProofUrl: photo.full,
+        photoFileId: ''
+      }); } catch (e) {}
+      // Cache attendance locally
+      cacheSave('attendance', state.session.userId, state.attendance);
       renderSession();
+      route('jobs');
     } catch (error) {
       if (claimDeviceAndRetry_(error, function () { submitCheckIn(); })) return;
       setMsg('checkInMsg', error.message, true);
     } finally {
       byId('checkInSubmit').disabled = false;
+      // Restore check-in button on error
+      var checkInBtn = byId('checkInBtn');
+      if (checkInBtn) { checkInBtn.classList.remove('hidden'); checkInBtn.textContent = 'Check in now'; }
     }
+    // Restore check-in button state via renderSession (badge count)
+    renderSession();
   }
 
   var attendanceStream = null;
@@ -3228,6 +4048,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       var native = JSON.parse(bridge.getCheckInState());
       if (native && native.checkedIn && !state.session.checkedIn) {
         state.session.checkedIn = true;
+        state.session.attendanceSynced = true;
         saveSession(state.session);
         renderSession();
         refreshBootstrap().catch(function () {});
@@ -3245,6 +4066,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           var native = JSON.parse(bridge.getCheckInState());
           if (native && native.checkedIn && state.session) {
             state.session.checkedIn = true;
+            state.session.attendanceSynced = true;
             saveSession(state.session);
             renderSession();
             if (state.view === 'jobs') loadJobs();
@@ -3270,10 +4092,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    var now = new Date();
-    var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
-    var stamp = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()) + ' ' +
-      pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
+    var p = istParts();
+    var stamp = p.y + '-' + p.mo + '-' + p.dom + ' ' + p.hh + ':' + p.mm + ':' + p.ss;
     var geo = state.lastPosition || null;
     var coords = geo ? (geo.latitude.toFixed(5) + ', ' + geo.longitude.toFixed(5)) : 'GPS pending';
     var lines = [
@@ -3313,6 +4133,18 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   async function submitAttCamera(skipEnqueue) {
     if (!pendingAttPhoto) { setMsg('attCamMsg', 'Capture a photo first.', true); return; }
     if (applyMockPolicy_()) { setMsg('attCamMsg', 'Mock GPS detected. Disable fake location to check in.', true); return; }
+    // Check-in once: block if already checked in without logout
+    if (state.session && state.session.checkedIn) {
+      setMsg('attCamMsg', 'Already checked in. Log out before checking in again.', true);
+      return;
+    }
+
+    // Hide check-in button and show verification under process
+    var checkInBtn = byId('checkInBtn');
+    if (checkInBtn) { checkInBtn.classList.add('hidden'); checkInBtn.textContent = 'Verification under process...'; }
+    var queueBadge = byId('checkInQueueBadge');
+    if (queueBadge) queueBadge.classList.add('hidden');
+
     var btn = byId('attCamSubmit');
     btn.disabled = true;
     setMsg('attCamMsg', 'Saving attendance...');
@@ -3380,7 +4212,19 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         toast('Attendance saved on device. Uploading in background...');
         pollAttendanceSync_();
       }
+      // Instant Firebase push for dashboard sync
+      try { firebasePushCheckin(state.session.userId, {
+        at: new Date().toISOString(),
+        lat: position ? position.coords.latitude : 0,
+        lng: position ? position.coords.longitude : 0,
+        hub: state.session ? state.session.hub : '',
+        photoProofUrl: pendingAttPhoto,
+        photoFileId: ''
+      }); } catch (e) {}
+      // Cache attendance locally
+      cacheSave('attendance', state.session.userId, state.attendance);
       renderSession();
+      route('jobs');
       await loadAttendance().catch(function () {});
     } catch (error) {
       if (claimDeviceAndRetry_(error, function () { submitAttCamera(true); })) {
@@ -3389,7 +4233,12 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       }
       setMsg('attCamMsg', error.message || 'Upload failed. Check the connection and retry.', true);
       btn.disabled = false;
+      // Restore check-in button on error
+      var checkInBtn = byId('checkInBtn');
+      if (checkInBtn) { checkInBtn.classList.remove('hidden'); checkInBtn.textContent = 'Check in now'; }
     }
+    // Restore check-in button state via renderSession (badge count)
+    renderSession();
   }
 
   function pollAttendanceSync_() {
@@ -3432,6 +4281,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       toast('Checked out');
       renderSession();
       await loadAttendance();
+      // Instant Firebase push for dashboard sync
+      try { firebasePushLogout(state.session.userId, {
+        at: new Date().toISOString(),
+        lat: position ? position.coords.latitude : 0,
+        lng: position ? position.coords.longitude : 0,
+        photoProofUrl: '',
+        photoFileId: ''
+      }); } catch (e) {}
     } catch (error) { toast(error.message); }
   }
 
@@ -3577,10 +4434,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   function printCurrentView() {
     var head = document.querySelector('.view:not(.hidden) .page-head h2');
     var title = head ? head.textContent.trim() : 'FieldOps Report';
-    var now = new Date();
-    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
-    var stamp = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' +
-      pad(now.getHours()) + '-' + pad(now.getMinutes());
+    var p = istParts();
+    var stamp = p.y + '-' + p.mo + '-' + p.dom + ' ' + p.hh + '-' + p.mm;
     var who = state.session ? (state.session.fullName || state.session.username || '') : '';
     var scope = state.session && state.session.scope ? ('Scope: ' + state.session.scope) : '';
     if (byId('printTitle')) byId('printTitle').textContent = title;
@@ -3706,9 +4561,10 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
   }
 
   function reportAddDays_(key, days) {
-    var d = new Date(String(key) + 'T00:00:00');
-    d.setDate(d.getDate() + days);
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    var parts = String(key).split('-');
+    var base = Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])) - 19800000;
+    var dd = new Date(base + days * 86400000);
+    return dd.getUTCFullYear() + '-' + pad(dd.getUTCMonth() + 1) + '-' + pad(dd.getUTCDate());
   }
 
   function reportChunk_(from, to, page, size) {
@@ -3770,26 +4626,23 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('repTurnaround').textContent = minutesToText(jobs.avgTurnaroundMinutes || 0);
     byId('repCompliance').textContent = (compliance.mockFlags || 0) + ' / ' + (compliance.breachEvents || 0);
 
-    var reportDate = formatDateIST(new Date());
-    var reportTime = timeOnly(new Date());
     paginateTable_('reportDaily', 'repDaily', report.daily || [], function (day) {
-      return '<tr><td>' + Safe.esc(formatDateIST(day.date)) + '</td><td>' + Safe.esc(reportTime) + '</td><td>' + Safe.esc(day.shifts) + '</td><td>' +
+      return '<tr><td>' + Safe.esc(day.date) + '</td><td>' + Safe.esc(day.shifts) + '</td><td>' +
         Safe.esc(minutesToText(day.minutes)) + '</td><td>' + Safe.esc(day.mock) + '</td></tr>';
-    }, { reset: true, colspan: 5, emptyText: 'No attendance in this range.' });
+    }, { reset: true, colspan: 4, emptyText: 'No attendance in this range.' });
 
     renderReportAttendance_(attendance, attMeta);
     renderReportJobs_(jobs.rows || [], paging.jobs || {});
 
     paginateTable_('reportEngineers', 'repEngineers', jobs.engineers || [], function (person) {
-      return '<tr><td>' + Safe.esc(reportDate) + '</td><td>' + Safe.esc(reportTime) + '</td><td>' + Safe.esc(person.userId) + '</td><td>' + Safe.esc(person.completed) + '</td><td>' +
+      return '<tr><td>' + Safe.esc(person.userId) + '</td><td>' + Safe.esc(person.completed) + '</td><td>' +
         Safe.esc(minutesToText(person.minutes)) + '</td></tr>';
-    }, { reset: true, colspan: 5, emptyText: 'No completed jobs in this range.' });
+    }, { reset: true, colspan: 3, emptyText: 'No completed jobs in this range.' });
   }
 
   function attendanceReportRowHtml_(row) {
-    return '<tr><td>' + Safe.esc(formatDateIST(row.checkIn || row.date)) + '</td><td>' + Safe.esc(timeOnly(row.checkIn) || '-') +
-      '</td><td>' + Safe.esc(row.checkOut ? formatDateIST(row.checkOut) : '-') + '</td><td>' + Safe.esc(row.checkOut ? timeOnly(row.checkOut) : '-') +
-      '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '') +
+    return '<tr><td>' + Safe.esc(row.date) + '</td><td>' + Safe.esc(row.userId) + '</td><td>' + Safe.esc(row.hubName || '') +
+      '</td><td>' + Safe.esc(timeOnly(row.checkIn) || '-') + '</td><td>' + Safe.esc(timeOnly(row.checkOut) || '-') +
       '</td><td>' + Safe.esc(minutesToText(row.minutes)) + '</td><td>' + Safe.esc(row.status || '') +
       '</td><td><button class="secondary sm" data-att-proofs="' + Safe.esc(row.userId + '|' + row.date) + '">Proofs</button></td></tr>';
   }
@@ -3799,9 +4652,6 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     var approved = job.holdApprovedBy ? (job.holdApprovedBy + (job.holdApprovedLevel ? ' L' + job.holdApprovedLevel : '')) : '';
     return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td class="small mono">' + Safe.esc(job.complaintNo || '-') + '</td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
       Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.status) + '</td><td>' +
-      Safe.esc(job.startTime ? formatDateIST(job.startTime) : '-') + '</td><td>' + Safe.esc(job.startTime ? timeOnly(job.startTime) : '-') +
-      '</td><td>' + Safe.esc(job.endTime ? formatDateIST(job.endTime) : '-') + '</td><td>' + Safe.esc(job.endTime ? timeOnly(job.endTime) : '-') +
-      '</td><td>' +
       (job.startProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">Start</button>' : '-') +
       '</td><td>' + (job.endProofUrl ? '<button class="secondary sm" data-job-proofs="' + Safe.esc(job.jobId) + '">End</button>' : '-') +
       '</td><td class="small">' + Safe.esc(hold + (job.holdReason ? ' \u00b7 ' + job.holdReason : '')) + '</td><td class="small">' +
@@ -3815,7 +4665,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         var jobPage = state.reportPaging && state.reportPaging.jobs ? state.reportPaging.jobs.page : 1;
         loadReports(state.reportPage, nextPage, jobPage || 1);
       },
-      colspan: 9,
+      colspan: 8,
       emptyText: 'No attendance rows.'
     });
   }
@@ -3827,7 +4677,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         var attPage = state.reportPaging && state.reportPaging.attendance ? state.reportPaging.attendance.page : 1;
         loadReports(state.reportPage, attPage || 1, nextPage);
       },
-      colspan: 14,
+      colspan: 10,
       emptyText: 'No jobs in this range.'
     });
   }
@@ -3850,19 +4700,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       return;
     }
     var report = data.report || {};
-    var rows = [['CheckIn Date', 'CheckIn Time', 'CheckOut Date', 'CheckOut Time', 'User', 'Hub', 'Minutes', 'Status', 'Mock']];
+    var rows = [['Date', 'User', 'Hub', 'CheckIn', 'CheckOut', 'Minutes', 'Status', 'Mock']];
     (report.attendance || []).forEach(function (row) {
-      rows.push([
-        formatDateIST(row.checkIn || row.date),
-        timeOnly(row.checkIn),
-        row.checkOut ? formatDateIST(row.checkOut) : '-',
-        row.checkOut ? timeOnly(row.checkOut) : '-',
-        row.userId,
-        row.hubName || '',
-        row.minutes || 0,
-        row.status || '',
-        row.mock ? 'YES' : 'NO'
-      ]);
+      rows.push([row.date, row.userId, row.hubName || '', row.checkIn || '', row.checkOut || '', row.minutes || 0, row.status || '', row.mock ? 'YES' : 'NO']);
     });
     var csv = rows.map(function (line) {
       return line.map(function (cell) { return '"' + String(cell === undefined || cell === null ? '' : cell).replace(/"/g, '""') + '"'; }).join(',');
@@ -3960,6 +4800,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     });
     if (bounds.length) {
       try { map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 }); } catch (error) {}
+    }
+    if (state.mapHistoryMode) {
+      renderHistoryTrails();
     }
   }
 
@@ -4656,8 +5499,19 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
 
   /* --------------------------------------------------------------- pending jobs */
   async function loadPending() {
-    var data = ensureOk(await Cloud.post('getHoldRequests', {}));
-    state.pending = data || { pending: [], onHold: [], history: [], analytics: {} };
+    var holds = ensureOk(await Cloud.post('getHoldRequests', {})) || {};
+    var unapprovedResp = {};
+    try { unapprovedResp = ensureOk(await Cloud.post('getUnapprovedJobs', {})) || {}; } catch (_) {}
+    state.pending = {
+      pending: holds.pending || [],
+      onHold: holds.onHold || [],
+      history: holds.history || [],
+      unapproved: unapprovedResp.unapproved || []
+    };
+    var a = holds.analytics || {};
+    var ua = unapprovedResp.analytics || {};
+    a.unapproved = ua.unapproved || 0;
+    state.pending.analytics = a;
     var logTab = document.querySelector('[data-pending-tab="log"]');
     if (logTab) logTab.classList.toggle('hidden', roleRank_(state.session.role) < 2);
     renderPending();
@@ -4670,6 +5524,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     byId('pendingSummary').innerHTML =
       '<div class="stat amber"><h4>Pending approval</h4><p class="value">' + Safe.esc(a.pending || 0) + '</p></div>' +
       '<div class="stat red"><h4>On hold</h4><p class="value">' + Safe.esc(a.onHold || 0) + '</p></div>' +
+      '<div class="stat bad"><h4>Unapproved</h4><p class="value">' + Safe.esc(a.unapproved || 0) + '</p></div>' +
       '<div class="stat blue"><h4>Downtime tracked</h4><p class="value">' + Safe.esc(minutesLabel_(a.totalDowntimeMinutes || 0)) + '</p></div>' +
       '<div class="stat"><h4>Reason types</h4><p class="value">' + Safe.esc(Object.keys(a.reasons || {}).length) + '</p></div>';
   }
@@ -4722,11 +5577,14 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
         action = '<button class="sm" data-hold-start="' + Safe.esc(job.jobId) + '">Start job</button>';
       } else if (tab === 'onHold' && job.canApprove) {
         action = '<button class="secondary sm" data-hold-release="' + Safe.esc(job.jobId) + '">Release</button>';
+      } else if (tab === 'unapproved') {
+        var mayResubmit = job.canApprove || job.assignedUserId === state.session.userId;
+        action = mayResubmit ? '<button class="sm" data-hold-resubmit="' + Safe.esc(job.jobId) + '">Resubmit</button>' : '<button class="secondary sm" data-edit-job="' + Safe.esc(job.jobId) + '">Open</button>';
       } else {
         action = '<button class="secondary sm" data-edit-job="' + Safe.esc(job.jobId) + '">Open</button>';
       }
       return '<tr><td><strong>' + Safe.esc(job.jobId) + '</strong></td><td>' + Safe.esc(job.vehicleDisplay || '-') + '</td><td>' +
-        Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' + Safe.esc(job.holdCategory || '-') + ' \u00b7 ' + Safe.esc(job.holdReason || '') +
+        Safe.esc(job.assignedUserName || job.assignedUserId) + '</td><td>' +         Safe.esc(job.holdCategory || '-') + (tab === 'unapproved' ? ' <span class="badge bad">' + Safe.esc(job.holdDecision || job.holdSource || 'unapproved') + '</span>' : '') + ' \u00b7 ' + Safe.esc(job.holdReason || '') +
         '</td><td>' + Safe.esc(minutesLabel_(job.ageMinutes || 0)) + '</td><td>' + Safe.esc(job.approverName || job.holdApprovedBy || '-') + '</td><td>L' +
         Safe.esc(job.holdApprovedLevel || job.requiredLevel || 1) + '</td><td class="small">' + Safe.esc(resolution || '-') + '</td><td>' + action + '</td></tr>';
     };
@@ -4916,6 +5774,16 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       await loadTeam();
       await loadOverview();
       await loadNotifications();
+    } catch (error) { toast(error.message); }
+  }
+
+  async function resubmitHold(jobId) {
+    var note = prompt('Resubmit reason (optional)', '') || '';
+    try {
+      ensureOk(await Cloud.post('resubmitUnapprovedJob', { jobId: jobId, holdReason: note }));
+      toast('Hold resubmitted for supervisor review');
+      await loadPending();
+      await loadTeam();
     } catch (error) { toast(error.message); }
   }
 
@@ -5157,7 +6025,8 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       ensureOk(await Cloud.post('jobHoldRequest', {
         jobId: state.holdJobId,
         holdCategory: byId('holdCategory').value,
-        holdReason: byId('holdReason').value.trim()
+        holdReason: byId('holdReason').value.trim(),
+        holdSource: 'Device'
       }));
       closeModal('holdModal');
       toast('Hold requested; supervisor notified');
@@ -5295,7 +6164,27 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     }
     var attTabs = document.querySelectorAll('[data-att-tab]');
     for (var at = 0; at < attTabs.length; at++) {
-      attTabs[at].addEventListener('click', function () { route(this.getAttribute('data-att-tab')); });
+      attTabs[at].addEventListener('click', function () {
+        var tabs = document.querySelectorAll('[data-att-tab]');
+        for (var x = 0; x < tabs.length; x++) tabs[x].classList.toggle('active', tabs[x] === this);
+        var tab = this.getAttribute('data-att-tab');
+        state.hrmsView = tab;
+        var tableContainer = byId('attTableContainer');
+        var cardsContainer = byId('hrmsCardsContainer');
+        if (tab === 'cards') {
+          if (tableContainer) tableContainer.classList.add('hidden');
+          if (cardsContainer) cardsContainer.classList.remove('hidden');
+          loadHRMSAttendance();
+        } else if (tab === 'attendance') {
+          if (tableContainer) tableContainer.classList.remove('hidden');
+          if (cardsContainer) cardsContainer.classList.add('hidden');
+          loadAttendance();
+        } else if (tab === 'map') {
+          if (tableContainer) tableContainer.classList.add('hidden');
+          if (cardsContainer) cardsContainer.classList.add('hidden');
+          loadMap();
+        }
+      });
     }
     if (byId('mapRealtimeToggle')) byId('mapRealtimeToggle').addEventListener('change', toggleRealtime_);
     if (byId('masterSave')) byId('masterSave').addEventListener('click', saveMasterEdit);
@@ -5368,6 +6257,25 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
     if (byId('repPrint')) byId('repPrint').addEventListener('click', printCurrentView);
     if (byId('mapLoad')) byId('mapLoad').addEventListener('click', loadMap);
     if (byId('mapSync')) byId('mapSync').addEventListener('click', startLiveSyncFromMap);
+    if (byId('mapHistoryToggle')) byId('mapHistoryToggle').addEventListener('click', toggleMapHistoryMode);
+    if (byId('mapTrial')) byId('mapTrial').addEventListener('click', mapTrial);
+    if (byId('mapHistoryClose')) byId('mapHistoryClose').addEventListener('click', mapHistoryClose);
+    if (byId('hrmsRefresh')) byId('hrmsRefresh').addEventListener('click', loadHRMSAttendance);
+    if (byId('cpRefresh')) byId('cpRefresh').addEventListener('click', loadCheckpoint);
+    document.querySelectorAll('[data-hrms-tab]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        document.querySelectorAll('[data-hrms-tab]').forEach(function (e) { e.classList.remove('active'); });
+        el.classList.add('active');
+        renderHRMS();
+      });
+    });
+    document.querySelectorAll('[data-cp-tab]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        document.querySelectorAll('[data-cp-tab]').forEach(function (e) { e.classList.remove('active'); });
+        el.classList.add('active');
+        renderCheckpoint();
+      });
+    });
     if (byId('saveSplash')) byId('saveSplash').addEventListener('click', saveSplash);
     if (byId('saveFirebase')) byId('saveFirebase').addEventListener('click', saveFirebase);
     if (byId('pcCompanySave')) byId('pcCompanySave').addEventListener('click', saveCompanyProfile);
@@ -5428,6 +6336,7 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
           if (node.getAttribute('data-hold-reject')) { openHoldDecision(node.getAttribute('data-hold-reject'), 'reject'); return; }
           if (node.getAttribute('data-hold-start')) { startReassignedJob(node.getAttribute('data-hold-start')); return; }
           if (node.getAttribute('data-hold-release')) { holdAction(node.getAttribute('data-hold-release'), 'release'); return; }
+          if (node.getAttribute('data-hold-resubmit')) { resubmitHold(node.getAttribute('data-hold-resubmit')); return; }
           if (node.getAttribute('data-notif-action')) { notifAction(node.getAttribute('data-notif-id'), node.getAttribute('data-notif-action')); return; }
           if (node.getAttribute('data-team-holds')) {
             state.pendingUserFilter = node.getAttribute('data-team-holds');
