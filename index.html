@@ -4871,7 +4871,9 @@ function delay(ms) { return new Promise(function (resolve) { setTimeout(resolve,
       L.circleMarker(coords[coords.length - 1], { radius: 6, color: '#fff', weight: 2, fillColor: '#dc2626', fillOpacity: 1 })
         .bindPopup('<strong>' + Safe.esc(userId) + '</strong><br>Latest<br>' + Safe.esc(dateTime(last.at)) +
           (last.address ? '<br>' + Safe.esc(last.address) : '') +
-          '<br>' + Safe.esc(last.zone || '') + (last.batteryPct >= 0 ? '<br>Battery ' + last.batteryPct + '%' : ''))
+          '<br>' + Safe.esc(last.zone || '') + (last.batteryPct >= 0 ? '<br>Battery ' + last.batteryPct + '%' : '') +
+          (last.jobId ? '<br>Job ' + Safe.esc(last.jobId) : '') +
+          (last.vehicleNo ? ' \u00b7 ' + Safe.esc(last.vehicleNo) : ''))
         .addTo(state.mapLayer);
       L.circleMarker(coords[coords.length - 1], { radius: 3, color: '#1d4ed8', weight: 1, fillColor: '#3b82f6', fillOpacity: 1 })
         .addTo(state.mapLayer);
